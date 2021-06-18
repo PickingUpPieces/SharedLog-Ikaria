@@ -1,0 +1,6 @@
+[submodule "pmdk"]
+	path = pmdk
+	url = git@github.com:PickingUpPieces/pmdk.git
+[submodule "eRPC"]
+	path = eRPC
+	url = git@github.com:PickingUpPieces/eRPC.git
