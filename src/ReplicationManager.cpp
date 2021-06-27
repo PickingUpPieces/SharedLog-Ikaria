@@ -59,13 +59,17 @@ int main(int argc, char** argv) {
 
     // Check which type this node should be
     nodeType node = HEAD;
-    if ( argc == 1 ) { 
-        switch ( (uint8_t) argv[1][0] ) {
-            case 48: node = HEAD; break;
-            case 49: node = TAIL; break;
+    if ( argc == 2 ) { 
+        std::string cmd_arg(argv[1]);
+        std::cout << cmd_arg << endl;
+
+        if ( cmd_arg.compare("head") == 0 ) {
+            node = HEAD;
+        } else if ( cmd_arg.compare("tail") == 0 ) {
+            node = TAIL;
         }
     }
-    cout << "This node is: " << node << endl;
+    std::cout << "This node is: " << node << endl;
 
     ReplicationManager *local_node{nullptr};
 
