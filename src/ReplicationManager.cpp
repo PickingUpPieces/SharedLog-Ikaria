@@ -83,14 +83,15 @@ int main(int argc, char** argv) {
     string message = "Test";
     char buffer[128]{0};
     while (true) {
-        counter %= 1;
 
         if(counter) {
             local_node->append(&message, 6);
         } else {
             local_node->read(&counter, buffer);
         }
-        ++counter;
     }
     
+    ++counter;
+    counter %= 2;
+    sleep(1);
 }
