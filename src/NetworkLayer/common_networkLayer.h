@@ -15,9 +15,9 @@ struct Message {
     MessageType messageType;
     uint64_t logOffset;
     erpc::ReqHandle *reqHandle;
-    void *reqBuffer;
+    const erpc::MsgBuffer *reqBuffer;
     size_t reqBufferSize;
-    void *respBuffer;
+    erpc::MsgBuffer *respBuffer;
     size_t respBufferSize;
 };
 

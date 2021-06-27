@@ -22,13 +22,20 @@ Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpcID, ReplicationManager *Replica
 void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     DEBUG_MSG("Inbound.req_handler_read()");
     auto inbound = static_cast<Inbound *>(context);
-     // TODO: Create Message struct and fill it
 
-    // Pre allocated MsgBuf 
     // FIXME: Not sure if pre_resp_msgbuf is okay
-    erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
-    inbound->rpc_->resize_msg_buffer(&resp, maxMessageSize);
+    //erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
+    erpc::MsgBuffer resp = inbound->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
+
+    /* Alloc space for the message meta information and fill it */
+    Message *message = (Message *) malloc(sizeof(Message));
+    message->messageType = READ;
+    message->reqHandle = req_handle;
+    message->reqBuffer = req;
+    message->reqBufferSize = req->get_data_size();
+    message->respBuffer = &resp;
+    message->respBufferSize = maxMessageSize;
 
     inbound->ReplicationManager_->read(req->buf, resp.buf);
 }
@@ -37,33 +44,45 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
 // Request handler for append requests
 void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     DEBUG_MSG("Inbound.req_handler_append()");
-
     auto inbound = static_cast<Inbound *>(context);
-     // TODO: Create Message struct and fill it
-
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
+    // FIXME: Not sure if pre_resp_msgbuf is okay
+    erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
+     
+    /* Alloc space for the message meta information and fill it */
+    Message *message = (Message *) malloc(sizeof(Message));
+    message->messageType = APPEND;
+    message->reqHandle = req_handle;
+    message->reqBuffer = req;
+    message->reqBufferSize = req->get_data_size();
+    message->respBuffer = &resp;
+    message->respBufferSize = resp.get_data_size();
+
+    DEBUG_MSG("DELETE THIS: respBuffer pre_resp_msgbuf size: " << resp.get_data_size());
+
     inbound->ReplicationManager_->append(req->buf, req->get_data_size());
 }
 
 void Inbound::send_response(Message *message) {
     DEBUG_MSG("Inbound.send_response(messageType: " << message->messageType << " ; logOffset: " << message->logOffset);
-    // FIXME: Not sure if pre_resp_msgbuf is okay
-    erpc::MsgBuffer resp = message->reqHandle->pre_resp_msgbuf;
 
     switch (message->messageType) {
         case READ: {
-            rpc_->resize_msg_buffer(&resp, message->respBufferSize);
-            memcpy(&resp.buf, message->respBuffer, message->respBufferSize);    
+            rpc_->resize_msg_buffer((erpc::MsgBuffer *) message->respBuffer, message->respBufferSize);
             break;
         }
         case APPEND: { 
             // FIXME: Find out minimal message size required for the buffer
-            rpc_->resize_msg_buffer(&resp, 8);
+            rpc_->resize_msg_buffer(message->respBuffer, 8);
+            break;
         }
     }
     
-    rpc_->enqueue_response(message->reqHandle, &resp);
-     // FIXME: Check when to free_msg_buffers and if it's necessary
+    rpc_->enqueue_response(message->reqHandle, message->respBuffer);
+
+    // FIXME: Is there any finally thing in c++?
+    // FIXME: Check when to free_msg_buffers and if it's necessary
+    delete message;
 }
 
 void Inbound::run_event_loop(int numberOfRuns) {
