@@ -5,8 +5,8 @@
 #include <iostream>
 #include "common_info.h"
 
-Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *ReplicationManager) {
-  this->erpcID_ = erpc_id; 
+Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *ReplicationManager): 
+      erpcID_{erpc_id} {
   this->ReplicationManager_ = ReplicationManager;
   Inbound::init(nexus);
   this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);

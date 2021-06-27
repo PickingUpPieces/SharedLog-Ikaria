@@ -19,14 +19,14 @@ void cont_func_append(void *context, void *) {
     // TODO: Implement cont function
 }
 
-Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, ReplicationManager *ReplicationManager) {
-    this->erpcID_ = erpcID;
+Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, ReplicationManager *ReplicationManager):
+    erpcID_{erpcID} {
     this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);
     this->ReplicationManager_ = ReplicationManager;
 
-    Outbound::connect(connectURI);
-
     DEBUG_MSG("Outbound(): sessionNum " << this->sessionNum_ << "; erpcID: " << this->erpcID_ << "; connectURI: " << connectURI);
+    
+    Outbound::connect(connectURI);
 }
 
 void Outbound::send_message(messageType messageType, void *data, uint64_t dataLength) {
