@@ -16,7 +16,7 @@ ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, 
 
 
 void ReplicationManager::append(void *reqBuffer, uint64_t reqBufferLength) {
-    switch(this->NodeType_) {
+    switch(NodeType_) {
         case HEAD: 
         {
             DEBUG_MSG("ReplicationManager.append()");
@@ -40,7 +40,7 @@ void ReplicationManager::append(void *reqBuffer, uint64_t reqBufferLength) {
 int ReplicationManager::read(void *reqBuffer, void *respBuffer) {
     int respBufferLength = -1;
 
-    switch(this->NodeType_) {
+    switch(NodeType_) {
         case HEAD: 
         {
             DEBUG_MSG("ReplicationManager.read()");
@@ -61,6 +61,12 @@ int ReplicationManager::read(void *reqBuffer, void *respBuffer) {
 }
 
 int main(int argc, char** argv) {
+
+    struct LogEntry
+    {
+        uint64_t dataLength;
+        char data[LOG_BLOCK_SIZE];
+    };
 
     // Check which type this node should be
     NodeType node = HEAD;
@@ -86,12 +92,15 @@ int main(int argc, char** argv) {
 
     uint64_t counter{0};
     uint64_t readCounter{0};
-    string message = "Test";
+    char message[5]{"Test"};
     char *buffer = (char *) malloc(4096);
 
     while (true) {
+
+        LogEntryInFlight logEntryInFlight{counter, { 5, *message}};
+        DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(counter) " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
         if(counter) {
-            localNode->append(&message, 6);
+            localNode->append(&logEntryInFlight, sizeof(logEntryInFlight));
         } else {
             localNode->read(&readCounter, buffer);
             ++readCounter;
