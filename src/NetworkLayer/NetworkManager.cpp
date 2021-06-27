@@ -1,6 +1,7 @@
 #include "NetworkManager.h"
 #include "common_networkLayer.h"
 #include "ReplicationManager.h"
+#include <iostream>
 
 
 NetworkManager::NetworkManager(string inbound_url, int inbound_port, 
@@ -15,6 +16,8 @@ NetworkManager::NetworkManager(string inbound_url, int inbound_port,
         std::string outbound_uri = outbound_url + ":" + std::to_string(outbound_port);
         this->Outbound_ = new Outbound(nexus_, 1, outbound_uri, ReplicationManager);
     }
+
+    DEBUG_MSG("NetworkManager(): inboundURI " << inbound_url << "; outboundURI " << outbound_url);
 }
 
 void NetworkManager::send_message(messageType messageType, void *data, uint64_t dataLength) {

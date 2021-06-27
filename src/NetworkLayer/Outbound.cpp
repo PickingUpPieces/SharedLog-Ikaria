@@ -56,7 +56,7 @@ void Outbound::send_message(messageType messageType, void *data, uint64_t dataLe
 
 
 void Outbound::connect(string connectURI) {
-    DEBUG_MSG("Outbound.connect(" << connectURI << ");"); 
+    DEBUG_MSG("Outbound.connect(" << connectURI << "): erpcID: ;" << this->erpcID_); 
     this->sessionNum_ = rpc_->create_session(connectURI, 0);
 
     /* Try until Client is connected */
