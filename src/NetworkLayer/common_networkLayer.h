@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "rpc.h"
 
-const size_t maxMessageSize = 4096;
+const size_t maxMessageSize = 4112;
 
 enum MessageType {
     READ = 2,

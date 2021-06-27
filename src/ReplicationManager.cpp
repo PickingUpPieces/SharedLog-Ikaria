@@ -6,11 +6,13 @@
 #include <unistd.h>
 
 
-ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor): 
-        NodeType_{NodeType}, 
-        Log_{POOL_SIZE, LOG_BLOCK_SIZE, POOL_PATH} 
+ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor, receive_local rec): 
+        softCounter_{0},
+        Log_{POOL_SIZE, LOG_BLOCK_SIZE, POOL_PATH}, 
+        NodeType_{NodeType}
 {
     this->NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
+    this->rec = rec; 
 }
 
 
@@ -65,8 +67,15 @@ void ReplicationManager::read(Message *message) {
     }
 }
 
+void receive_locally(Message *message) {
+    DEBUG_MSG("main.receive_locally(Type: " << std::to_string(message->messageType) << "; logOffset: " << to_string(message->logOffset) << ")");
+}
+
 int main(int argc, char** argv) {
 
+    DEBUG_MSG("-------------------------------------");
+    DEBUG_MSG("Init everything...");
+    
     struct LogEntry
     {
         uint64_t dataLength;
@@ -84,25 +93,28 @@ int main(int argc, char** argv) {
             node = TAIL;
         }
     }
-    DEBUG_MSG("This node is: " << node);
+    DEBUG_MSG("This node is: " << node << "(HEAD= 0, MIDDLE= 1, TAIL= 2)");
     ReplicationManager *localNode{nullptr};
 
     switch(node) {
-        case HEAD: localNode = new ReplicationManager(node, hostname_head, port_head, hostname_tail, port_tail); break;
-        case TAIL: localNode = new ReplicationManager(node, hostname_tail, port_tail, std::string(), -1 ); break;
+        case HEAD: localNode = new ReplicationManager(node, hostname_head, port_head, hostname_tail, port_tail, &receive_locally); break;
+        case TAIL: localNode = new ReplicationManager(node, hostname_tail, port_tail, std::string(), -1, &receive_locally ); break;
         case MIDDLE: break;
     }
 
+    DEBUG_MSG("-------------------------------------");
     DEBUG_MSG("Start testing...");
 
     uint64_t counter{0};
+    erpc::MsgBuffer req = localNode->NetworkManager_->Outbound_->rpc_.alloc_msg_buffer_or_die(maxMessageSize);
+    erpc::MsgBuffer resp = localNode->NetworkManager_->Outbound_->rpc_.alloc_msg_buffer_or_die(maxMessageSize);
 
-    // TODO: Fix message buffer; In need of real MsgBuffer so buffer.buf works
     Message message;
-    message.reqBuffer = (erpc::MsgBuffer *) malloc(4096);
-    message.reqBufferSize = 4096;
-    message.respBuffer = (erpc::MsgBuffer *) malloc(4096);
-    message.respBufferSize = 4096;
+    message.sentByThisNode = true;
+    message.reqBuffer = &req;
+    message.reqBufferSize = maxMessageSize;
+    message.respBuffer = &resp;
+    message.respBufferSize = maxMessageSize;
 
     while (true) {
 
@@ -110,6 +122,8 @@ int main(int argc, char** argv) {
             localNode->read(&message);
         } else {
             LogEntryInFlight logEntryInFlight{counter, { 5, "Test"}};
+            memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
+            message.logOffset = counter;
             DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(counter) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
             localNode->append(&message);
         }
@@ -120,5 +134,8 @@ int main(int argc, char** argv) {
     ++counter;
     counter %= 2;
     sleep(1);
+    DEBUG_MSG("-------------------------------------");
     }
 }
+
+

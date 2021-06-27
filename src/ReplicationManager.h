@@ -21,20 +21,22 @@ struct LogEntryInFlight
 };
 
 class NetworkManager;
+typedef void (*receive_local)(Message *message);
 
 class ReplicationManager {
 private:
-    NodeType NodeType_;
     // TODO: Make softCounter static
     uint64_t softCounter_;
     Log Log_;
 
 public:
-    ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor); 
+    ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor, receive_local rec); 
     void append(Message *message);
     void read(Message *message);
 
+    NodeType NodeType_;
     NetworkManager *NetworkManager_;
+    receive_local rec;
 };
 
 #endif // REPLICATIONNODE_REPLICATIONMANAGER_H

@@ -20,7 +20,6 @@ class NetworkManager {
 private:
     erpc::Nexus *nexus_;
     Inbound *Inbound_;
-    Outbound *Outbound_;
     ReplicationManager *ReplicationManager_;
 
 public:
@@ -30,6 +29,8 @@ public:
     void receive_response(Message *message);
     void sync_inbound(int numberOfRuns);
     void terminate();
+    // FIXME: Only here, so we can access it in main() ReplicationManager
+    Outbound *Outbound_;
 };
 
 #endif //REPLICATIONNODE_NETWORKMANAGER_H

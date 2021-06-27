@@ -12,6 +12,7 @@ Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpcID, NetworkManager *NetworkMana
     NetworkManager_ = NetworkManager;
 
     Inbound::init(nexus);
+    // FIXME: Two RPC Objects: One Inbound + One outbound; Each own hw_port
     rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, erpcID_, inbound_sm_handler, 0);
 
     DEBUG_MSG("Inbound(): erpcID " << std::to_string(erpcID_));

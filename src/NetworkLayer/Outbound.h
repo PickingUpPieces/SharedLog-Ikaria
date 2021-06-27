@@ -19,7 +19,6 @@ friend void cont_func_read(void *context, void *tag);
 private:
     uint8_t erpcID_;
     int8_t sessionNum_;
-    erpc::Rpc<erpc::CTransport> rpc_;
     NetworkManager *NetworkManager_;
     erpc::MsgBuffer reqBuffer_;
     erpc::MsgBuffer respBuffer_;
@@ -30,6 +29,7 @@ public:
     void send_message(Message *message);
     void connect(string connectURI);
 
+    erpc::Rpc<erpc::CTransport> rpc_;
 };
 
 #endif //REPLICATIONNODE_OUTBOUND_H

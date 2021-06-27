@@ -7,10 +7,10 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
 NetworkManager::NetworkManager(string inboundHostname, int inboundPort, string outboundHostname, int outboundPort, ReplicationManager *ReplicationManager) {
 
-    ReplicationManager_ = ReplicationManager;
     string inboundURI = inboundHostname + ":" + std::to_string(inboundPort);
     nexus_ = new erpc::Nexus(inboundURI, 0, 0);
     Inbound_ = new Inbound(nexus_, 0, this);
+    ReplicationManager_ = ReplicationManager;
 
     if (!outboundHostname.empty()) {
         string outboundURI = outboundHostname + ":" + std::to_string(outboundPort);

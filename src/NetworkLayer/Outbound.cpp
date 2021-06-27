@@ -24,8 +24,8 @@ void cont_func_append(void *context, void *tag) {
 Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, NetworkManager *NetworkManager):
     erpcID_{erpcID}, 
     sessionNum_{-1}, 
-    rpc_{nexus, this, erpcID_, outbound_sm_handler, 0}, 
-    NetworkManager_{NetworkManager} 
+    NetworkManager_{NetworkManager},
+    rpc_{nexus, this, erpcID_, outbound_sm_handler, 0}
 {
     DEBUG_MSG("Outbound(): sessionNum " << std::to_string(this->sessionNum_) << "; erpcID: " << std::to_string(this->erpcID_) << "; connectURI: " << connectURI);
     Outbound::connect(connectURI);

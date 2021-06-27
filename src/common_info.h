@@ -25,12 +25,13 @@ static const int port_tail = 31850;
 
 struct Message {
     MessageType messageType;
-    uint64_t logOffset;
-    erpc::ReqHandle *reqHandle;
-    erpc::MsgBuffer *reqBuffer;
-    size_t reqBufferSize;
-    erpc::MsgBuffer *respBuffer;
-    size_t respBufferSize;
+    bool sentByThisNode{false};
+    uint64_t logOffset{0};
+    erpc::ReqHandle *reqHandle{nullptr};
+    erpc::MsgBuffer *reqBuffer{nullptr};
+    size_t reqBufferSize{0};
+    erpc::MsgBuffer *respBuffer{nullptr};
+    size_t respBufferSize{0};
 };
 
 
