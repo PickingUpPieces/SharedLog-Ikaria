@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string>
-#include <libpmemlog.h>
+#include "libpmemlog.h"
 #include "common_info.h"
 using namespace std;
 

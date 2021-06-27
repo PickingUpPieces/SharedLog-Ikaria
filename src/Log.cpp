@@ -1,5 +1,6 @@
 #include "Log.h"
 #include "common_info.h"
+#include "libpmemlog.h"
 #include <iostream>
 
 Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog):

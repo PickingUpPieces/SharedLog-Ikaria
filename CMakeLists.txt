@@ -17,7 +17,7 @@ set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC")
 message(STATUS "eRPC-path: ${ERPC}")
 
 # PMDK
-set(PMKD "${CMAKE_CURRENT_SOURCE_DIR}/pmdk")
+set(PMDK "${CMAKE_CURRENT_SOURCE_DIR}/pmdk")
 message(STATUS "PMDK-path: ${PMDK}")
 
 # This project source directory:
@@ -42,7 +42,8 @@ add_definitions(-DERPC_INFINIBAND=true)
 link_libraries(erpc)
 
 
-# TODO Fix library name
+include_directories(SYSTEM ${PMDK}/lib/include)
+link_directories(${PMDK}/lib/lib64)
 link_libraries(pmem pmemlog)
 
 include_directories(${PMDK}/src)
@@ -75,7 +76,6 @@ set(LOG_SOURCE
 )  
 
 
-# Finally build all libraries:
 add_executable(replicationNode
   ${NETWORK_SOURCE}
   ${REPLICATION_SOURCE}
