@@ -7,12 +7,13 @@
 
 void inbound_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
-Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *ReplicationManager): 
-    erpcID_{erpc_id},
-    rpc_{nexus, this, erpcID_, inbound_sm_handler, 0},
-    ReplicationManager_{ReplicationManager}
-{
+Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *ReplicationManager) {
+  erpcID_ = erpc_id;
+  ReplicationManager_ = ReplicationManager;
+
   Inbound::init(nexus);
+  rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, erpcID_, inbound_sm_handler, 0);
+
   DEBUG_MSG("Inbound(): erpcID " << std::to_string(erpcID_));
 }
 
@@ -33,7 +34,7 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
   erpc::Rpc<erpc::CTransport>::resize_msg_buffer(&resp, readLength);
 
   // Enqueue the request --> Will be send when returning to the while(true)
-  inbound->rpc_.enqueue_response(req_handle, &resp);
+  inbound->rpc_->enqueue_response(req_handle, &resp);
 }
 
 
@@ -47,15 +48,15 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
 
   // Prepare ACK message
   erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
-  inbound->rpc_.resize_msg_buffer(&resp, 16);
+  inbound->rpc_->resize_msg_buffer(&resp, 16);
   sprintf(reinterpret_cast<char *>(resp.buf), "ACK");
   // Enqueue the request --> Will be send when returned
-  inbound->rpc_.enqueue_response(req_handle, &resp);
+  inbound->rpc_->enqueue_response(req_handle, &resp);
 }
 
 void Inbound::run_event_loop(int numberOfRuns) {
   for (int i = 0; i < numberOfRuns; i++)
-    rpc_.run_event_loop_once();
+    rpc_->run_event_loop_once();
 }
 
 

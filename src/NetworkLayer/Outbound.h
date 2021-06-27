@@ -15,10 +15,10 @@ class Outbound {
 private:
     uint8_t erpcID_;
     int8_t sessionNum_;
+    erpc::Rpc<erpc::CTransport> rpc_;
     ReplicationManager *ReplicationManager_;
     erpc::MsgBuffer reqBuffer_;
     erpc::MsgBuffer respBuffer_;
-    erpc::Rpc<erpc::CTransport> rpc_;
 
 public:
     Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, ReplicationManager *ReplicationManager);
