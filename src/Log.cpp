@@ -2,7 +2,7 @@
 #include "common_info.h"
 #include <iostream>
 
-Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, char *pathToLog):
+Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog):
     logTotalSize_{logTotalSize},
     logBlockSize_{logBlockSize},
     pathToLog_{pathToLog},
@@ -36,7 +36,7 @@ void Log::append(uint64_t logOffset, void *log) {
 }
 
 
-void* Log::read(uint64_t logOffset, uint64_t *logEntryLength) {
+void* Log::read(uint64_t logOffset, int *logEntryLength) {
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << ")");
 
     void *returnRead = pmemlog_read(plp_, logOffset);

@@ -6,28 +6,32 @@
 #include <unistd.h>
 
 
-ReplicationManager::ReplicationManager(nodeType node, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor): 
-        node_{node}, 
-        softCounter_{0} 
+ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor): 
+        NodeType_{NodeType}, 
+        softCounter_{0},
+        Log_{POOL_SIZE, LOG_BLOCK_SIZE, POOL_PATH} 
 {
     this->NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
 }
 
 
-// TODO: Define header of append()
 void ReplicationManager::append(void *reqBuffer, uint64_t reqBufferLength) {
-    switch(this->node_) {
+    switch(this->NodeType_) {
         case HEAD: 
         {
             DEBUG_MSG("ReplicationManager.append()");
-            // TODO: Log on this node 
-            softCounter_++;
+            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) reqBuffer;
+            /* Set logOffset */
+            ++softCounter_;
+            logEntryInFlight->logOffset = softCounter_;
+            Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
+            /* Send append to next node in chain */
             NetworkManager_->send_message(APPEND, reqBuffer, reqBufferLength);
         }; break;
         case TAIL: {
             DEBUG_MSG("ReplicationManager.append()");
-            softCounter_++;
-            // TODO: Log on this node
+            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) reqBuffer;
+            Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
         }; break;
         case MIDDLE: break;
     }
@@ -36,21 +40,19 @@ void ReplicationManager::append(void *reqBuffer, uint64_t reqBufferLength) {
 int ReplicationManager::read(void *reqBuffer, void *respBuffer) {
     int respBufferLength = -1;
 
-    switch(this->node_) {
+    switch(this->NodeType_) {
         case HEAD: 
         {
             DEBUG_MSG("ReplicationManager.read()");
-            // TODO: Call send_message with reqBuffer on successor
             NetworkManager_->send_message(READ, reqBuffer, sizeof(uint64_t));
         }; break;
         case TAIL:
         {
-            uint64_t *logOffset = reinterpret_cast<uint64_t *>(reqBuffer);
-            DEBUG_MSG("ReplicationManager.read(" << std::to_string(*logOffset) << ")");
-            // TODO: Do local read
-            // TODO: memcpy ret_logData to respBuffer
-            sprintf(reinterpret_cast<char *>(respBuffer), "ACK");
-            respBufferLength = 4;
+            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) reqBuffer;
+            DEBUG_MSG("ReplicationManager.read(" << std::to_string(logEntryInFlight->logOffset) << ")");
+            void *data = Log_.read(logEntryInFlight->logOffset, &respBufferLength);
+            // TODO: Check respBufferLength
+            memcpy(respBuffer, data, respBufferLength);
         }; break;
         case MIDDLE: break;
     }
@@ -61,7 +63,7 @@ int ReplicationManager::read(void *reqBuffer, void *respBuffer) {
 int main(int argc, char** argv) {
 
     // Check which type this node should be
-    nodeType node = HEAD;
+    NodeType node = HEAD;
     if ( argc == 2 ) { 
         std::string cmd_arg(argv[1]);
 
