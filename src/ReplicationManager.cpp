@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
     while (true) {
 
         LogEntryInFlight logEntryInFlight{counter, { 5, *message}};
-        DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(counter) " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
+        DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(counter) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
         if(counter) {
             localNode->append(&logEntryInFlight, sizeof(logEntryInFlight));
         } else {
