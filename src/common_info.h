@@ -8,6 +8,7 @@
 #endif
 
 #include <string>
+#include "rpc.h"
 
 
 static const std::string hostname_head = "131.159.102.1";
