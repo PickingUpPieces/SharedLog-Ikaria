@@ -17,7 +17,7 @@ class Inbound {
 
     private:
         uint8_t erpcID_;
-        erpc::Rpc<erpc::CTransport> *rpc_;
+        erpc::Rpc<erpc::CTransport> rpc_;
         ReplicationManager *ReplicationManager_;
         void init(erpc::Nexus *nexus);
 

@@ -14,11 +14,11 @@ class ReplicationManager;
 class Outbound {
 private:
     uint8_t erpcID_;
-    uint8_t sessionNum_;
+    int8_t sessionNum_;
     ReplicationManager *ReplicationManager_;
     erpc::MsgBuffer reqBuffer_;
     erpc::MsgBuffer respBuffer_;
-    erpc::Rpc<erpc::CTransport> *rpc_;
+    erpc::Rpc<erpc::CTransport> rpc_;
 
 public:
     Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, ReplicationManager *ReplicationManager);

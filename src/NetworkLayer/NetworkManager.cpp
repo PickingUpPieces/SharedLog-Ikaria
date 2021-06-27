@@ -3,6 +3,7 @@
 #include "ReplicationManager.h"
 #include <iostream>
 
+void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
 NetworkManager::NetworkManager(string inbound_url, int inbound_port, 
     string outbound_url, int outbound_port, 
@@ -14,11 +15,11 @@ NetworkManager::NetworkManager(string inbound_url, int inbound_port,
 
     if (!outbound_url.empty()) {
         std::string outbound_uri = outbound_url + ":" + std::to_string(outbound_port);
-        DEBUG_MSG("NetworkManager(): outboundURI " << outbound_url);
+        DEBUG_MSG("NetworkManager(): outboundURI " << outbound_uri);
         this->Outbound_ = new Outbound(nexus_, 1, outbound_uri, ReplicationManager);
     }
 
-    DEBUG_MSG("NetworkManager(): inboundURI " << inbound_url << "; outboundURI " << outbound_url);
+    DEBUG_MSG("NetworkManager(): inboundURI " << inbound_uri);
 }
 
 void NetworkManager::send_message(messageType messageType, void *data, uint64_t dataLength) {
