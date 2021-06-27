@@ -19,7 +19,7 @@ static const int port_tail = 31850;
 /* log block size in KB */
 #define LOG_BLOCK_SIZE 4096
 /* Path to the Pool file */
-#define POOL_PATH "/home/vincent/pmem/log-test-0.log
+#define POOL_PATH "/home/vincent/pmem/log-test-0.log"
 
 
 #endif // REPLICATIONNODE_COMMON_INFO_H
