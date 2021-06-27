@@ -22,9 +22,9 @@ private:
     uint64_t softCounter_;
 
 public:
-    ReplicationManager(nodeType node, std::string hostname, int port, std::string hostname_successor, int port_successor); 
+    ReplicationManager(nodeType node, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor); 
     void append(void *reqBuffer, uint64_t reqBufferLength); 
-    uint64_t read(void *reqBuffer, void *respBuffer);
+    int read(void *reqBuffer, void *respBuffer);
 
     NetworkManager *NetworkManager_;
 };

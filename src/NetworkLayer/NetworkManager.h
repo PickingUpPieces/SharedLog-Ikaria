@@ -21,7 +21,7 @@ private:
     Outbound *Outbound_;
 
 public:
-    NetworkManager(string inbound_url, int inbound_port, string outbound_url, int outbound_port, ReplicationManager *ReplicationManager);
+    NetworkManager(string inboundHostname, int inboundPort, string outboundHostname, int outboundPort, ReplicationManager *ReplicationManager);
     void send_message(messageType messageType, void *data, uint64_t dataLength);
     void sync_inbound(int numberOfRuns);
     void terminate();

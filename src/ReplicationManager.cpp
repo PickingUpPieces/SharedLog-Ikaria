@@ -6,9 +6,11 @@
 #include <unistd.h>
 
 
-ReplicationManager::ReplicationManager(nodeType node, std::string hostname, int port, std::string hostname_successor, int port_successor): 
-        node_{node}, softCounter_{0} {
-    this->NetworkManager_ = new NetworkManager(hostname, port, hostname_successor, port_successor, this);
+ReplicationManager::ReplicationManager(nodeType node, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor): 
+        node_{node}, 
+        softCounter_{0} 
+{
+    this->NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
 }
 
 
@@ -17,13 +19,13 @@ void ReplicationManager::append(void *reqBuffer, uint64_t reqBufferLength) {
     switch(this->node_) {
         case HEAD: 
         {
-            DEBUG_MSG("append()");
+            DEBUG_MSG("ReplicationManager.append()");
             // TODO: Log on this node 
             softCounter_++;
             NetworkManager_->send_message(APPEND, reqBuffer, reqBufferLength);
         }; break;
         case TAIL: {
-            DEBUG_MSG("append()");
+            DEBUG_MSG("ReplicationManager.append()");
             softCounter_++;
             // TODO: Log on this node
         }; break;
@@ -31,9 +33,8 @@ void ReplicationManager::append(void *reqBuffer, uint64_t reqBufferLength) {
     }
 }
 
-uint64_t ReplicationManager::read(void *reqBuffer, void *respBuffer) {
-    // TODO: Find way to return an error over int
-    uint64_t respBufferLength = 0;
+int ReplicationManager::read(void *reqBuffer, void *respBuffer) {
+    int respBufferLength = -1;
 
     switch(this->node_) {
         case HEAD: 
@@ -44,8 +45,8 @@ uint64_t ReplicationManager::read(void *reqBuffer, void *respBuffer) {
         }; break;
         case TAIL:
         {
-            uint64_t logOffset = reinterpret_cast<uint64_t>(&reqBuffer);
-            DEBUG_MSG("ReplicationManager.read(" << logOffset << ")");
+            uint64_t *logOffset = reinterpret_cast<uint64_t *>(reqBuffer);
+            DEBUG_MSG("ReplicationManager.read(" << std::to_string(*logOffset) << ")");
             // TODO: Do local read
             // TODO: memcpy ret_logData to respBuffer
             sprintf(reinterpret_cast<char *>(respBuffer), "ACK");

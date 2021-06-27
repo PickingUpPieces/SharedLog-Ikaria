@@ -22,7 +22,7 @@ class Inbound {
         void init(erpc::Nexus *nexus);
 
     public:
-        Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *ReplicationManager);
+        Inbound(erpc::Nexus *nexus, uint8_t erpcID, ReplicationManager *ReplicationManager);
         void run_event_loop(int numberOfRuns);
         void terminate();
 };
