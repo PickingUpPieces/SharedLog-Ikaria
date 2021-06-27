@@ -25,6 +25,8 @@ Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, Replic
     this->ReplicationManager_ = ReplicationManager;
 
     Outbound::connect(connectURI);
+
+    DEBUG_MSG("Outbound(): sessionNum " << this->sessionNum_ << "; erpcID: " this->erpcID_ << "; connectURI: " << connectURI);
 }
 
 void Outbound::send_message(messageType messageType, void *data, uint64_t dataLength) {
@@ -54,7 +56,7 @@ void Outbound::send_message(messageType messageType, void *data, uint64_t dataLe
 
 
 void Outbound::connect(string connectURI) {
-    DEBUG_MSG("Outbound.connect(" << connectURI << ")");
+    DEBUG_MSG("Outbound.connect(" << connectURI << ");"); 
     this->sessionNum_ = rpc_->create_session(connectURI, 0);
 
     /* Try until Client is connected */

@@ -10,6 +10,8 @@ Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *Replic
   this->ReplicationManager_ = ReplicationManager;
   Inbound::init(nexus);
   this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);
+
+  DEBUG_MSG("Inbound(): erpcID " << this->erpcID_);
 }
 
 
