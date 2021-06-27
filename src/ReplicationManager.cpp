@@ -38,14 +38,13 @@ uint64_t ReplicationManager::read(void *reqBuffer, void *respBuffer) {
     switch(this->node_) {
         case HEAD: 
         {
-            DEBUG_MSG("read()");
+            DEBUG_MSG("ReplicationManager.read()");
             // TODO: Call send_message with reqBuffer on successor
             NetworkManager_->send_message(READ, reqBuffer, sizeof(uint64_t));
         }; break;
         case TAIL:
         {
-            DEBUG_MSG("read()");
-            uint64_t logOffset = (uint64_t) &reqBuffer;
+            uint64_t logOffset = reinterpret_cast<uint64_t>(&reqBuffer);
             DEBUG_MSG("ReplicationManager.read(" << logOffset << ")");
             // TODO: Do local read
             // TODO: memcpy ret_logData to respBuffer
