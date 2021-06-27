@@ -11,14 +11,4 @@ enum MessageType {
     APPEND = 3
 };
 
-struct Message {
-    MessageType messageType;
-    uint64_t logOffset;
-    erpc::ReqHandle *reqHandle;
-    const erpc::MsgBuffer *reqBuffer;
-    size_t reqBufferSize;
-    erpc::MsgBuffer *respBuffer;
-    size_t respBufferSize;
-};
-
 #endif // REPLICATIONNODE_COMMON_NETWORKLAYER_H

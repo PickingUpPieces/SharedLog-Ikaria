@@ -8,6 +8,7 @@
 #endif
 
 #include <string>
+#include "common_networkLayer.h"
 
 static const std::string hostname_head = "131.159.102.1";
 static const int port_head = 31850;
@@ -21,6 +22,16 @@ static const int port_tail = 31850;
 #define LOG_BLOCK_SIZE 4096
 /* Path to the Pool file */
 #define POOL_PATH "/home/vincent/pmem/log-test-0.log"
+
+struct Message {
+    MessageType messageType;
+    uint64_t logOffset;
+    erpc::ReqHandle *reqHandle;
+    erpc::MsgBuffer *reqBuffer;
+    size_t reqBufferSize;
+    erpc::MsgBuffer *respBuffer;
+    size_t respBufferSize;
+};
 
 
 
