@@ -83,6 +83,7 @@ int main(int argc, char** argv) {
     DEBUG_MSG("Start testing...");
 
     uint64_t counter{0};
+    uint64_t readCounter{0};
     string message = "Test";
     char *buffer = (char *) malloc(4096);
 
@@ -90,7 +91,8 @@ int main(int argc, char** argv) {
         if(counter) {
             localNode->append(&message, 6);
         } else {
-            localNode->read(&counter, buffer);
+            localNode->read(&readCounter, buffer);
+            ++readCounter;
         }
     
     for(int i = 0; i < 10; i++)

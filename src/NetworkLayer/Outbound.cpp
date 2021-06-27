@@ -34,7 +34,7 @@ Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, Replic
 }
 
 void Outbound::send_message(messageType messageType, void *data, uint64_t dataLength) {
-    DEBUG_MSG("send_message(" << std::to_string(messageType) << ")");
+    DEBUG_MSG("Outbound.send_message(" << std::to_string(messageType) << ")");
 
     // Get buffer for request and response
     reqBuffer_ = rpc_.alloc_msg_buffer_or_die(dataLength);
@@ -67,8 +67,8 @@ void Outbound::connect(string connectURI) {
     while (!rpc_.is_connected( sessionNum_ )) 
         rpc_.run_event_loop_once();
 
-    DEBUG_MSG("Connection is ready");
-    DEBUG_MSG("Connection Bandwith: " << std::to_string( rpc_.get_bandwidth() / (1024 * 1024)) << "MiB/s");
+    DEBUG_MSG("Outbound.connect(): Connection is ready");
+    DEBUG_MSG("Outbound.connect(): Connection Bandwith is " << std::to_string( rpc_.get_bandwidth() / (1024 * 1024)) << "MiB/s");
 }
 
 void Outbound::terminate() {}
