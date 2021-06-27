@@ -8,7 +8,7 @@
 #endif
 
 #include <string>
-#include "common_networkLayer.h"
+
 
 static const std::string hostname_head = "131.159.102.1";
 static const int port_head = 31850;
@@ -22,6 +22,13 @@ static const int port_tail = 31850;
 #define LOG_BLOCK_SIZE 4096
 /* Path to the Pool file */
 #define POOL_PATH "/home/vincent/pmem/log-test-0.log"
+
+const size_t maxMessageSize = 4112;
+
+enum MessageType {
+    READ = 2,
+    APPEND = 3
+};
 
 struct Message {
     MessageType messageType;

@@ -1,9 +1,10 @@
-#include "ReplicationManager.h"
-#include "rpc.h"
-#include "NetworkManager.h"
-#include "common_info.h"
 #include <iostream>
 #include <unistd.h>
+#include "rpc.h"
+
+#include "NetworkManager.h"
+#include "ReplicationManager.h"
+#include "common_info.h"
 
 
 ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor, receive_local rec): 

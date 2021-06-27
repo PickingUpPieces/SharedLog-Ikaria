@@ -3,7 +3,6 @@
 
 #include "rpc.h"
 #include "NetworkManager.h"
-#include "common_networkLayer.h"
 #include "common_info.h"
 #include <stdio.h>
 #include <cstdint>

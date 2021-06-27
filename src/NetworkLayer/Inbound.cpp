@@ -1,9 +1,8 @@
-#include "Inbound.h"
-#include "NetworkManager.h"
-#include "common_networkLayer.h"
-#include "rpc.h"
 #include <iostream>
+#include "rpc.h"
+#include "Inbound.h"
 #include "common_info.h"
+#include "NetworkManager.h"
 
 void inbound_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 

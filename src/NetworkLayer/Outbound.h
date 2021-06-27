@@ -2,8 +2,6 @@
 #define REPLICATIONNODE_OUTBOUND_H
 
 #include "rpc.h"
-#include "ReplicationManager.h"
-#include "common_networkLayer.h"
 #include "common_info.h"
 #include <string>
 using namespace std;

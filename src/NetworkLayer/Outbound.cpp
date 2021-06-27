@@ -1,8 +1,7 @@
-#include "Outbound.h"
-#include "ReplicationManager.h"
-#include "NetworkManager.h"
-#include "rpc.h"
 #include <iostream>
+#include "rpc.h"
+#include "Outbound.h"
+#include "NetworkManager.h"
 
 void empty_cont_func(void *, void *) {}
 

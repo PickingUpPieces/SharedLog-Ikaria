@@ -5,7 +5,6 @@
 #include "ReplicationManager.h"
 #include "Inbound.h"
 #include "Outbound.h"
-#include "common_networkLayer.h"
 #include "common_info.h"
 #include <stdio.h>
 #include <string>
