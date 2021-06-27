@@ -2,6 +2,7 @@
 #include "rpc.h"
 #include "NetworkManager.h"
 #include <iostream>
+#include <unistd.h>
 
 
 ReplicationManager::ReplicationManager(nodeType node, std::string hostname, int port, std::string hostname_successor, int port_successor): 
@@ -61,7 +62,6 @@ int main(int argc, char** argv) {
     nodeType node = HEAD;
     if ( argc == 2 ) { 
         std::string cmd_arg(argv[1]);
-        std::cout << cmd_arg << endl;
 
         if ( cmd_arg.compare("head") == 0 ) {
             node = HEAD;
@@ -70,7 +70,6 @@ int main(int argc, char** argv) {
         }
     }
     std::cout << "This node is: " << node << endl;
-
     ReplicationManager *local_node{nullptr};
 
     switch(node) {
@@ -82,16 +81,16 @@ int main(int argc, char** argv) {
     int counter = 0;
     string message = "Test";
     char buffer[128]{0};
-    while (true) {
 
+    while (true) {
         if(counter) {
             local_node->append(&message, 6);
         } else {
             local_node->read(&counter, buffer);
         }
-    }
-    
+
     ++counter;
     counter %= 2;
     sleep(1);
+    }
 }
