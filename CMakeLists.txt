@@ -13,16 +13,15 @@ set(LIBRARIES pthread numa dl ibverbs)
 # Some paths:
 # These two paths might need to be changed:
 # eRPC
-set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/../eRPC")
+set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC")
 message(STATUS "eRPC-path: ${ERPC}")
 
 # PMDK
-set(PMKD "${CMAKE_CURRENT_SOURCE_DIR}/../PMKD")
+set(PMKD "${CMAKE_CURRENT_SOURCE_DIR}/pmdk")
 message(STATUS "PMDK-path: ${PMDK}")
 
 # This project source directory:
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(SRC_NETWORK ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # User options:
 set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)") 
@@ -43,7 +42,7 @@ link_libraries(erpc)
 
 
 # TODO Fix library name
-link_libraries(pmdk)
+#link_libraries(pmdk)
 
 include_directories(${PMDK}/src)
 include_directories(SYSTEM ${ERPC}/src)
@@ -60,16 +59,18 @@ set(NETWORK_SOURCE
   ${SRC}/NetworkLayer/Outbound.cpp
   ${SRC}/NetworkLayer/NetworkManager.h
   ${SRC}/NetworkLayer/NetworkManager.cpp
+  ${SRC}/NetworkLayer/common_networkLayer.h
 )
 
 set(REPLICATION_SOURCE
   ${SRC}/ReplicationManager.h
   ${SRC}/ReplicationManager.cpp
+  ${SRC}/common_info.h
 )
 
 set(LOG_SOURCE
-  ${SRC}/Log.h
-  ${SRC}/Log.cpp
+#  ${SRC}/Log.h
+#  ${SRC}/Log.cpp
 )  
 
 
