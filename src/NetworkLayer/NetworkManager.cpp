@@ -13,11 +13,11 @@ NetworkManager::NetworkManager(string inboundHostname, int inboundPort, string o
 
     if (!outboundHostname.empty()) {
         std::string outboundURI = outboundHostname + ":" + std::to_string(outboundPort);
-        DEBUG_MSG("NetworkManager(): outboundURI " << outboundURI);
+        DEBUG_MSG("NetworkManager.outboundURI " << outboundURI);
         this->Outbound_ = new Outbound(nexus_, 1, outboundURI, ReplicationManager);
     }
 
-    DEBUG_MSG("NetworkManager(): inboundURI " << inboundURI);
+    DEBUG_MSG("NetworkManager.inboundURI " << inboundURI);
 }
 
 void NetworkManager::send_message(messageType messageType, void *data, uint64_t dataLength) {

@@ -3,6 +3,8 @@
 #include "libpmemlog.h"
 #include <iostream>
 
+static uint64_t logEntryTotalSize = sizeof(LogEntry);
+
 Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog):
     logTotalSize_{logTotalSize},
     logBlockSize_{logBlockSize},
@@ -28,9 +30,9 @@ void Log::append(uint64_t logOffset, void *log) {
     LogEntry *logEntry = (LogEntry *) log;
     
 	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
-    DEBUG_MSG("LogEntry.dataLength: " << std::to_string(logEntry->dataLength) << " ; LogEntry.data: " << logEntry->data);
+    DEBUG_MSG("LogEntry.dataLength: " << std::to_string(logEntry->dataLength) << " ; LogEntry.data: " << to_string(logEntry->data));
 
-	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset) < 0) {
+	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logEntryTotalSize) < 0) {
 		perror("pmemlog_write");
 		exit(EXIT_FAILURE);
 	}
@@ -40,12 +42,12 @@ void Log::append(uint64_t logOffset, void *log) {
 void* Log::read(uint64_t logOffset, int *logEntryLength) {
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << ")");
 
-    void *returnRead = pmemlog_read(plp_, logOffset);
+    void *returnRead = pmemlog_read(plp_, logOffset * logEntryTotalSize);
     // TODO: Check if first byte (LogEntry.dataLength) is 0 -> read failed
 
     LogEntry *logEntry = (LogEntry *) returnRead;
 	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
-    DEBUG_MSG("LogEntry.dataLength: " << std::to_string(logEntry->dataLength) << " ; LogEntry.data: " << logEntry->data);
+    DEBUG_MSG("LogEntry.dataLength: " << to_string(logEntry->dataLength) << " ; LogEntry.data: " << to_string(logEntry->data));
 
     *logEntryLength = totalLogEntrySize;
     return returnRead;
