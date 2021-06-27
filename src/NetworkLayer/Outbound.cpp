@@ -26,7 +26,7 @@ Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, Replic
 
     Outbound::connect(connectURI);
 
-    DEBUG_MSG("Outbound(): sessionNum " << this->sessionNum_ << "; erpcID: " this->erpcID_ << "; connectURI: " << connectURI);
+    DEBUG_MSG("Outbound(): sessionNum " << this->sessionNum_ << "; erpcID: " << this->erpcID_ << "; connectURI: " << connectURI);
 }
 
 void Outbound::send_message(messageType messageType, void *data, uint64_t dataLength) {
