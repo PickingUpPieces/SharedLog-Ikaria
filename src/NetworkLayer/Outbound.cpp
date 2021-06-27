@@ -6,12 +6,14 @@
 void empty_cont_func(void *, void *) {}
 
 void cont_func_read(void *context, void *) {
+    DEBUG_MSG("Outbound.cont_func_read()");
     auto outbound = static_cast<Outbound *>(context);
 
     // TODO: Implement cont function
 }
 
 void cont_func_append(void *context, void *) {
+    DEBUG_MSG("Outbound.cont_func_append()");
     auto outbound = static_cast<Outbound *>(context);
 
     // TODO: Implement cont function
@@ -26,6 +28,7 @@ Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, Replic
 }
 
 void Outbound::send_message(messageType messageType, void *data, uint64_t dataLength) {
+    DEBUG_MSG("send_message(" << messageType << ")");
 
     // Get buffer for request and response
     reqBuffer_ = this->rpc_->alloc_msg_buffer_or_die(dataLength);
@@ -35,7 +38,7 @@ void Outbound::send_message(messageType messageType, void *data, uint64_t dataLe
 
     // Write message into buffer
     // FIXME: Send message without memcpy'ing it
-    memcpy(respBuffer_.buf, (uint8_t *) data, dataLength);
+    memcpy(respBuffer_.buf, data, dataLength);
 
     switch(messageType) {
       case READ: cont_func = cont_func_read; break;
@@ -51,14 +54,15 @@ void Outbound::send_message(messageType messageType, void *data, uint64_t dataLe
 
 
 void Outbound::connect(string connectURI) {
+    DEBUG_MSG("Outbound.connect(" << connectURI << ")");
     this->sessionNum_ = rpc_->create_session(connectURI, 0);
 
     /* Try until Client is connected */
     while (!rpc_->is_connected(this->sessionNum_)) 
       this->rpc_->run_event_loop_once();
 
-    cout << "Connection is Ready!" << endl;
-    cout << "Connection Bandwith: " << ( rpc_->get_bandwidth() / (1024 * 1024)) << "MiB/s" << endl;
+    DEBUG_MSG("Connection is ready");
+    DEBUG_MSG("Connection Bandwith: " << ( rpc_->get_bandwidth() / (1024 * 1024)) << "MiB/s");
 }
 
 void Outbound::terminate() {}

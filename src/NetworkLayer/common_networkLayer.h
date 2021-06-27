@@ -10,9 +10,5 @@ enum messageType {
     APPEND = 3
 };
 
-const int ReqTypeRead = 1;
-const int ReqTypeAppend = 2;
-
-
 
 #endif // REPLICATIONNODE_COMMON_NETWORKLAYER_H

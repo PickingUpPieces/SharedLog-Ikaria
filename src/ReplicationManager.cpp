@@ -1,6 +1,7 @@
 #include "ReplicationManager.h"
 #include "rpc.h"
 #include "NetworkManager.h"
+#include "common_info.h"
 #include <iostream>
 #include <unistd.h>
 
@@ -16,13 +17,13 @@ void ReplicationManager::append(void *reqBuffer, uint64_t reqBufferLength) {
     switch(this->node_) {
         case HEAD: 
         {
-            cout << "append()" << endl;
+            DEBUG_MSG("append()");
             // TODO: Log on this node 
             softCounter_++;
             NetworkManager_->send_message(APPEND, reqBuffer, reqBufferLength);
         }; break;
         case TAIL: {
-            cout << "append()" << endl;
+            DEBUG_MSG("append()");
             softCounter_++;
             // TODO: Log on this node
         }; break;
@@ -37,13 +38,13 @@ uint64_t ReplicationManager::read(void *reqBuffer, void *respBuffer) {
     switch(this->node_) {
         case HEAD: 
         {
-            cout << "read()" << endl;
+            DEBUG_MSG("read()");
             // TODO: Call send_message with reqBuffer on successor
             NetworkManager_->send_message(READ, reqBuffer, 8);
         }; break;
         case TAIL:
         {
-            cout << "read()" << endl;
+            DEBUG_MSG("read()");
             // TODO: Cast reqBuffer to uint64_t
             // TODO: Do local read
             // TODO: memcpy ret_logData to respBuffer
@@ -69,7 +70,7 @@ int main(int argc, char** argv) {
             node = TAIL;
         }
     }
-    std::cout << "This node is: " << node << endl;
+    DEBUG_MSG("This node is: " << node);
     ReplicationManager *localNode{nullptr};
 
     switch(node) {
@@ -78,9 +79,11 @@ int main(int argc, char** argv) {
         case MIDDLE: break;
     }
 
+    DEBUG_MSG("Start testing...");
+
     int counter = 0;
     string message = "Test";
-    char buffer[128]{0};
+    char *buffer = (char *) malloc(4096);
 
     while (true) {
         if(counter) {

@@ -3,19 +3,19 @@
 #include "common_networkLayer.h"
 #include "rpc.h"
 #include <iostream>
+#include "common_info.h"
 
 Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *ReplicationManager) {
   this->erpcID_ = erpc_id; 
   this->ReplicationManager_ = ReplicationManager;
   Inbound::init(nexus);
   this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);
-
-  cout << "Inbound init done" << endl;
 }
 
 
 // Request handler for read requests
 void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
+  DEBUG_MSG("Inbound.req_handler_read()");
 
   auto inbound = static_cast<Inbound *>(context);
 
@@ -35,6 +35,7 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
 
 // Request handler for append requests
 void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
+  DEBUG_MSG("Inbound.req_handler_append()");
 
   auto inbound = static_cast<Inbound *>(context);
   const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
@@ -57,13 +58,13 @@ void Inbound::run_event_loop(int numberOfRuns) {
 void Inbound::init(erpc::Nexus *nexus) {
 
   // Register request handler for Request Type ReqTypeRead
-  if (nexus->register_req_func(ReqTypeRead, req_handler_read)) {
+  if (nexus->register_req_func(READ, req_handler_read)) {
     cerr << "Failed to initialize ReqTypeRead" << endl;
     std::terminate();
   } 
 
     // Register request handler for Request Type ReqTypeAppend
-  if (nexus->register_req_func(ReqTypeAppend, req_handler_read)) {
+  if (nexus->register_req_func(APPEND, req_handler_read)) {
     cerr << "Failed to initialize ReqTypeAppend" << endl;
     std::terminate();
   }
