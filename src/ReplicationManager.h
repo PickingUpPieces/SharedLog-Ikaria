@@ -20,12 +20,13 @@ class ReplicationManager {
 private:
     nodeType node_;
     uint64_t softCounter_;
-    NetworkManager *NetworkManager_;
 
 public:
     ReplicationManager(nodeType node, std::string hostname, int port, std::string hostname_successor, int port_successor); 
     void append(void *reqBuffer, uint64_t reqBufferLength); 
     uint64_t read(void *reqBuffer, void *respBuffer);
+
+    NetworkManager *NetworkManager_;
 };
 
 #endif // REPLICATIONNODE_REPLICATIONMANAGER_H

@@ -13,19 +13,19 @@ class ReplicationManager;
 
 class Outbound {
 private:
-    uint8_t erpc_id_;
-    uint8_t session_num_;
+    uint8_t erpcID_;
+    uint8_t sessionNum_;
     ReplicationManager *ReplicationManager_;
     erpc::MsgBuffer reqBuffer_;
     erpc::MsgBuffer respBuffer_;
+    erpc::Rpc<erpc::CTransport> *rpc_;
 
 public:
-    Outbound(erpc::Nexus *nexus, uint8_t erpc_id, string connect_url, ReplicationManager *ReplicationManager);
+    Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, ReplicationManager *ReplicationManager);
     void terminate();
     void send_message(messageType messageType, void *data, uint64_t dataLength);
-    void connect(string connect_url);
+    void connect(string connectURI);
 
-    erpc::Rpc<erpc::CTransport> *rpc_;
 };
 
 #endif //REPLICATIONNODE_OUTBOUND_H

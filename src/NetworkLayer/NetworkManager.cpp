@@ -21,4 +21,8 @@ void NetworkManager::send_message(messageType messageType, void *data, uint64_t 
    this->Outbound_->send_message(messageType, data, dataLength); 
 }
 
+void NetworkManager::sync_inbound(int numberOfRuns) {
+    this->Inbound_->run_event_loop(numberOfRuns);
+}
+
 void NetworkManager::terminate() {}

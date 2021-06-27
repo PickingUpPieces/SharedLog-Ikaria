@@ -17,12 +17,12 @@ void cont_func_append(void *context, void *) {
     // TODO: Implement cont function
 }
 
-Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpc_id, string connect_url, ReplicationManager *ReplicationManager) {
-    this->erpc_id_ = erpc_id;
-    this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpc_id_, nullptr);
+Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, ReplicationManager *ReplicationManager) {
+    this->erpcID_ = erpcID;
+    this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);
     this->ReplicationManager_ = ReplicationManager;
 
-    Outbound::connect(connect_url);
+    Outbound::connect(connectURI);
 }
 
 void Outbound::send_message(messageType messageType, void *data, uint64_t dataLength) {
@@ -43,18 +43,18 @@ void Outbound::send_message(messageType messageType, void *data, uint64_t dataLe
     }
 
     // Enqueue the request
-    this->rpc_->enqueue_request(session_num_, messageType, &reqBuffer_, &respBuffer_, cont_func, 0);
+    this->rpc_->enqueue_request(sessionNum_, messageType, &reqBuffer_, &respBuffer_, cont_func, 0);
 
     for (size_t i = 0; i < DEFAULT_RUN_EVENT_LOOP; i++)
       this->rpc_->run_event_loop_once();
 }
 
 
-void Outbound::connect(string connect_uri) {
-    this->session_num_ = rpc_->create_session(connect_uri, 0);
+void Outbound::connect(string connectURI) {
+    this->sessionNum_ = rpc_->create_session(connectURI, 0);
 
     /* Try until Client is connected */
-    while (!rpc_->is_connected(this->session_num_)) 
+    while (!rpc_->is_connected(this->sessionNum_)) 
       this->rpc_->run_event_loop_once();
 
     cout << "Connection is Ready!" << endl;

@@ -70,11 +70,11 @@ int main(int argc, char** argv) {
         }
     }
     std::cout << "This node is: " << node << endl;
-    ReplicationManager *local_node{nullptr};
+    ReplicationManager *localNode{nullptr};
 
     switch(node) {
-        case HEAD: local_node = new ReplicationManager(node, hostname_head, port_head, hostname_tail, port_tail); break;
-        case TAIL: local_node = new ReplicationManager(node, hostname_tail, port_tail, std::string(), -1 ); break;
+        case HEAD: localNode = new ReplicationManager(node, hostname_head, port_head, hostname_tail, port_tail); break;
+        case TAIL: localNode = new ReplicationManager(node, hostname_tail, port_tail, std::string(), -1 ); break;
         case MIDDLE: break;
     }
 
@@ -84,10 +84,13 @@ int main(int argc, char** argv) {
 
     while (true) {
         if(counter) {
-            local_node->append(&message, 6);
+            localNode->append(&message, 6);
         } else {
-            local_node->read(&counter, buffer);
+            localNode->read(&counter, buffer);
         }
+    
+    for(int i = 0; i < 10; i++)
+        localNode->NetworkManager_->sync_inbound(20);
 
     ++counter;
     counter %= 2;
