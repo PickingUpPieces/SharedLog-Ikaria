@@ -28,7 +28,7 @@ set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
-  message(STATUS "Debugging enabled. Compiling with address sanitizer")
+  message(STATUS "Debugging enabled. Compiling with address sanitizer and debug messages")
   add_definitions(-g -fsanitize=address)
   add_compile_definitions(DEBUG)
   link_libraries(-fsanitize=address)
@@ -43,7 +43,7 @@ link_libraries(erpc)
 
 
 # TODO Fix library name
-#link_libraries(pmdk)
+link_libraries(pmem pmemlog)
 
 include_directories(${PMDK}/src)
 include_directories(SYSTEM ${ERPC}/src)
@@ -70,8 +70,8 @@ set(REPLICATION_SOURCE
 )
 
 set(LOG_SOURCE
-#  ${SRC}/Log.h
-#  ${SRC}/Log.cpp
+  ${SRC}/Log.h
+  ${SRC}/Log.cpp
 )  
 
 
