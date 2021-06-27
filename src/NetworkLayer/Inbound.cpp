@@ -21,25 +21,16 @@ Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpcID, ReplicationManager *Replica
 // Request handler for read requests
 void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     DEBUG_MSG("Inbound.req_handler_read()");
-
     auto inbound = static_cast<Inbound *>(context);
+     // TODO: Create Message struct and fill it
 
-    // Pre allocated MsgBuf -> Single packet response
+    // Pre allocated MsgBuf 
+    // FIXME: Not sure if pre_resp_msgbuf is okay
     erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
+    inbound->rpc_->resize_msg_buffer(&resp, maxMessageSize);
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
 
-    // Call read method
-    int readLength = inbound->ReplicationManager_->read(req->buf, resp.buf);
-    
-    if(readLength < 0) {
-        cerr << "Inbound.req_handler_read(): readLength is smaller zero;" << endl;
-        std::terminate();
-    }
-
-    erpc::Rpc<erpc::CTransport>::resize_msg_buffer(&resp, readLength);
-
-    // Enqueue the request --> Will be send when returning to the while(true)
-    inbound->rpc_->enqueue_response(req_handle, &resp);
+    inbound->ReplicationManager_->read(req->buf, resp.buf);
 }
 
 
@@ -48,15 +39,31 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     DEBUG_MSG("Inbound.req_handler_append()");
 
     auto inbound = static_cast<Inbound *>(context);
+     // TODO: Create Message struct and fill it
+
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
     inbound->ReplicationManager_->append(req->buf, req->get_data_size());
+}
 
-    // Prepare ACK message
-    erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
-    inbound->rpc_->resize_msg_buffer(&resp, 16);
-    sprintf(reinterpret_cast<char *>(resp.buf), "ACK");
-    // Enqueue the request --> Will be send when returned
-    inbound->rpc_->enqueue_response(req_handle, &resp);
+void Inbound::send_response(Message *message) {
+    DEBUG_MSG("Inbound.send_response(messageType: " << message->messageType << " ; logOffset: " << message->logOffset);
+    // FIXME: Not sure if pre_resp_msgbuf is okay
+    erpc::MsgBuffer resp = message->reqHandle->pre_resp_msgbuf;
+
+    switch (message->messageType) {
+        case READ: {
+            rpc_->resize_msg_buffer(&resp, message->respBufferSize);
+            memcpy(&resp.buf, message->respBuffer, message->respBufferSize);    
+            break;
+        }
+        case APPEND: { 
+            // FIXME: Find out minimal message size required for the buffer
+            rpc_->resize_msg_buffer(&resp, 8);
+        }
+    }
+    
+    rpc_->enqueue_response(message->reqHandle, &resp);
+     // FIXME: Check when to free_msg_buffers and if it's necessary
 }
 
 void Inbound::run_event_loop(int numberOfRuns) {

@@ -3,6 +3,7 @@
 
 #include "rpc.h"
 #include "ReplicationManager.h"
+#include "common_networkLayer.h"
 #include <stdio.h>
 #include <cstdint>
 using namespace std;
@@ -23,6 +24,7 @@ class Inbound {
 
     public:
         Inbound(erpc::Nexus *nexus, uint8_t erpcID, ReplicationManager *ReplicationManager);
+        void send_response(Message *message);
         void run_event_loop(int numberOfRuns);
         void terminate();
 };
