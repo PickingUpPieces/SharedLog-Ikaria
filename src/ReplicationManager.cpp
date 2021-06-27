@@ -40,16 +40,17 @@ uint64_t ReplicationManager::read(void *reqBuffer, void *respBuffer) {
         {
             DEBUG_MSG("read()");
             // TODO: Call send_message with reqBuffer on successor
-            NetworkManager_->send_message(READ, reqBuffer, 8);
+            NetworkManager_->send_message(READ, reqBuffer, sizeof(uint64_t));
         }; break;
         case TAIL:
         {
             DEBUG_MSG("read()");
-            // TODO: Cast reqBuffer to uint64_t
+            uint64_t logOffset = (uint64_t) &reqBuffer;
+            DEBUG_MSG("ReplicationManager.read(" << logOffset << ")");
             // TODO: Do local read
             // TODO: memcpy ret_logData to respBuffer
-            memcpy(respBuffer, "Fake", 5);
-            respBufferLength = 5;
+            sprintf(reinterpret_cast<char *>(respBuffer), "ACK");
+            respBufferLength = 4;
         }; break;
         case MIDDLE: break;
     }
@@ -81,7 +82,7 @@ int main(int argc, char** argv) {
 
     DEBUG_MSG("Start testing...");
 
-    int counter = 0;
+    uint64_t counter{0};
     string message = "Test";
     char *buffer = (char *) malloc(4096);
 
