@@ -91,19 +91,17 @@ int main(int argc, char** argv) {
     DEBUG_MSG("Start testing...");
 
     uint64_t counter{0};
-    uint64_t readCounter{0};
-    char message[5]{"Test"};
     char *buffer = (char *) malloc(4096);
+
 
     while (true) {
 
-        LogEntryInFlight logEntryInFlight{counter, { 5, *message}};
-        DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(counter) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
         if(counter) {
-            localNode->append(&logEntryInFlight, sizeof(logEntryInFlight));
+            localNode->read(&counter, buffer);
         } else {
-            localNode->read(&readCounter, buffer);
-            ++readCounter;
+            LogEntryInFlight logEntryInFlight{counter, { 5, "Test"}};
+            DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(counter) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
+            localNode->append(&logEntryInFlight, sizeof(logEntryInFlight));
         }
     
     for(int i = 0; i < 10; i++)

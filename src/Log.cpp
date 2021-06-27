@@ -30,7 +30,7 @@ void Log::append(uint64_t logOffset, void *log) {
     LogEntry *logEntry = (LogEntry *) log;
     
 	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
-    DEBUG_MSG("LogEntry.dataLength: " << std::to_string(logEntry->dataLength) << " ; LogEntry.data: " << to_string(logEntry->data));
+    DEBUG_MSG("LogEntry.dataLength: " << std::to_string(logEntry->dataLength) << " ; LogEntry.data: " << logEntry->data);
 
 	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logEntryTotalSize) < 0) {
 		perror("pmemlog_write");
@@ -47,7 +47,7 @@ void* Log::read(uint64_t logOffset, int *logEntryLength) {
 
     LogEntry *logEntry = (LogEntry *) returnRead;
 	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
-    DEBUG_MSG("LogEntry.dataLength: " << to_string(logEntry->dataLength) << " ; LogEntry.data: " << to_string(logEntry->data));
+    DEBUG_MSG("LogEntry.dataLength: " << to_string(logEntry->dataLength) << " ; LogEntry.data: " << logEntry->data);
 
     *logEntryLength = totalLogEntrySize;
     return returnRead;
