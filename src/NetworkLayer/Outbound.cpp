@@ -8,51 +8,49 @@ void empty_cont_func(void *, void *) {}
 
 void outbound_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
-
-void cont_func_read(void *context, void *) {
-    DEBUG_MSG("Outbound.cont_func_read()");
+// FIXME: Could be the same cont_func in the end!
+void cont_func_read(void *context, void *tag) {
+    DEBUG_MSG("Outbound.cont_func_append(messsageType: " << to_string(((Message *) tag)->messageType) << " ; logOffset: " << to_string(((Message *) tag)->logOffset));
     auto outbound = static_cast<Outbound *>(context);
-
-    // TODO: Implement cont function
+    outbound->NetworkManager_->receive_response((Message *) tag);
 }
 
-void cont_func_append(void *context, void *) {
-    DEBUG_MSG("Outbound.cont_func_append()");
+void cont_func_append(void *context, void *tag) {
+    DEBUG_MSG("Outbound.cont_func_append(messsageType: " << to_string(((Message *) tag)->messageType) << " ; logOffset: " << to_string(((Message *) tag)->logOffset));
     auto outbound = static_cast<Outbound *>(context);
-
-    // TODO: Implement cont function
+    outbound->NetworkManager_->receive_response((Message *) tag);
 }
 
-Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, ReplicationManager *ReplicationManager):
+Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, NetworkManager *NetworkManager):
     erpcID_{erpcID}, 
     sessionNum_{-1}, 
     rpc_{nexus, this, erpcID_, outbound_sm_handler, 0}, 
-    ReplicationManager_{ReplicationManager} 
+    NetworkManager_{NetworkManager} 
 {
     DEBUG_MSG("Outbound(): sessionNum " << std::to_string(this->sessionNum_) << "; erpcID: " << std::to_string(this->erpcID_) << "; connectURI: " << connectURI);
     Outbound::connect(connectURI);
 }
 
-void Outbound::send_message(messageType messageType, void *data, uint64_t dataLength) {
-    DEBUG_MSG("Outbound.send_message(" << std::to_string(messageType) << ")");
+void Outbound::send_message(Message *message) {
+    DEBUG_MSG("Outbound.send_message(Type: " << std::to_string(message->messageType) << "; logOffset: " << to_string(message->logOffset) << ")");
 
-    // Get buffer for request and response
-    reqBuffer_ = rpc_.alloc_msg_buffer_or_die(dataLength);
-    respBuffer_ = rpc_.alloc_msg_buffer_or_die(max_message_size);
+    // FIXME: Do the buffers need to be from the same rpc?
+    //reqBuffer_ = rpc_.alloc_msg_buffer_or_die(dataLength);
+    //respBuffer_ = rpc_.alloc_msg_buffer_or_die(maxMessageSize);
+
+    // FIXME: Send message without memcpy'ing it
+    // Write message into buffer
+    //memcpy(reqBuffer_.buf, data, dataLength);
 
     erpc::erpc_cont_func_t cont_func{nullptr};
 
-    // Write message into buffer
-    // FIXME: Send message without memcpy'ing it
-    memcpy(respBuffer_.buf, data, dataLength);
-
-    switch(messageType) {
+    switch(message->messageType) {
       case READ: cont_func = cont_func_read; break;
       case APPEND: cont_func = cont_func_append; break;
     }
 
     // Enqueue the request
-    rpc_.enqueue_request(sessionNum_, messageType, &reqBuffer_, &respBuffer_, cont_func, 0);
+    rpc_.enqueue_request(sessionNum_, message->messageType, message->reqBuffer, message->respBuffer, cont_func, (void *) message);
 
     for (size_t i = 0; i < DEFAULT_RUN_EVENT_LOOP; i++)
       rpc_.run_event_loop_once();

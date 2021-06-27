@@ -8,56 +8,61 @@
 
 ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor): 
         NodeType_{NodeType}, 
-        softCounter_{0},
         Log_{POOL_SIZE, LOG_BLOCK_SIZE, POOL_PATH} 
 {
     this->NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
 }
 
 
-void ReplicationManager::append(void *reqBuffer, uint64_t reqBufferLength) {
+void ReplicationManager::append(Message *message) {
     switch(NodeType_) {
         case HEAD: 
         {
             DEBUG_MSG("ReplicationManager.append()");
-            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) reqBuffer;
+            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Set logOffset */
             ++softCounter_;
             logEntryInFlight->logOffset = softCounter_;
+            message->logOffset = softCounter_;
+            /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send append to next node in chain */
-            NetworkManager_->send_message(APPEND, reqBuffer, reqBufferLength);
-        }; break;
-        case TAIL: {
-            DEBUG_MSG("ReplicationManager.append()");
-            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) reqBuffer;
-            Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
+            NetworkManager_->send_message(message);
         }; break;
         case MIDDLE: break;
+        case TAIL: {
+            DEBUG_MSG("ReplicationManager.append()");
+            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+            Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
+        };
     }
 }
 
-int ReplicationManager::read(void *reqBuffer, void *respBuffer) {
-    int respBufferLength = -1;
+void ReplicationManager::read(Message *message) {
+    size_t respBufferSize = 0;
 
     switch(NodeType_) {
+        case MIDDLE: ;
         case HEAD: 
         {
+            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             DEBUG_MSG("ReplicationManager.read()");
-            NetworkManager_->send_message(READ, reqBuffer, sizeof(uint64_t));
+            /* Send READ request to next node in chain, to get the answer from the tail */
+            // FIXME: Maybe send request directly to the tail
+            NetworkManager_->send_message(message);
         }; break;
         case TAIL:
         {
-            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) reqBuffer;
+            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             DEBUG_MSG("ReplicationManager.read(" << std::to_string(logEntryInFlight->logOffset) << ")");
-            void *data = Log_.read(logEntryInFlight->logOffset, &respBufferLength);
-            // TODO: Check respBufferLength
-            memcpy(respBuffer, data, respBufferLength);
-        }; break;
-        case MIDDLE: break;
+            void *logEntry = Log_.read(logEntryInFlight->logOffset, &respBufferSize);
+            // TODO: Check respBufferSize == 0, if read was successful
+            message->respBufferSize = respBufferSize;
+            memcpy(message->respBuffer->buf, logEntry, respBufferSize);
+            /* Send READ response */
+            NetworkManager_->receive_response(message);
+        }; 
     }
-
-    return respBufferLength;
 }
 
 int main(int argc, char** argv) {
@@ -91,17 +96,22 @@ int main(int argc, char** argv) {
     DEBUG_MSG("Start testing...");
 
     uint64_t counter{0};
-    char *buffer = (char *) malloc(4096);
 
+    // TODO: Fix message buffer; In need of real MsgBuffer so buffer.buf works
+    Message message;
+    message.reqBuffer = (erpc::MsgBuffer *) malloc(4096);
+    message.reqBufferSize = 4096;
+    message.respBuffer = (erpc::MsgBuffer *) malloc(4096);
+    message.respBufferSize = 4096;
 
     while (true) {
 
         if(counter) {
-            localNode->read(&counter, buffer);
+            localNode->read(&message);
         } else {
             LogEntryInFlight logEntryInFlight{counter, { 5, "Test"}};
             DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(counter) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
-            localNode->append(&logEntryInFlight, sizeof(logEntryInFlight));
+            localNode->append(&message);
         }
     
     for(int i = 0; i < 10; i++)

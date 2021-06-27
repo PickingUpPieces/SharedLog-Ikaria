@@ -1,5 +1,5 @@
 #include "Inbound.h"
-#include "ReplicationManager.h"
+#include "NetworkManager.h"
 #include "common_networkLayer.h"
 #include "rpc.h"
 #include <iostream>
@@ -7,9 +7,9 @@
 
 void inbound_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
-Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpcID, ReplicationManager *ReplicationManager) {
+Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpcID, NetworkManager *NetworkManager) {
     erpcID_ = erpcID;
-    ReplicationManager_ = ReplicationManager;
+    NetworkManager_ = NetworkManager;
 
     Inbound::init(nexus);
     rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, erpcID_, inbound_sm_handler, 0);
@@ -32,12 +32,13 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     Message *message = (Message *) malloc(sizeof(Message));
     message->messageType = READ;
     message->reqHandle = req_handle;
-    message->reqBuffer = req;
+    // FIXME: Is this const_cast a good idea?
+    message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
     message->respBuffer = &resp;
     message->respBufferSize = maxMessageSize;
 
-    inbound->ReplicationManager_->read(req->buf, resp.buf);
+    inbound->NetworkManager_->receive_message(message);
 }
 
 
@@ -53,18 +54,19 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     Message *message = (Message *) malloc(sizeof(Message));
     message->messageType = APPEND;
     message->reqHandle = req_handle;
-    message->reqBuffer = req;
+    // FIXME: Is this const_cast a good idea?
+    message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
     message->respBuffer = &resp;
     message->respBufferSize = resp.get_data_size();
 
     DEBUG_MSG("DELETE THIS: respBuffer pre_resp_msgbuf size: " << resp.get_data_size());
 
-    inbound->ReplicationManager_->append(req->buf, req->get_data_size());
+    inbound->NetworkManager_->receive_message(message);
 }
 
 void Inbound::send_response(Message *message) {
-    DEBUG_MSG("Inbound.send_response(messageType: " << message->messageType << " ; logOffset: " << message->logOffset);
+    DEBUG_MSG("Inbound.send_response(messageType: " << message->messageType << " ; logOffset: " << message->logOffset << ")");
 
     switch (message->messageType) {
         case READ: {

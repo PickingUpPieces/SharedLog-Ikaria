@@ -22,17 +22,17 @@ struct LogEntryInFlight
 
 class NetworkManager;
 
-// Creates and holds connections to the other nodes
 class ReplicationManager {
 private:
     NodeType NodeType_;
+    // TODO: Make softCounter static
     uint64_t softCounter_;
     Log Log_;
 
 public:
     ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor); 
-    void append(void *reqBuffer, uint64_t reqBufferLength); 
-    int read(void *reqBuffer, void *respBuffer);
+    void append(Message *message);
+    void read(Message *message);
 
     NetworkManager *NetworkManager_;
 };
