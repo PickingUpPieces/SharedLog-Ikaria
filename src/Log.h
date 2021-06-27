@@ -26,7 +26,7 @@ class Log {
     public:
         Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog);
         void append(uint64_t logOffset, void *data);
-        void* read(uint64_t logOffset, int *logEntryLength);
+        void* read(uint64_t logOffset, size_t *logEntryLength);
         void terminate();
 };
 

@@ -39,7 +39,7 @@ void Log::append(uint64_t logOffset, void *log) {
 }
 
 
-void* Log::read(uint64_t logOffset, int *logEntryLength) {
+void* Log::read(uint64_t logOffset, size_t *logEntryLength) {
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << ")");
 
     void *returnRead = pmemlog_read(plp_, logOffset * logEntryTotalSize);
@@ -64,5 +64,3 @@ void Log::terminate() {
 
     exit(EXIT_SUCCESS);
 }
-
-
