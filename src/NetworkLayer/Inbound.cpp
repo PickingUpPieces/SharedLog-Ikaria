@@ -63,7 +63,7 @@ void Inbound::init(erpc::Nexus *nexus) {
   } 
 
     // Register request handler for Request Type ReqTypeAppend
-  if (nexus->register_req_func(ReqTypeRead, req_handler_read)) {
+  if (nexus->register_req_func(ReqTypeAppend, req_handler_read)) {
     cerr << "Failed to initialize ReqTypeAppend" << endl;
     std::terminate();
   }
