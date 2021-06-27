@@ -6,10 +6,11 @@
 
 Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *ReplicationManager) {
   this->erpcID_ = erpc_id; 
-  this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);
   this->ReplicationManager_ = ReplicationManager;
-
   Inbound::init(nexus);
+  this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);
+
+  cout << "Inbound init done" << endl;
 }
 
 
