@@ -24,13 +24,13 @@ Outbound::Outbound(erpc::Nexus *nexus, uint8_t erpcID, string connectURI, Replic
     this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);
     this->ReplicationManager_ = ReplicationManager;
 
-    DEBUG_MSG("Outbound(): sessionNum " << this->sessionNum_ << "; erpcID: " << this->erpcID_ << "; connectURI: " << connectURI);
+    DEBUG_MSG("Outbound(): sessionNum " << std::to_string(this->sessionNum_) << "; erpcID: " << std::to_string(this->erpcID_) << "; connectURI: " << connectURI);
     
     Outbound::connect(connectURI);
 }
 
 void Outbound::send_message(messageType messageType, void *data, uint64_t dataLength) {
-    DEBUG_MSG("send_message(" << messageType << ")");
+    DEBUG_MSG("send_message(" << std::to_string(messageType) << ")");
 
     // Get buffer for request and response
     reqBuffer_ = this->rpc_->alloc_msg_buffer_or_die(dataLength);
@@ -56,7 +56,7 @@ void Outbound::send_message(messageType messageType, void *data, uint64_t dataLe
 
 
 void Outbound::connect(string connectURI) {
-    DEBUG_MSG("Outbound.connect(" << connectURI << "): erpcID: ;" << this->erpcID_); 
+    DEBUG_MSG("Outbound.connect(" << connectURI << "): erpcID: " << std::to_string(this->erpcID_)); 
     this->sessionNum_ = rpc_->create_session(connectURI, 0);
 
     /* Try until Client is connected */
@@ -64,7 +64,7 @@ void Outbound::connect(string connectURI) {
       this->rpc_->run_event_loop_once();
 
     DEBUG_MSG("Connection is ready");
-    DEBUG_MSG("Connection Bandwith: " << ( rpc_->get_bandwidth() / (1024 * 1024)) << "MiB/s");
+    DEBUG_MSG("Connection Bandwith: " << std::to_string( rpc_->get_bandwidth() / (1024 * 1024)) << "MiB/s");
 }
 
 void Outbound::terminate() {}

@@ -14,6 +14,7 @@ NetworkManager::NetworkManager(string inbound_url, int inbound_port,
 
     if (!outbound_url.empty()) {
         std::string outbound_uri = outbound_url + ":" + std::to_string(outbound_port);
+        DEBUG_MSG("NetworkManager(): outboundURI " << outbound_url);
         this->Outbound_ = new Outbound(nexus_, 1, outbound_uri, ReplicationManager);
     }
 

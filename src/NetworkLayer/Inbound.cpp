@@ -11,7 +11,7 @@ Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpc_id, ReplicationManager *Replic
   Inbound::init(nexus);
   this->rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, this->erpcID_, nullptr);
 
-  DEBUG_MSG("Inbound(): erpcID " << this->erpcID_);
+  DEBUG_MSG("Inbound(): erpcID " << std::to_string(this->erpcID_));
 }
 
 
