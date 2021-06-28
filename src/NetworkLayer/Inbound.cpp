@@ -4,15 +4,10 @@
 #include "common_info.h"
 #include "NetworkManager.h"
 
-void inbound_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
-
 Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager) {
-    NetworkManager_ = NetworkManager;
-
-    Inbound::init(nexus);
-    // FIXME: Two RPC Objects: One Inbound + One outbound; Each own hw_port
-
     DEBUG_MSG("Inbound()");
+    NetworkManager_ = NetworkManager;
+    Inbound::init(nexus);
 }
 
 
@@ -28,6 +23,8 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     /* Alloc space for the message meta information and fill it */
     Message *message = (Message *) malloc(sizeof(Message));
     message->messageType = READ;
+    message->sentByThisNode = false;
+    message->logOffset = 0;
     message->reqHandle = req_handle;
     // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
@@ -52,6 +49,8 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     /* Alloc space for the message meta information and fill it */
     Message *message = (Message *) malloc(sizeof(Message));
     message->messageType = APPEND;
+    message->sentByThisNode = false;
+    message->logOffset = 0;
     message->reqHandle = req_handle;
     // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);

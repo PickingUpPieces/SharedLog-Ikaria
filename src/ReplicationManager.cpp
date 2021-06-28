@@ -22,7 +22,6 @@ void ReplicationManager::append(Message *message) {
     switch(NodeType_) {
         case HEAD: 
         {
-            DEBUG_MSG("ReplicationManager.append()");
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Set logOffset */
             ++softCounter_;
@@ -35,23 +34,24 @@ void ReplicationManager::append(Message *message) {
         }; break;
         case MIDDLE: break;
         case TAIL: {
-            DEBUG_MSG("ReplicationManager.append()");
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
+            /* Send APPEND response */
+            NetworkManager_->receive_response(message);
         };
     }
 }
 
 void ReplicationManager::read(Message *message) {
     DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    size_t respBufferSize = 0;
+    size_t logEntrySize = 0;
 
     switch(NodeType_) {
         case MIDDLE: ;
         case HEAD: 
         {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
-            DEBUG_MSG("ReplicationManager.read(" << std::to_string(logEntryInFlight->logOffset) << ")");
+            DEBUG_MSG("ReplicationManager.read(logOffset: " << std::to_string(logEntryInFlight->logOffset) << ")");
             /* Send READ request to next node in chain, to get the answer from the tail */
             // FIXME: Maybe send request directly to the tail
             NetworkManager_->send_message(message);
@@ -59,11 +59,11 @@ void ReplicationManager::read(Message *message) {
         case TAIL:
         {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
-            DEBUG_MSG("ReplicationManager.read(" << std::to_string(logEntryInFlight->logOffset) << ")");
-            void *logEntry = Log_.read(logEntryInFlight->logOffset, &respBufferSize);
+            DEBUG_MSG("ReplicationManager.read(logOffset: " << std::to_string(logEntryInFlight->logOffset) << ")");
+            void *logEntry = Log_.read(logEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read was successful
-            message->respBufferSize = respBufferSize;
-            memcpy(message->respBuffer->buf, logEntry, respBufferSize);
+            message->respBufferSize = logEntrySize;
+            memcpy(message->respBuffer->buf, logEntry, logEntrySize);
             /* Send READ response */
             NetworkManager_->receive_response(message);
         }; 

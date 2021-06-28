@@ -5,7 +5,6 @@
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
 NetworkManager::NetworkManager(string inboundHostname, int inboundPort, string outboundHostname, int outboundPort, ReplicationManager *ReplicationManager) {
-
     string inboundURI = inboundHostname + ":" + std::to_string(inboundPort);
     nexus_ = new erpc::Nexus(inboundURI, 0, 0);
     Inbound_ = new Inbound(nexus_, this);
@@ -26,13 +25,8 @@ void NetworkManager::send_message(Message *message) {
     Outbound_->send_message(message);
 }
 
-void NetworkManager::sync_inbound(int numberOfRuns) {
-    Inbound_->run_event_loop(numberOfRuns);
-}
-
 void NetworkManager::receive_message(Message *message) {
-    switch (message->messageType)
-    {
+    switch (message->messageType) {
     case READ:
         ReplicationManager_->read(message);
         break;
@@ -48,5 +42,10 @@ void NetworkManager::receive_response(Message *message) {
     else
         Inbound_->send_response(message);
 }
+
+void NetworkManager::sync_inbound(int numberOfRuns) {
+    Inbound_->run_event_loop(numberOfRuns);
+}
+
 
 void NetworkManager::terminate() {}
