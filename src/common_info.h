@@ -38,7 +38,7 @@ struct Message {
     erpc::ReqHandle *reqHandle{nullptr};
     erpc::MsgBuffer *reqBuffer{nullptr};
     size_t reqBufferSize{0};
-    erpc::MsgBuffer *respBuffer{nullptr};
+    erpc::MsgBuffer respBuffer;
     size_t respBufferSize{0};
 };
 

@@ -17,7 +17,6 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
 
     // FIXME: Not sure if pre_resp_msgbuf is okay
     //erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
-    erpc::MsgBuffer resp = networkManager->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
 
     /* Alloc space for the message meta information and fill it */
@@ -29,7 +28,7 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
-    message->respBuffer = &resp;
+    message->respBuffer = networkManager->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
     message->respBufferSize = maxMessageSize;
 
     DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
@@ -41,10 +40,7 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
 // Request handler for append requests
 void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
-
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
-    // FIXME: Not sure if pre_resp_msgbuf is okay
-    erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
      
     /* Alloc space for the message meta information and fill it */
     Message *message = (Message *) malloc(sizeof(Message));
@@ -55,8 +51,8 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
-    message->respBuffer = &resp;
-    message->respBufferSize = resp.get_data_size();
+    message->respBuffer = networkManager->rpc_->alloc_msg_buffer_or_die(8);
+    message->respBufferSize = 8;
 
     DEBUG_MSG("Inbound.req_handler_append(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
     DEBUG_MSG("DELETE THIS: respBuffer pre_resp_msgbuf size: " << resp.get_data_size());
@@ -69,21 +65,24 @@ void Inbound::send_response(Message *message) {
 
     switch (message->messageType) {
         case READ: {
-            rpc_->resize_msg_buffer((erpc::MsgBuffer *) message->respBuffer, message->respBufferSize);
+            rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
             break;
         }
         case APPEND: { 
             // FIXME: Find out minimal message size required for the buffer
-            rpc_->resize_msg_buffer(message->respBuffer, 8);
+            rpc_->resize_msg_buffer(&message->respBuffer, 8);
             break;
         }
     }
     
-    rpc_->enqueue_response(message->reqHandle, message->respBuffer);
+    rpc_->enqueue_response(message->reqHandle, &message->respBuffer);
+
+    for (size_t i = 0; i < DEFAULT_RUN_EVENT_LOOP; i++)
+      rpc_->run_event_loop_once();
 
     // FIXME: Is there any finally thing in c++?
     // FIXME: Check when to free_msg_buffers and if it's necessary
-    delete message;
+    free(message);
 }
 
 void Inbound::run_event_loop(int numberOfRuns) {

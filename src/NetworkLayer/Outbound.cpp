@@ -39,7 +39,7 @@ void Outbound::send_message(Message *message) {
 
     // Enqueue the request
     //rpc_->enqueue_request(sessionNum_, message->messageType, &reqBuffer_, &respBuffer, cont_func, (void *) message);
-    rpc_->enqueue_request(sessionNum_, message->messageType, message->reqBuffer, message->respBuffer, cont_func, (void *) message);
+    rpc_->enqueue_request(sessionNum_, message->messageType, message->reqBuffer, &message->respBuffer, cont_func, (void *) message);
 
     for (size_t i = 0; i < DEFAULT_RUN_EVENT_LOOP; i++)
       rpc_->run_event_loop_once();

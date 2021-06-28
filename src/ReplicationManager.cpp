@@ -63,7 +63,7 @@ void ReplicationManager::read(Message *message) {
             void *logEntry = Log_.read(logEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read was successful
             message->respBufferSize = logEntrySize;
-            memcpy(message->respBuffer->buf, logEntry, logEntrySize);
+            memcpy(&message->respBuffer.buf, logEntry, logEntrySize);
             /* Send READ response */
             NetworkManager_->receive_response(message);
         }; 
@@ -111,16 +111,14 @@ int main(int argc, char** argv) {
     uint64_t counter{0};
     uint64_t changer{0};
     erpc::MsgBuffer req;
-    erpc::MsgBuffer resp;
 
     Message message;
     message.sentByThisNode = true;
     message.reqBuffer = &req;
-    message.respBuffer = &resp;
 
     while (true) {
 	    req = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
-	    resp = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
+	    message.respBuffer = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
         /* Fill message struct */
         message.reqBufferSize = maxMessageSize;
 	    message.respBufferSize = maxMessageSize;
