@@ -51,6 +51,7 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
+    // FIXME: Find out minimal message size required for the buffer
     message->respBuffer = networkManager->rpc_->alloc_msg_buffer_or_die(8);
     message->respBufferSize = 8;
 
@@ -64,14 +65,12 @@ void Inbound::send_response(Message *message) {
 
     switch (message->messageType) {
         case READ: {
-            rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
+	    if ( message->respBufferSize < maxMessageSize)
+            	rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
             break;
         }
-        case APPEND: { 
-            // FIXME: Find out minimal message size required for the buffer
-            rpc_->resize_msg_buffer(&message->respBuffer, 8);
+        case APPEND: 
             break;
-        }
     }
     
     rpc_->enqueue_response(message->reqHandle, &message->respBuffer);
