@@ -63,7 +63,7 @@ void ReplicationManager::read(Message *message) {
             void *logEntry = Log_.read(logEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read was successful
             message->respBufferSize = logEntrySize;
-            memcpy(&message->respBuffer.buf, logEntry, logEntrySize);
+            memcpy(message->respBuffer.buf, logEntry, logEntrySize);
             /* Send READ response */
             NetworkManager_->receive_response(message);
         }; 
