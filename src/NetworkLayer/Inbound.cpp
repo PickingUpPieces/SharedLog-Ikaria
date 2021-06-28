@@ -55,7 +55,6 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     message->respBufferSize = 8;
 
     DEBUG_MSG("Inbound.req_handler_append(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
-    DEBUG_MSG("DELETE THIS: respBuffer pre_resp_msgbuf size: " << resp.get_data_size());
 
     networkManager->receive_message(message);
 }
