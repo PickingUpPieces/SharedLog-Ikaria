@@ -9,7 +9,7 @@
 
 ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor, receive_local rec): 
         softCounter_{0},
-        Log_{POOL_SIZE, LOG_BLOCK_SIZE, POOL_PATH}, 
+        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         NodeType_{NodeType}
 {
     this->NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
@@ -18,6 +18,7 @@ ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, 
 
 
 void ReplicationManager::append(Message *message) {
+    DEBUG_MSG("ReplicationManager.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     switch(NodeType_) {
         case HEAD: 
         {
@@ -42,6 +43,7 @@ void ReplicationManager::append(Message *message) {
 }
 
 void ReplicationManager::read(Message *message) {
+    DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     size_t respBufferSize = 0;
 
     switch(NodeType_) {
@@ -49,7 +51,7 @@ void ReplicationManager::read(Message *message) {
         case HEAD: 
         {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
-            DEBUG_MSG("ReplicationManager.read()");
+            DEBUG_MSG("ReplicationManager.read(" << std::to_string(logEntryInFlight->logOffset) << ")");
             /* Send READ request to next node in chain, to get the answer from the tail */
             // FIXME: Maybe send request directly to the tail
             NetworkManager_->send_message(message);
@@ -80,7 +82,7 @@ int main(int argc, char** argv) {
     struct LogEntry
     {
         uint64_t dataLength;
-        char data[LOG_BLOCK_SIZE];
+        char data[LOG_BLOCK_DATA_SIZE];
     };
 
     // Check which type this node should be
@@ -107,33 +109,47 @@ int main(int argc, char** argv) {
     DEBUG_MSG("Start testing...");
 
     uint64_t counter{0};
-    erpc::MsgBuffer req = localNode->NetworkManager_->Outbound_->rpc_.alloc_msg_buffer_or_die(maxMessageSize);
-    erpc::MsgBuffer resp = localNode->NetworkManager_->Outbound_->rpc_.alloc_msg_buffer_or_die(maxMessageSize);
+    uint64_t changer{0};
+    erpc::MsgBuffer req;
+    erpc::MsgBuffer resp;
 
     Message message;
     message.sentByThisNode = true;
     message.reqBuffer = &req;
-    message.reqBufferSize = maxMessageSize;
     message.respBuffer = &resp;
-    message.respBufferSize = maxMessageSize;
 
     while (true) {
+	    req = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
+	    resp = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
+        /* Fill message struct */
+        message.reqBufferSize = maxMessageSize;
+	    message.respBufferSize = maxMessageSize;
+        message.logOffset = counter;
 
-        if(counter) {
+        if(changer) {
+            LogEntryInFlight logEntryInFlight{counter, { 1, ""}};
+            memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
+            message.reqBufferSize = sizeof(logEntryInFlight);
+            message.messageType = READ;
+
+            DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
             localNode->read(&message);
         } else {
             LogEntryInFlight logEntryInFlight{counter, { 5, "Test"}};
             memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
-            message.logOffset = counter;
-            DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(counter) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
+            message.reqBufferSize = sizeof(logEntryInFlight);
+            message.messageType = APPEND;
+
+            DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
             localNode->append(&message);
         }
     
     for(int i = 0; i < 10; i++)
         localNode->NetworkManager_->sync_inbound(20);
 
+    ++changer;
     ++counter;
-    counter %= 2;
+    changer %= 2;
     sleep(1);
     DEBUG_MSG("-------------------------------------");
     }

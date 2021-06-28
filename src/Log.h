@@ -10,9 +10,8 @@ using namespace std;
 struct LogEntry
 {
     uint64_t dataLength;
-    char data[LOG_BLOCK_SIZE];
+    char data[LOG_BLOCK_DATA_SIZE];
 };
-
 
 class Log {
     private:

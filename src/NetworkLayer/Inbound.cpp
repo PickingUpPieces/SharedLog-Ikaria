@@ -6,26 +6,23 @@
 
 void inbound_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
-Inbound::Inbound(erpc::Nexus *nexus, uint8_t erpcID, NetworkManager *NetworkManager) {
-    erpcID_ = erpcID;
+Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager) {
     NetworkManager_ = NetworkManager;
 
     Inbound::init(nexus);
     // FIXME: Two RPC Objects: One Inbound + One outbound; Each own hw_port
-    rpc_ = new erpc::Rpc<erpc::CTransport>(nexus, this, erpcID_, inbound_sm_handler, 0);
 
-    DEBUG_MSG("Inbound(): erpcID " << std::to_string(erpcID_));
+    DEBUG_MSG("Inbound()");
 }
 
 
 // Request handler for read requests
 void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
-    DEBUG_MSG("Inbound.req_handler_read()");
-    auto inbound = static_cast<Inbound *>(context);
+    auto networkManager = static_cast<NetworkManager *>(context);
 
     // FIXME: Not sure if pre_resp_msgbuf is okay
     //erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
-    erpc::MsgBuffer resp = inbound->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
+    erpc::MsgBuffer resp = networkManager->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
 
     /* Alloc space for the message meta information and fill it */
@@ -38,14 +35,16 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     message->respBuffer = &resp;
     message->respBufferSize = maxMessageSize;
 
-    inbound->NetworkManager_->receive_message(message);
+    DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+
+    networkManager->receive_message(message);
 }
 
 
 // Request handler for append requests
 void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
-    DEBUG_MSG("Inbound.req_handler_append()");
-    auto inbound = static_cast<Inbound *>(context);
+    auto networkManager = static_cast<NetworkManager *>(context);
+
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
     // FIXME: Not sure if pre_resp_msgbuf is okay
     erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
@@ -60,9 +59,10 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     message->respBuffer = &resp;
     message->respBufferSize = resp.get_data_size();
 
+    DEBUG_MSG("Inbound.req_handler_append(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
     DEBUG_MSG("DELETE THIS: respBuffer pre_resp_msgbuf size: " << resp.get_data_size());
 
-    inbound->NetworkManager_->receive_message(message);
+    networkManager->receive_message(message);
 }
 
 void Inbound::send_response(Message *message) {
@@ -105,6 +105,10 @@ void Inbound::init(erpc::Nexus *nexus) {
         cerr << "Failed to initialize ReqTypeAppend" << endl;
         std::terminate();
     }
+}
+
+void Inbound::set_rpc(erpc::Rpc<erpc::CTransport> *rpc) {
+    rpc_ = rpc;
 }
 
 void Inbound::terminate() {}

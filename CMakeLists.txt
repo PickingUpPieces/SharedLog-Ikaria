@@ -61,7 +61,6 @@ set(NETWORK_SOURCE
   ${SRC}/NetworkLayer/Outbound.cpp
   ${SRC}/NetworkLayer/NetworkManager.h
   ${SRC}/NetworkLayer/NetworkManager.cpp
-  ${SRC}/NetworkLayer/common_networkLayer.h
 )
 
 set(REPLICATION_SOURCE

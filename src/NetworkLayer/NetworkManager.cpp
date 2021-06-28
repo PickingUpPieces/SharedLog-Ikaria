@@ -8,13 +8,15 @@ NetworkManager::NetworkManager(string inboundHostname, int inboundPort, string o
 
     string inboundURI = inboundHostname + ":" + std::to_string(inboundPort);
     nexus_ = new erpc::Nexus(inboundURI, 0, 0);
-    Inbound_ = new Inbound(nexus_, 0, this);
+    Inbound_ = new Inbound(nexus_, this);
+    rpc_ = new erpc::Rpc<erpc::CTransport>(nexus_, this, 0, empty_sm_handler, 0);
+    Inbound_->set_rpc(rpc_);
     ReplicationManager_ = ReplicationManager;
 
     if (!outboundHostname.empty()) {
         string outboundURI = outboundHostname + ":" + std::to_string(outboundPort);
         DEBUG_MSG("NetworkManager.outboundURI: " << outboundURI);
-        Outbound_ = new Outbound(nexus_, 1, outboundURI, this);
+        Outbound_ = new Outbound(outboundURI, this, rpc_);
     }
 
     DEBUG_MSG("NetworkManager.inboundURI: " << inboundURI);
@@ -41,7 +43,10 @@ void NetworkManager::receive_message(Message *message) {
 }
 
 void NetworkManager::receive_response(Message *message) {
-    Inbound_->send_response(message);
+    if( message->sentByThisNode)
+        ReplicationManager_->rec(message);
+    else
+        Inbound_->send_response(message);
 }
 
 void NetworkManager::terminate() {}
