@@ -71,7 +71,8 @@ void ReplicationManager::read(Message *message) {
 }
 
 void receive_locally(Message *message) {
-    DEBUG_MSG("main.receive_locally(Type: " << std::to_string(message->messageType) << "; logOffset: " << to_string(message->logOffset) << ")");
+    DEBUG_MSG("main.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+    DEBUG_MSG("main.receive_locally(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
 }
 
 int main(int argc, char** argv) {
@@ -117,17 +118,17 @@ int main(int argc, char** argv) {
     message.reqBuffer = &req;
 
     while (true) {
+        /* Fill message struct */
 	    req = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
 	    message.respBuffer = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
-        /* Fill message struct */
         message.reqBufferSize = maxMessageSize;
+        message.reqBufferSize = sizeof(LogEntryInFlight);
 	    message.respBufferSize = maxMessageSize;
         message.logOffset = counter;
 
         if(changer) {
             LogEntryInFlight logEntryInFlight{counter, { 1, ""}};
             memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
-            message.reqBufferSize = sizeof(logEntryInFlight);
             message.messageType = READ;
 
             DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
@@ -135,22 +136,18 @@ int main(int argc, char** argv) {
         } else {
             LogEntryInFlight logEntryInFlight{counter, { 5, "Test"}};
             memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
-            message.reqBufferSize = sizeof(logEntryInFlight);
             message.messageType = APPEND;
 
             DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
             localNode->append(&message);
+
+            ++changer;
+            changer %= 2;
         }
     
-    for(int i = 0; i < 10; i++)
-        localNode->NetworkManager_->sync_inbound(20);
-
-    ++changer;
+    localNode->NetworkManager_->sync_inbound(100);
     ++counter;
-    changer %= 2;
     sleep(1);
     DEBUG_MSG("-------------------------------------");
     }
 }
-
-
