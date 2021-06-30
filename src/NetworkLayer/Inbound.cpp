@@ -51,9 +51,8 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
-    // FIXME: Find out minimal message size required for the buffer
-    message->respBuffer = networkManager->rpc_->alloc_msg_buffer_or_die(8);
-    message->respBufferSize = 8;
+    message->respBuffer = req_handle->pre_resp_msgbuf;
+    message->respBufferSize = message->respBuffer.get_data_size();
 
     DEBUG_MSG("Inbound.req_handler_append(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
 
@@ -70,6 +69,9 @@ void Inbound::send_response(Message *message) {
             break;
         }
         case APPEND: 
+        // FIXME: Find out minimal message size required for the buffer
+	    if ( message->respBufferSize > 8)
+            	rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 8);
             break;
     }
     
