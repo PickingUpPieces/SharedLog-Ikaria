@@ -1,14 +1,14 @@
 #ifndef REPLICATIONNODE_COMMON_INFO_H
 #define REPLICATIONNODE_COMMON_INFO_H
 
+#include <string>
+#include "rpc.h"
+
 #ifdef DEBUG
 #define DEBUG_MSG(str) do { std::cout << str << std::endl; } while( false )
 #else
 #define DEBUG_MSG(str) do { } while ( false )
 #endif
-
-#include <string>
-#include "rpc.h"
 
 static const std::string hostname_head = "131.159.102.1";
 static const int port_head = 31850;

@@ -12,7 +12,6 @@ class NetworkManager;
 
 // Server Object
 class Inbound {
-
     friend void req_handler_read(erpc::ReqHandle *req_handle, void *context);
     friend void req_handler_append(erpc::ReqHandle *req_handle, void *context);
 

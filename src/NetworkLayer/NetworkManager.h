@@ -1,14 +1,22 @@
 #ifndef REPLICATIONNODE_NETWORKMANAGER_H
 #define REPLICATIONNODE_NETWORKMANAGER_H
 
+#include <stdio.h>
+#include <string>
 #include "rpc.h"
+#include "common_info.h"
 #include "ReplicationManager.h"
 #include "Inbound.h"
 #include "Outbound.h"
-#include "common_info.h"
-#include <stdio.h>
-#include <string>
 using namespace std;
+
+#define DEFAULT_RUN_EVENT_LOOP 10
+
+struct LogEntryInFlight
+{
+    uint64_t logOffset;
+    LogEntry logEntry;
+};
 
 class Inbound;
 class Outbound;
