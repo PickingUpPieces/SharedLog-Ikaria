@@ -11,8 +11,7 @@ class NetworkManager;
 #define DEFAULT_RUN_EVENT_LOOP 10
 
 class Outbound {
-friend void cont_func_append(void *context, void *tag);
-friend void cont_func_read(void *context, void *tag);
+friend void cont_func(void *context, void *tag);
 
 private:
     int8_t sessionNum_;
