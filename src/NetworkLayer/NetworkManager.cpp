@@ -1,6 +1,5 @@
 #include <iostream>
 #include "NetworkManager.h"
-#include "ReplicationManager.h"
 
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 

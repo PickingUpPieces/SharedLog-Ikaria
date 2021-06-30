@@ -1,11 +1,11 @@
 #ifndef REPLICATIONNODE_INBOUND_H
 #define REPLICATIONNODE_INBOUND_H
 
-#include "rpc.h"
-#include "NetworkManager.h"
-#include "common_info.h"
 #include <stdio.h>
 #include <cstdint>
+#include "rpc.h"
+#include "common_info.h"
+#include "NetworkManager.h"
 using namespace std;
 
 class NetworkManager;

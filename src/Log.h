@@ -7,11 +7,6 @@
 #include "common_info.h"
 using namespace std;
 
-struct LogEntry
-{
-    uint64_t dataLength;
-    char data[LOG_BLOCK_DATA_SIZE];
-};
 
 class Log {
     private:

@@ -2,6 +2,7 @@
 #define REPLICATIONNODE_COMMON_INFO_H
 
 #include <string>
+#include <iostream>
 #include "rpc.h"
 
 #ifdef DEBUG
@@ -28,6 +29,18 @@ static const int port_tail = 31850;
 /* Path to the Pool file */
 #define POOL_PATH "/home/vincent/pmem/log-test-0.log"
 
+
+struct LogEntry
+{
+    uint64_t dataLength;
+    char data[LOG_BLOCK_DATA_SIZE];
+};
+
+struct LogEntryInFlight
+{
+    uint64_t logOffset;
+    LogEntry logEntry;
+};
 
 enum MessageType {
     READ = 2,

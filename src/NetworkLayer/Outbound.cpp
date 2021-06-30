@@ -1,8 +1,5 @@
 #include <iostream>
-#include "rpc.h"
 #include "Outbound.h"
-#include "NetworkManager.h"
-
 
 Outbound::Outbound(string connectURI, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc):
     sessionNum_{-1}, 

@@ -4,4 +4,5 @@ server
 CMakeCache.txt
 Makefile
 cmake_install.cmake
-replicationNode
+libreplication_node.a
+run_node

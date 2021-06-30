@@ -1,17 +1,16 @@
 cmake_minimum_required(VERSION 3.13)
+project(replication_node)
 
-project(Single-Node-Setup)
-
-set(CMAKE_CXX_STANDARD 11)
-add_definitions(-Wall -Wextra -Wpedantic -Wsign-conversion -Wunused )
+set(CMAKE_CXX_STANDARD 14)
+add_definitions(-Wall -Wextra -Wpedantic -Wsign-conversion -Wunused)
 add_definitions(-Wno-unused-function -Wno-deprecated-declarations)
+add_definitions(-Wno-format -Wno-format-security)
 add_definitions(-msse4.1)
 
 # Libraries that are required:
 set(LIBRARIES pthread numa dl ibverbs)
 
-# Some paths:
-# These two paths might need to be changed:
+# These paths might need to be changed:
 # eRPC
 set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC")
 message(STATUS "eRPC-path: ${ERPC}")
@@ -20,8 +19,9 @@ message(STATUS "eRPC-path: ${ERPC}")
 set(PMDK "${CMAKE_CURRENT_SOURCE_DIR}/pmdk")
 message(STATUS "PMDK-path: ${PMDK}")
 
-# This project source directory:
+# This project source/test directory:
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 # User options:
 set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)") 
@@ -29,8 +29,8 @@ set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)")
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
   message(STATUS "Debugging enabled. Compiling with address sanitizer and debug messages")
-  add_definitions(-g -fsanitize=address)
   add_compile_definitions(DEBUG)
+  add_definitions(-g -fsanitize=address)
   link_libraries(-fsanitize=address)
 else()
   message(STATUS "Debugging disabled")
@@ -39,19 +39,21 @@ endif()
 
 message(STATUS "Compiling with infiniband")
 add_definitions(-DERPC_INFINIBAND=true)
-link_libraries(erpc)
 
-
+# PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
+include_directories(SYSTEM ${PMDK}/src)
 link_directories(${PMDK}/lib/lib64)
 link_libraries(pmem pmemlog)
 
-include_directories(${PMDK}/src)
+# eRPC
 include_directories(SYSTEM ${ERPC}/src)
+link_directories(${ERPC}/build)
+link_libraries(erpc)
+
 include_directories(${SRC})
 include_directories(${SRC}/NetworkLayer)
 
-link_directories(${ERPC}/build)
 link_libraries(${LIBRARIES})
 
 set(NETWORK_SOURCE
@@ -74,9 +76,22 @@ set(LOG_SOURCE
   ${SRC}/Log.cpp
 )  
 
+set(TEST_UTILS 
+  ${TESTS}/run_node.cpp 
+)
 
-add_executable(replicationNode
+# Compile as static library
+add_library(replication_node STATIC
   ${NETWORK_SOURCE}
   ${REPLICATION_SOURCE}
   ${LOG_SOURCE}
+)
+
+# Compile tests
+add_executable(run_node
+  ${TEST_UTILS}
+)
+
+target_link_libraries(run_node
+  replication_node
 )

@@ -1,8 +1,5 @@
 #include <iostream>
-#include "rpc.h"
 #include "Inbound.h"
-#include "common_info.h"
-#include "NetworkManager.h"
 
 Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager) {
     DEBUG_MSG("Inbound()");

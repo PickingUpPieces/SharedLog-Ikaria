@@ -1,9 +1,10 @@
 #ifndef REPLICATIONNODE_OUTBOUND_H
 #define REPLICATIONNODE_OUTBOUND_H
 
+#include <string>
 #include "rpc.h"
 #include "common_info.h"
-#include <string>
+#include "NetworkManager.h"
 using namespace std;
 
 class NetworkManager;

@@ -1,7 +1,5 @@
 #include <iostream>
 #include "Log.h"
-#include "common_info.h"
-#include "libpmemlog.h"
 
 static uint64_t logEntryTotalSize = sizeof(LogEntry);
 
