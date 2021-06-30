@@ -8,8 +8,8 @@
 
 
 void receive_locally(Message *message) {
-    DEBUG_MSG("main.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    DEBUG_MSG("main.receive_locally(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+    DEBUG_MSG("run_node.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+    DEBUG_MSG("run_node.receive_locally(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
 }
 
 int main(int argc, char** argv) {
@@ -68,7 +68,8 @@ int main(int argc, char** argv) {
             memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
             message.messageType = READ;
 
-            DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
+            DEBUG_MSG("run_node.main(Message: Type: " << std::to_string(message.messageType) << "; logOffset: " << std::to_string(message.logOffset) << " ; sentByThisNode: " << message.sentByThisNode << " ; reqBufferSize: " << std::to_string(message.reqBufferSize) << " ; respBufferSize: " << std::to_string(message.respBufferSize) <<")");
+            DEBUG_MSG("run_node.main(LogEntryInFlight: logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; data: " << logEntryInFlight.logEntry.data << " )");
             localNode->read(&message);
 
             ++changer;
@@ -78,7 +79,8 @@ int main(int argc, char** argv) {
             memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
             message.messageType = APPEND;
 
-            DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
+            DEBUG_MSG("run_node.main(Message: Type: " << std::to_string(message.messageType) << "; logOffset: " << std::to_string(message.logOffset) << " ; sentByThisNode: " << message.sentByThisNode << " ; reqBufferSize: " << std::to_string(message.reqBufferSize) << " ; respBufferSize: " << std::to_string(message.respBufferSize) <<")");
+            DEBUG_MSG("run_node.main(LogEntryInFlight: logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; data: " << logEntryInFlight.logEntry.data << ")");
             localNode->append(&message);
 
             ++changer;
