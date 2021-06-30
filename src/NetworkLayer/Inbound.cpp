@@ -85,11 +85,6 @@ void Inbound::send_response(Message *message) {
     free(message);
 }
 
-void Inbound::run_event_loop(int numberOfRuns) {
-    for (int i = 0; i < numberOfRuns; i++)
-        rpc_->run_event_loop_once();
-}
-
 
 void Inbound::init(erpc::Nexus *nexus) {
     // Register request handler for Request Type ReqTypeRead

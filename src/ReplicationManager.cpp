@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
             ++changer;
         }
     
-    localNode->NetworkManager_->sync_inbound(100);
+    localNode->NetworkManager_->sync(100);
     ++counter;
     sleep(1);
     DEBUG_MSG("-------------------------------------");

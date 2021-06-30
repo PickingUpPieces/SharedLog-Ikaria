@@ -23,7 +23,6 @@ class Inbound {
     public:
         Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager);
         void send_response(Message *message);
-        void run_event_loop(int numberOfRuns);
         void set_rpc(erpc::Rpc<erpc::CTransport> *rpc); 
         void terminate();
 };

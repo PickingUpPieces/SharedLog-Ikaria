@@ -43,9 +43,9 @@ void NetworkManager::receive_response(Message *message) {
         Inbound_->send_response(message);
 }
 
-void NetworkManager::sync_inbound(int numberOfRuns) {
-    Inbound_->run_event_loop(numberOfRuns);
+void NetworkManager::sync(int numberOfRuns) {
+    for (int i = 0; i < numberOfRuns; i++)
+        rpc_->run_event_loop_once();
 }
-
 
 void NetworkManager::terminate() {}

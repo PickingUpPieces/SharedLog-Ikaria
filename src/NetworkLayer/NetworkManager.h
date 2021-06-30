@@ -35,7 +35,7 @@ class NetworkManager {
         void send_message(Message *message);
         void receive_message(Message *message); 
         void receive_response(Message *message);
-        void sync_inbound(int numberOfRuns);
+        void sync(int numberOfRuns);
         void terminate();
         erpc::Rpc<erpc::CTransport> *rpc_;
 };
