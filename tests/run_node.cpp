@@ -1,6 +1,11 @@
 #include "rpc.h"
 #include "ReplicationManager.h"
 
+#define HOSTNAME_HEAD "131.159.102.1"
+#define PORT_HEAD 31850
+#define HOSTNAME_TAIL "131.159.102.2" 
+#define PORT_TAIL 31850
+
 
 void receive_locally(Message *message) {
     DEBUG_MSG("main.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
@@ -33,8 +38,8 @@ int main(int argc, char** argv) {
     ReplicationManager *localNode{nullptr};
 
     switch(node) {
-        case HEAD: localNode = new ReplicationManager(node, hostname_head, port_head, hostname_tail, port_tail, &receive_locally); break;
-        case TAIL: localNode = new ReplicationManager(node, hostname_tail, port_tail, std::string(), -1, &receive_locally ); break;
+        case HEAD: localNode = new ReplicationManager(node, HOSTNAME_HEAD, PORT_HEAD, HOSTNAME_TAIL, PORT_TAIL, &receive_locally); break;
+        case TAIL: localNode = new ReplicationManager(node, HOSTNAME_TAIL, PORT_TAIL, std::string(), -1, &receive_locally ); break;
         case MIDDLE: break;
     }
 
