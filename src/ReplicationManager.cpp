@@ -29,13 +29,21 @@ void ReplicationManager::append(Message *message) {
             /* Send append to next node in chain */
             NetworkManager_->send_message(message);
         }; break;
-        case MIDDLE: break;
-        case TAIL: {
+        case MIDDLE: {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+            /* Append the log entry to the local log */
+            Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
+            /* Send append to next node in chain */
+            NetworkManager_->send_message(message);
+        }; break;
+        case TAIL: 
+        {
+            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+            message->logOffset = logEntryInFlight->logOffset;
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND response */
             NetworkManager_->receive_response(message);
-        };
+        }; 
     }
 }
 
@@ -48,6 +56,7 @@ void ReplicationManager::read(Message *message) {
         case HEAD: 
         {
             DEBUG_MSG("ReplicationManager.read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+            message->logOffset = ((LogEntryInFlight *) message->reqBuffer->buf)->logOffset;
             /* Send READ request to next node in chain, to get the answer from the tail */
             // FIXME: Maybe send request directly to the tail
             NetworkManager_->send_message(message);
@@ -58,6 +67,7 @@ void ReplicationManager::read(Message *message) {
             DEBUG_MSG("ReplicationManager.read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
             void *logEntry = Log_.read(logEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read was successful
+            message->logOffset = logEntryInFlight->logOffset;
             message->respBufferSize = logEntrySize;
             memcpy(message->respBuffer.buf, logEntry, logEntrySize);
             /* Send READ response */
