@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 
     switch(node) {
         case HEAD: localNode = new ReplicationManager(node, HOSTNAME_HEAD, PORT_HEAD, HOSTNAME_TAIL, PORT_TAIL, &receive_locally); break;
-        case TAIL: localNode = new ReplicationManager(node, HOSTNAME_TAIL, PORT_TAIL, std::string(), -1, &receive_locally ); break;
+        case TAIL: localNode = new ReplicationManager(node, HOSTNAME_TAIL, PORT_TAIL, HOSTNAME_HEAD, PORT_HEAD, &receive_locally ); break;
         case MIDDLE: break;
     }
 
@@ -81,7 +81,10 @@ int main(int argc, char** argv) {
 
             DEBUG_MSG("run_node.main(Message: Type: " << std::to_string(message.messageType) << "; logOffset: " << std::to_string(message.logOffset) << " ; sentByThisNode: " << message.sentByThisNode << " ; reqBufferSize: " << std::to_string(message.reqBufferSize) << " ; respBufferSize: " << std::to_string(message.respBufferSize) <<")");
             DEBUG_MSG("run_node.main(LogEntryInFlight: logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; data: " << logEntryInFlight.logEntry.data << ")");
-            localNode->append(&message);
+	    if ( node == HEAD )
+            	localNode->append(&message);
+	    else
+	        localNode->NetworkManager_->send_message(&message);
 
             ++changer;
         }
