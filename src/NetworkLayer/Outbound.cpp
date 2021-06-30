@@ -7,7 +7,6 @@ Outbound::Outbound(string connectURI, NetworkManager *NetworkManager, erpc::Rpc<
     rpc_{rpc}
 {
     DEBUG_MSG("Outbound(): sessionNum " << std::to_string(this->sessionNum_) << " ; connectURI: " << connectURI);
-    Outbound::connect(connectURI);
 }
 
 
@@ -22,6 +21,8 @@ void Outbound::send_message(Message *message) {
     DEBUG_MSG("Outbound.send_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     DEBUG_MSG("Outbound.send_message(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
 
+    while (!rpc_->is_connected(sessionNum_)) 
+    
     // Enqueue the request
     rpc_->enqueue_request(sessionNum_, message->messageType, message->reqBuffer, &message->respBuffer, cont_func, (void *) message);
 

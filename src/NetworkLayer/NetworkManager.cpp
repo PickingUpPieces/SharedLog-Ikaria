@@ -4,17 +4,17 @@
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
 NetworkManager::NetworkManager(string inboundHostname, int inboundPort, string outboundHostname, int outboundPort, ReplicationManager *ReplicationManager) {
+    ReplicationManager_ = ReplicationManager;
     string inboundURI = inboundHostname + ":" + std::to_string(inboundPort);
     nexus_ = new erpc::Nexus(inboundURI, 0, 0);
     Inbound_ = new Inbound(nexus_, this);
     rpc_ = new erpc::Rpc<erpc::CTransport>(nexus_, this, 0, empty_sm_handler, 0);
-    Inbound_->set_rpc(rpc_);
-    ReplicationManager_ = ReplicationManager;
 
     if (!outboundHostname.empty()) {
         string outboundURI = outboundHostname + ":" + std::to_string(outboundPort);
         DEBUG_MSG("NetworkManager.outboundURI: " << outboundURI);
         Outbound_ = new Outbound(outboundURI, this, rpc_);
+        Outbound_->connect(outboundURI);
     }
 
     DEBUG_MSG("NetworkManager.inboundURI: " << inboundURI);

@@ -18,12 +18,10 @@ class Inbound {
     private:
         NetworkManager *NetworkManager_;
         void init(erpc::Nexus *nexus);
-        erpc::Rpc<erpc::CTransport> *rpc_{nullptr};
 
     public:
         Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager);
         void send_response(Message *message);
-        void set_rpc(erpc::Rpc<erpc::CTransport> *rpc); 
         void terminate();
 };
 

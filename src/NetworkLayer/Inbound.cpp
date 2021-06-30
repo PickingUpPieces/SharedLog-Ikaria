@@ -62,20 +62,20 @@ void Inbound::send_response(Message *message) {
     switch (message->messageType) {
         case READ: {
 	    if ( message->respBufferSize < MAX_MESSAGE_SIZE)
-            	rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
+            	NetworkManager_->rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
             break;
         }
         case APPEND: 
         // FIXME: Find out minimal message size required for the buffer
 	    if ( message->respBufferSize > 8)
-            	rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 8);
+            	NetworkManager_->rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 8);
             break;
     }
     
-    rpc_->enqueue_response(message->reqHandle, &message->respBuffer);
+    NetworkManager_->rpc_->enqueue_response(message->reqHandle, &message->respBuffer);
 
     for (size_t i = 0; i < DEFAULT_RUN_EVENT_LOOP; i++)
-      rpc_->run_event_loop_once();
+      NetworkManager_->rpc_->run_event_loop_once();
 
     // FIXME: Is there any finally thing in c++?
     // FIXME: Check when to free_msg_buffers and if it's necessary
@@ -95,10 +95,6 @@ void Inbound::init(erpc::Nexus *nexus) {
         cerr << "Failed to initialize ReqTypeAppend" << endl;
         std::terminate();
     }
-}
-
-void Inbound::set_rpc(erpc::Rpc<erpc::CTransport> *rpc) {
-    rpc_ = rpc;
 }
 
 void Inbound::terminate() {}

@@ -9,8 +9,8 @@ ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, 
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         NodeType_{NodeType}
 {
-    this->NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
     this->rec = rec; 
+    this->NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
 }
 
 
@@ -26,14 +26,15 @@ void ReplicationManager::append(Message *message) {
             message->logOffset = softCounter_;
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
-            /* Send append to next node in chain */
+            /* Send APPEND to next node in chain */
             NetworkManager_->send_message(message);
         }; break;
-        case MIDDLE: {
+        case MIDDLE: 
+        {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
-            /* Send append to next node in chain */
+            /* Send APPEND to next node in chain */
             NetworkManager_->send_message(message);
         }; break;
         case TAIL: 
