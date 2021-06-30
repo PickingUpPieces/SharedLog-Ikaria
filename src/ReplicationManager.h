@@ -25,8 +25,7 @@ typedef void (*receive_local)(Message *message);
 
 class ReplicationManager {
 private:
-    // TODO: Make softCounter static
-    uint64_t softCounter_;
+    static uint64_t softCounter_;
     Log Log_;
 
 public:

@@ -6,9 +6,10 @@
 #include "ReplicationManager.h"
 #include "common_info.h"
 
+/* Init static softCounter */
+uint64_t ReplicationManager::softCounter_ = 0;
 
 ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor, receive_local rec): 
-        softCounter_{0},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         NodeType_{NodeType}
 {
