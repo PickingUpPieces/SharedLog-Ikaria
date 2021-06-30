@@ -28,8 +28,8 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
-    message->respBuffer = networkManager->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
-    message->respBufferSize = maxMessageSize;
+    message->respBuffer = networkManager->rpc_->alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    message->respBufferSize = MAX_MESSAGE_SIZE;
 
     DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight.logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
 
@@ -65,7 +65,7 @@ void Inbound::send_response(Message *message) {
 
     switch (message->messageType) {
         case READ: {
-	    if ( message->respBufferSize < maxMessageSize)
+	    if ( message->respBufferSize < MAX_MESSAGE_SIZE)
             	rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
             break;
         }

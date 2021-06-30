@@ -120,11 +120,11 @@ int main(int argc, char** argv) {
 
     while (true) {
         /* Fill message struct */
-	    req = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
-	    message.respBuffer = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(maxMessageSize);
-        message.reqBufferSize = maxMessageSize;
+	    req = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+	    message.respBuffer = localNode->NetworkManager_->rpc_->alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+        message.reqBufferSize = MAX_MESSAGE_SIZE;
         message.reqBufferSize = sizeof(LogEntryInFlight);
-	    message.respBufferSize = maxMessageSize;
+	    message.respBufferSize = MAX_MESSAGE_SIZE;
         message.logOffset = counter;
 
         if(changer) {
