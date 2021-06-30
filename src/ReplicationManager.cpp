@@ -133,6 +133,9 @@ int main(int argc, char** argv) {
 
             DEBUG_MSG("main.LogEntryInFlight.logOffset: " << std::to_string(logEntryInFlight.logOffset) << " ; LogEntryInFlight.dataLength: " << std::to_string(logEntryInFlight.logEntry.dataLength) << " ; main.LogEntryInFlight.data: " << logEntryInFlight.logEntry.data);
             localNode->read(&message);
+
+            ++changer;
+            changer %= 2;
         } else {
             LogEntryInFlight logEntryInFlight{counter, { 5, "Test"}};
             memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
@@ -142,7 +145,6 @@ int main(int argc, char** argv) {
             localNode->append(&message);
 
             ++changer;
-            changer %= 2;
         }
     
     localNode->NetworkManager_->sync_inbound(100);
