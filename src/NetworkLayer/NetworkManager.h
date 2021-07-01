@@ -23,6 +23,7 @@ class NetworkManager {
         Outbound *Outbound_;
         Inbound *Inbound_;
         ReplicationManager *ReplicationManager_;
+        bool everythingConnected_;
 
     public:
         NetworkManager(string inboundHostname, int inboundPort, string outboundHostname, int outboundPort, ReplicationManager *ReplicationManager);
@@ -30,6 +31,7 @@ class NetworkManager {
         void receive_message(Message *message); 
         void receive_response(Message *message);
         void sync(int numberOfRuns);
+	void connect();
         void terminate();
         erpc::Rpc<erpc::CTransport> *rpc_;
 };

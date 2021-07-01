@@ -10,7 +10,8 @@ ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, 
         NodeType_{NodeType}
 {
     this->rec = rec; 
-    this->NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
+    NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
+    NetworkManager_->connect();
 }
 
 

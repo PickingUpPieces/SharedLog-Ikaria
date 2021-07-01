@@ -19,10 +19,9 @@ class Outbound {
 
     public:
         Outbound(string connectURI, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc);
-        void terminate();
         void send_message(Message *message);
-        void connect(string connectURI);
-
+        void connect();
+        void terminate();
 };
 
 #endif //REPLICATIONNODE_OUTBOUND_H
