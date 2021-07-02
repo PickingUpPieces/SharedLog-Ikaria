@@ -20,6 +20,7 @@ class ReplicationManager {
         ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec);
         void append(Message *message);
         void read(Message *message);
+        void init(Message *message);
 
         NodeType NodeType_;
         NetworkManager *NetworkManager_;

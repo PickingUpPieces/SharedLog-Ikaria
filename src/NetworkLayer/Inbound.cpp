@@ -35,8 +35,6 @@ void req_handler_init(erpc::ReqHandle *req_handle, void *context) {
 void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
 
-    // FIXME: Not sure if pre_resp_msgbuf is okay
-    //erpc::MsgBuffer resp = req_handle->pre_resp_msgbuf;
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
 
     /* Alloc space for the message meta information and fill it */
@@ -83,16 +81,19 @@ void Inbound::send_response(Message *message) {
     DEBUG_MSG("Inbound.send_response(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
     switch (message->messageType) {
-        case READ: {
-	    if ( message->respBufferSize < MAX_MESSAGE_SIZE)
-            	NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
+        case READ: 
+        {
+	        if (message->respBufferSize < MAX_MESSAGE_SIZE)
+               	NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
             break;
         }
         case APPEND: 
-        // FIXME: Find out minimal message size required for the buffer
-	    if ( message->respBufferSize > 1)
-            	NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 1);
+        {
+            if (message->respBufferSize > 1)
+                    NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 1);
             break;
+        }
+        case INIT: break;
     }
     
     NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);

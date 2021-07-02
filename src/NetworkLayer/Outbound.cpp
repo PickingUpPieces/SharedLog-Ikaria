@@ -2,9 +2,9 @@
 #include "Outbound.h"
 
 Outbound::Outbound(string connectURI, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc):
-    sessionNum_{-1}, 
-    NetworkManager_{NetworkManager},
-    rpc_{rpc}
+        sessionNum_{-1}, 
+        NetworkManager_{NetworkManager},
+        rpc_{rpc}
 {
     sessionNum_ = rpc_->create_session(connectURI, 0);
     DEBUG_MSG("Outbound(): sessionNum " << std::to_string(this->sessionNum_) << " ; connectURI: " << connectURI);
@@ -22,11 +22,9 @@ void Outbound::send_message(Message *message) {
     DEBUG_MSG("Outbound.send_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     DEBUG_MSG("Outbound.send_message(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
     
-    // Enqueue the request
+    /* Enqueue the request and send it */
     rpc_->enqueue_request(sessionNum_, message->messageType, message->reqBuffer, &message->respBuffer, cont_func, (void *) message);
-
-    for (size_t i = 0; i < DEFAULT_RUN_EVENT_LOOP; i++)
-      rpc_->run_event_loop_once();
+    rpc_->run_event_loop_once();
 }
 
 
