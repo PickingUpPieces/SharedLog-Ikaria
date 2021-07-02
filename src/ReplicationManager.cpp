@@ -7,13 +7,16 @@ uint64_t ReplicationManager::softCounter_ = 0;
 
 ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec): 
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
-        NodeType_{NodeType}
+        NodeType_{NodeType},
+        rec{rec},
+        NetworkManager_{new NetworkManager(hostURI, headURI, successorURI, tailURI, this)}
 {
-    this->rec = rec; 
-    NetworkManager_ = new NetworkManager(hostURI, headURI, successorURI, tailURI, this);
     NetworkManager_->connect();
 }
 
+void ReplicationManager::wait_for_init() {
+    NetworkManager_->wait_for_init();
+}
 
 void ReplicationManager::append(Message *message) {
     DEBUG_MSG("ReplicationManager.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");

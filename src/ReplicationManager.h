@@ -21,10 +21,11 @@ class ReplicationManager {
         void append(Message *message);
         void read(Message *message);
         void init(Message *message);
+        void wait_for_init();
 
         NodeType NodeType_;
-        NetworkManager *NetworkManager_;
         receive_local rec;
+        NetworkManager *NetworkManager_;
 };
 
 #endif // REPLICATIONNODE_REPLICATIONMANAGER_H

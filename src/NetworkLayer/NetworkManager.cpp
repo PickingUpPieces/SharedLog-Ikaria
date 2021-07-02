@@ -33,7 +33,6 @@ NetworkManager::NetworkManager(string hostURI, string headURI, string successorU
 }
 
 void NetworkManager::send_message(NodeType targetNode, Message *message) {
-
     switch (targetNode)
     {
     case HEAD: Head_->send_message(message); break;
@@ -43,7 +42,6 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
 }
 
 void NetworkManager::receive_message(Message *message) {
-
     switch (message->messageType) {
         case INIT: 
         {
@@ -76,8 +74,11 @@ void NetworkManager::receive_response(Message *message) {
         ReplicationManager_->rec(message);
         return;
     }
-    if (message->messageType == INIT)    
-    Inbound_->send_response(message);
+    
+    if (Head_)
+        Inbound_->send_response(message);
+    else
+        chainReady_ = true;
 }
 
 void NetworkManager::sync(int numberOfRuns) {
@@ -98,9 +99,8 @@ void NetworkManager::connect() {
         else
             Inbound_->send_response(initMessage_);
     } 
-
+    else if (!Head_)
     /* Check if node is head and send INIT message */
-    if (!Head_)
         send_init_message();
 }
 
@@ -117,5 +117,7 @@ void NetworkManager::send_init_message() {
     Successor_->send_message(initMessage_);
 }
 
-void NetworkManager::terminate() {}
-
+void NetworkManager::wait_for_init() {
+    while(!chainReady_)
+        rpc_.run_event_loop_once();
+}
