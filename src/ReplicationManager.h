@@ -8,12 +8,6 @@
 #include "Log.h"
 using namespace std;
 
-enum NodeType {
-    HEAD,
-    MIDDLE,
-    TAIL
-};
-
 class NetworkManager;
 typedef void (*receive_local)(Message *message);
 
@@ -23,7 +17,7 @@ class ReplicationManager {
         Log Log_;
 
     public:
-        ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor, receive_local rec); 
+        ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec);
         void append(Message *message);
         void read(Message *message);
 

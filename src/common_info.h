@@ -24,15 +24,12 @@
 /* Path to the Pool file */
 #define POOL_PATH "/home/vincent/pmem/log-test-0.log"
 
-
-struct LogEntry
-{
+struct LogEntry {
     uint64_t dataLength;
     char data[LOG_BLOCK_DATA_SIZE];
 };
 
-struct LogEntryInFlight
-{
+struct LogEntryInFlight {
     uint64_t logOffset;
     LogEntry logEntry;
 };
@@ -40,6 +37,13 @@ struct LogEntryInFlight
 enum MessageType {
     READ = 2,
     APPEND = 3
+};
+
+enum NodeType {
+    HEAD,
+    MIDDLE,
+    SUCCESSOR = 1,
+    TAIL
 };
 
 struct Message {
