@@ -57,12 +57,12 @@ include_directories(${SRC}/NetworkLayer)
 link_libraries(${LIBRARIES})
 
 set(NETWORK_SOURCE
+  ${SRC}/NetworkLayer/NetworkManager.h
+  ${SRC}/NetworkLayer/NetworkManager.cpp
   ${SRC}/NetworkLayer/Inbound.h
   ${SRC}/NetworkLayer/Inbound.cpp
   ${SRC}/NetworkLayer/Outbound.h
   ${SRC}/NetworkLayer/Outbound.cpp
-  ${SRC}/NetworkLayer/NetworkManager.h
-  ${SRC}/NetworkLayer/NetworkManager.cpp
 )
 
 set(REPLICATION_SOURCE

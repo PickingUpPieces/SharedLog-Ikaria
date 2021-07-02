@@ -1,9 +1,10 @@
 #include <iostream>
 #include "Inbound.h"
 
-Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager) {
+Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
+        NetworkManager_{NetworkManager}
+{
     DEBUG_MSG("Inbound()");
-    NetworkManager_ = NetworkManager;
     Inbound::init(nexus);
 }
 
@@ -25,7 +26,7 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
-    message->respBuffer = networkManager->rpc_->alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    message->respBuffer = networkManager->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
     message->respBufferSize = MAX_MESSAGE_SIZE;
 
     DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
@@ -62,23 +63,19 @@ void Inbound::send_response(Message *message) {
     switch (message->messageType) {
         case READ: {
 	    if ( message->respBufferSize < MAX_MESSAGE_SIZE)
-            	NetworkManager_->rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
+            	NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
             break;
         }
         case APPEND: 
         // FIXME: Find out minimal message size required for the buffer
-	    if ( message->respBufferSize > 8)
-            	NetworkManager_->rpc_->resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 8);
+	    if ( message->respBufferSize > 1)
+            	NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 1);
             break;
     }
     
-    NetworkManager_->rpc_->enqueue_response(message->reqHandle, &message->respBuffer);
+    NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
+    NetworkManager_->rpc_.run_event_loop_once();
 
-    for (size_t i = 0; i < DEFAULT_RUN_EVENT_LOOP; i++)
-      NetworkManager_->rpc_->run_event_loop_once();
-
-    // FIXME: Is there any finally thing in c++?
-    // FIXME: Check when to free_msg_buffers and if it's necessary
     free(message);
 }
 

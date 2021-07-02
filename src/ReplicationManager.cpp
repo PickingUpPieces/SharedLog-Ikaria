@@ -5,12 +5,12 @@
 /* Init static softCounter */
 uint64_t ReplicationManager::softCounter_ = 0;
 
-ReplicationManager::ReplicationManager(NodeType NodeType, std::string hostname, int port, std::string hostnameSuccessor, int portSuccessor, receive_local rec): 
+ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec): 
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         NodeType_{NodeType}
 {
     this->rec = rec; 
-    NetworkManager_ = new NetworkManager(hostname, port, hostnameSuccessor, portSuccessor, this);
+    NetworkManager_ = new NetworkManager(hostURI, headURI, successorURI, tailURI, this);
     NetworkManager_->connect();
 }
 
@@ -28,7 +28,7 @@ void ReplicationManager::append(Message *message) {
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND to next node in chain */
-            NetworkManager_->send_message(message);
+            NetworkManager_->send_message(MIDDLE, message);
         }; break;
         case MIDDLE: 
         {
@@ -36,7 +36,7 @@ void ReplicationManager::append(Message *message) {
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND to next node in chain */
-            NetworkManager_->send_message(message);
+            NetworkManager_->send_message(MIDDLE, message);
         }; break;
         case TAIL: 
         {
@@ -59,9 +59,8 @@ void ReplicationManager::read(Message *message) {
         {
             DEBUG_MSG("ReplicationManager.read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
             message->logOffset = ((LogEntryInFlight *) message->reqBuffer->buf)->logOffset;
-            /* Send READ request to next node in chain, to get the answer from the tail */
-            // FIXME: Maybe send request directly to the tail
-            NetworkManager_->send_message(message);
+            /* Send READ request drectly to TAIL */
+            NetworkManager_->send_message(TAIL, message);
         }; break;
         case TAIL:
         {
