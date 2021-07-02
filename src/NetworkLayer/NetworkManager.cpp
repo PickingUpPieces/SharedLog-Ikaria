@@ -67,9 +67,9 @@ void NetworkManager::sync(int numberOfRuns) {
 }
 
 void NetworkManager::connect() {
-    Head_->connect();
-    Successor_->connect();
-    Tail_->connect();
+    if (Head_) Head_->connect();
+    if (Successor_) Successor_->connect();
+    if (Tail_) Tail_->connect();
     everythingConnected_ = true;
 }
 
