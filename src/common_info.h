@@ -36,7 +36,8 @@ struct LogEntryInFlight {
 
 enum MessageType {
     READ = 2,
-    APPEND = 3
+    APPEND = 3,
+    INIT = 4
 };
 
 enum NodeType {
