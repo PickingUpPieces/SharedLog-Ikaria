@@ -42,6 +42,7 @@ enum MessageType {
 enum NodeType {
     HEAD,
     MIDDLE,
+    SUCCESSOR = 1,
     TAIL
 };
 

@@ -36,7 +36,7 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
     switch (targetNode)
     {
     case HEAD: Head_->send_message(message); break;
-    case MIDDLE: Successor_->send_message(message); break;
+    case SUCCESSOR: Successor_->send_message(message); break;
     case TAIL: Tail_->send_message(message); break;
     }
 }

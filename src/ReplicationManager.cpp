@@ -28,7 +28,7 @@ void ReplicationManager::append(Message *message) {
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND to next node in chain */
-            NetworkManager_->send_message(MIDDLE, message);
+            NetworkManager_->send_message(SUCCESSOR, message);
         }; break;
         case MIDDLE: 
         {
@@ -36,7 +36,7 @@ void ReplicationManager::append(Message *message) {
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND to next node in chain */
-            NetworkManager_->send_message(MIDDLE, message);
+            NetworkManager_->send_message(SUCCESSOR, message);
         }; break;
         case TAIL: 
         {
