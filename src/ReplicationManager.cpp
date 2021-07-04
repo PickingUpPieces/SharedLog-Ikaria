@@ -42,12 +42,11 @@ void ReplicationManager::init() {
             NetworkManager_->receive_response(setupMessage_);
         else
             NetworkManager_->send_message(SUCCESSOR, setupMessage_);
-    }
 
-    /* Wait for first APPEND/READ from the HEAD */
-    if (NodeType_ != HEAD)
+        /* Wait for first APPEND/READ from the HEAD */
         while (!chainReady_) 
             NetworkManager_->sync(10);
+    }
 }
 
 void ReplicationManager::setup(Message *message) {
