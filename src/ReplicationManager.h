@@ -15,15 +15,21 @@ class ReplicationManager {
     private:
         static uint64_t softCounter_;
         Log Log_;
+        bool nodeReady_;
+        bool chainReady_;
+        Message *setupMessage_;
 
     public:
         ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec);
+        void setup(Message *message);
+        void setup_response(); 
         void append(Message *message);
         void read(Message *message);
+        void init();
 
         NodeType NodeType_;
-        NetworkManager *NetworkManager_;
         receive_local rec;
+        NetworkManager *NetworkManager_;
 };
 
 #endif // REPLICATIONNODE_REPLICATIONMANAGER_H

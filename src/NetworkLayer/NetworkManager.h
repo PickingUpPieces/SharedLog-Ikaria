@@ -20,7 +20,6 @@ class ReplicationManager;
 class NetworkManager {
     private:
         ReplicationManager *ReplicationManager_;
-        bool everythingConnected_;
         erpc::Nexus Nexus_;
         Inbound *Inbound_;
         Outbound *Head_;
@@ -29,12 +28,12 @@ class NetworkManager {
 
     public:
         NetworkManager(string hostURI, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
+        void init();
+	    void connect();
         void send_message(NodeType targetNode, Message *message); 
         void receive_message(Message *message); 
         void receive_response(Message *message);
         void sync(int numberOfRuns);
-	    void connect();
-        void terminate();
 
         erpc::Rpc<erpc::CTransport> rpc_;
 };

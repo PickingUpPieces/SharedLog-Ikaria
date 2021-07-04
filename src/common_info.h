@@ -13,6 +13,7 @@
 
 /* Max message size */
 #define MAX_MESSAGE_SIZE 4112
+static constexpr size_t kAppMaxConcurrency = 32;  // Outstanding reqs per thread
 
 // Log variables
 /* size of the pmemlog pool -- 1 GB = 2^30 */
@@ -36,13 +37,14 @@ struct LogEntryInFlight {
 
 enum MessageType {
     READ = 2,
-    APPEND = 3
+    APPEND = 3,
+    SETUP = 4
 };
 
 enum NodeType {
     HEAD,
     MIDDLE,
-    SUCCESSOR = 1,
+    SUCCESSOR = 1, // Refers to the next node in the chain
     TAIL
 };
 

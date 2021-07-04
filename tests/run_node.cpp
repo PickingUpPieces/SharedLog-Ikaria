@@ -41,6 +41,8 @@ int main(int argc, char** argv) {
         case MIDDLE: break;
     }
 
+    localNode->init();
+
     DEBUG_MSG("-------------------------------------");
     DEBUG_MSG("Start testing...");
 
