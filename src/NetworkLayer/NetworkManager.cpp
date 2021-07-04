@@ -5,9 +5,6 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
 NetworkManager::NetworkManager(string hostURI, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
         ReplicationManager_{ReplicationManager},
-        nodeReady_{false},
-        chainReady_{false},
-        initMessage_{nullptr},
         Nexus_{hostURI, 0, 0},
         Inbound_{new Inbound(&Nexus_, this)},
         Head_{nullptr},
@@ -32,40 +29,40 @@ NetworkManager::NetworkManager(string hostURI, string headURI, string successorU
         Successor_ = new Outbound(successorURI, this, &rpc_);
 }
 
+
+void NetworkManager::init() {
+    if (Head_) Head_->connect();
+    if (Successor_) Successor_->connect();
+    if (Tail_ && (Tail_ != Successor_)) Tail_->connect();
+}
+
 void NetworkManager::send_message(NodeType targetNode, Message *message) {
     switch (targetNode)
     {
-    case HEAD: Head_->send_message(message); break;
-    case SUCCESSOR: Successor_->send_message(message); break;
-    case TAIL: Tail_->send_message(message); break;
+    case HEAD: 
+        Head_->send_message(message); 
+        break;
+    case SUCCESSOR: 
+        Successor_->send_message(message); 
+        break;
+    case TAIL: 
+        Tail_->send_message(message); 
+        break;
     }
 }
 
 void NetworkManager::receive_message(Message *message) {
-    switch (message->messageType) {
-        case INIT: 
-        {
-            if (nodeReady_) {
-                if (Successor_)
-                    Successor_->send_message(initMessage_);
-                else
-                    Inbound_->send_response(initMessage_);
-            } else
-                initMessage_ = message;
+    switch (message->messageType) 
+    {
+        case SETUP: 
+            ReplicationManager_->setup(message); 
             break;
-        }
         case READ: 
-        {
-            chainReady_ = true;
             ReplicationManager_->read(message); 
             break;
-        }
         case APPEND: 
-        {
-            chainReady_ = true; 
             ReplicationManager_->append(message); 
             break;
-        }
     }
 }
 
@@ -74,50 +71,18 @@ void NetworkManager::receive_response(Message *message) {
         ReplicationManager_->rec(message);
         return;
     }
-    
-    if (Head_)
+
+    switch (message->messageType)
+    {
+    case SETUP:
+        ReplicationManager_->setup_response();
+    default:
         Inbound_->send_response(message);
-    else
-        chainReady_ = true;
+        break;
+    }
 }
 
 void NetworkManager::sync(int numberOfRuns) {
     for (int i = 0; i < numberOfRuns; i++)
-        rpc_.run_event_loop_once();
-}
-
-void NetworkManager::connect() {
-    if (Head_) Head_->connect();
-    if (Successor_) Successor_->connect();
-    if (Tail_) Tail_->connect();
-    nodeReady_ = true;
-
-    /* Check if INIT has already been received */
-    if (initMessage_) {
-        if (Successor_)
-            Successor_->send_message(initMessage_);
-        else
-            Inbound_->send_response(initMessage_);
-    } 
-    else if (!Head_)
-    /* Check if node is head and send INIT message */
-        send_init_message();
-}
-
-void NetworkManager::send_init_message() {
-    initMessage_ = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer reqBuffer = rpc_.alloc_msg_buffer_or_die(1);
-
-    initMessage_->messageType = INIT;
-    initMessage_->reqBuffer = &reqBuffer;
-    initMessage_->reqBufferSize = 1;
-    initMessage_->respBuffer = rpc_.alloc_msg_buffer_or_die(1);
-    initMessage_->respBufferSize = 1;
-
-    Successor_->send_message(initMessage_);
-}
-
-void NetworkManager::wait_for_init() {
-    while(!chainReady_)
         rpc_.run_event_loop_once();
 }

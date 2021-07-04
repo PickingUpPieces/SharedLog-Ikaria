@@ -8,14 +8,14 @@ Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
     Inbound::init(nexus);
 }
 
-void req_handler_init(erpc::ReqHandle *req_handle, void *context) {
+void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
 
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
 
     /* Alloc space for the message meta information and fill it */
     Message *message = (Message *) malloc(sizeof(Message));
-    message->messageType = INIT;
+    message->messageType = SETUP;
     message->sentByThisNode = false;
     message->logOffset = 0;
     message->reqHandle = req_handle;
@@ -93,7 +93,7 @@ void Inbound::send_response(Message *message) {
                     NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 1);
             break;
         }
-        case INIT: break;
+        default: break;
     }
     
     NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
@@ -105,7 +105,7 @@ void Inbound::send_response(Message *message) {
 
 void Inbound::init(erpc::Nexus *nexus) {
     // Register request handler for Request Type INIT
-    if (nexus->register_req_func(INIT, req_handler_init)) {
+    if (nexus->register_req_func(SETUP, req_handler_setup)) {
         cerr << "Failed to initialize req INIT" << endl;
         std::terminate();
     } 

@@ -7,19 +7,63 @@ uint64_t ReplicationManager::softCounter_ = 0;
 
 ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec): 
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
+        nodeReady_{false},
+        chainReady_{false},
+        setupMessage_{nullptr},
         NodeType_{NodeType},
         rec{rec},
-        NetworkManager_{new NetworkManager(hostURI, headURI, successorURI, tailURI, this)}
-{
-    NetworkManager_->connect();
+        NetworkManager_{new NetworkManager(hostURI, headURI, successorURI, tailURI, this)} {}
+
+
+void ReplicationManager::init() {
+    NetworkManager_->init();
+    nodeReady_ = true;
+
+    if (NodeType_ == HEAD) {
+        /*  Send SETUP message down the chain */
+        setupMessage_ = (Message *) malloc(sizeof(Message));
+        erpc::MsgBuffer reqBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
+        setupMessage_->messageType = SETUP;
+        setupMessage_->reqBuffer = &reqBuffer;
+        setupMessage_->respBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
+        NetworkManager_->send_message(SUCCESSOR, setupMessage_);
+
+        /* Wait for SETUP response */
+        while(!chainReady_)
+            NetworkManager_->sync(10);
+    } else {
+        /* Wait for the SETUP message */
+        while (!setupMessage_)
+            NetworkManager_->sync(10);
+
+        /* Answer/Forward SETUP accordingly */
+        if (NodeType_ == TAIL)
+            NetworkManager_->receive_response(setupMessage_);
+        else
+            NetworkManager_->send_message(SUCCESSOR, setupMessage_);
+    }
+
+    /* Wait for first APPEND/READ from the HEAD */
+    if (NodeType_ != HEAD)
+        while (!chainReady_) 
+            NetworkManager_->sync(10);
 }
 
-void ReplicationManager::wait_for_init() {
-    NetworkManager_->wait_for_init();
+void ReplicationManager::setup(Message *message) {
+    DEBUG_MSG("ReplicationManager.setup()");
+    setupMessage_ = message;
+}
+
+void ReplicationManager::setup_response() {
+    if (NodeType_ == HEAD)
+        chainReady_ = true;
 }
 
 void ReplicationManager::append(Message *message) {
     DEBUG_MSG("ReplicationManager.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+    /* Assumes that the HEAD only sends messages, when it received the SETUP response */
+    chainReady_ = true;
+
     switch(NodeType_) {
         case HEAD: 
         {
@@ -54,6 +98,8 @@ void ReplicationManager::append(Message *message) {
 
 void ReplicationManager::read(Message *message) {
     DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+    /* Assumes that the HEAD only sends messages, when it received the SETUP response */
+    chainReady_ = true;
     size_t logEntrySize = 0;
 
     switch(NodeType_) {

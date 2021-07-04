@@ -37,13 +37,13 @@ struct LogEntryInFlight {
 enum MessageType {
     READ = 2,
     APPEND = 3,
-    INIT = 4
+    SETUP = 4
 };
 
 enum NodeType {
     HEAD,
     MIDDLE,
-    SUCCESSOR = 1,
+    SUCCESSOR = 1, // Refers to the next node in the chain
     TAIL
 };
 
