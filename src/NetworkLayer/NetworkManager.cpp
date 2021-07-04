@@ -76,6 +76,7 @@ void NetworkManager::receive_response(Message *message) {
     {
     case SETUP:
         ReplicationManager_->setup_response();
+	break;
     default:
         Inbound_->send_response(message);
         break;

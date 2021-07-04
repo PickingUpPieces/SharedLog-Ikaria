@@ -24,6 +24,7 @@ void ReplicationManager::init() {
         setupMessage_ = (Message *) malloc(sizeof(Message));
         erpc::MsgBuffer reqBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
         setupMessage_->messageType = SETUP;
+        setupMessage_->sentByThisNode = false;
         setupMessage_->reqBuffer = &reqBuffer;
         setupMessage_->respBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
         NetworkManager_->send_message(SUCCESSOR, setupMessage_);
