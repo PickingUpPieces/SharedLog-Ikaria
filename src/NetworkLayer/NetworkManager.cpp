@@ -54,11 +54,11 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
     }
 }
 
-void NetworkManager::receive_message(Message *message) {
-    messagesInFlight_--;
-    totalMessagesCompleted_++;
-    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << ")");
+void NetworkManager::send_response(Message *message) {
+    Inbound_->send_response(message);
+}
 
+void NetworkManager::receive_message(Message *message) {
     switch (message->messageType) 
     {
         case SETUP: 
@@ -74,6 +74,10 @@ void NetworkManager::receive_message(Message *message) {
 }
 
 void NetworkManager::receive_response(Message *message) {
+    messagesInFlight_--;
+    totalMessagesCompleted_++;
+    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << ")");
+
     if (message->sentByThisNode) {
         ReplicationManager_->rec(message);
         return;

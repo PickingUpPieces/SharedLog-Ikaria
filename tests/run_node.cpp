@@ -1,16 +1,17 @@
 #include "rpc.h"
 #include "ReplicationManager.h"
+#include <iostream>
 
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
 
-int messagesInFlight_ = 0;
-int messagesSent_ = 0;
-int messagesFinished_ = 0;
-Message message;
+int messagesInFlight_{0};
+int messagesSent_{0};
+int messagesFinished_{0};
 ReplicationManager *localNode;
+Message *message;
 // Check which type this node should be
-NodeType node = HEAD;
+NodeType node{HEAD};
 
 enum Modus {
     SLOW,
@@ -27,48 +28,50 @@ void receive_locally(Message *message) {
 }
 
 void send_read_message(uint64_t logOffset) {
+    message = (Message *) malloc(sizeof(Message));
     /* Fill message struct */
 	erpc::MsgBuffer req = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-    message.reqBuffer = &req;
-    message.reqBufferSize = MAX_MESSAGE_SIZE;
-	message.respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message.respBufferSize = MAX_MESSAGE_SIZE;
-    message.sentByThisNode = true;
-    message.logOffset = logOffset;
+    message->reqBuffer = &req;
+    message->reqBufferSize = MAX_MESSAGE_SIZE;
+	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+	message->respBufferSize = MAX_MESSAGE_SIZE;
+    message->sentByThisNode = true;
+    message->logOffset = logOffset;
 
-    message.messageType = READ;
+    message->messageType = READ;
     LogEntryInFlight logEntryInFlight{logOffset, { 1, ""}};
-    memcpy(message.reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
+    memcpy(message->reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
 
-    DEBUG_MSG("run_node.send_read_message(Message: Type: " << std::to_string(message.messageType) << "; logOffset: " << std::to_string(message.logOffset) << " ; sentByThisNode: " << message.sentByThisNode << " ; reqBufferSize: " << std::to_string(message.reqBufferSize) << " ; respBufferSize: " << std::to_string(message.respBufferSize) <<")");
+    DEBUG_MSG("run_node.send_read_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
-    localNode->read(&message);
+    localNode->read(message);
     messagesInFlight_++;
     messagesSent_++;
     DEBUG_MSG("run_node.send_read_message(messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; messagesSent_: " << std::to_string(messagesSent_) << ")");
 }
 
 void send_append_message(uint64_t logOffset, void *data, size_t dataLength) {
+    message = (Message *) malloc(sizeof(Message));
     /* Fill message struct */
 	erpc::MsgBuffer req = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-    message.reqBuffer = &req;
-    message.reqBufferSize = MAX_MESSAGE_SIZE;
-	message.respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message.respBufferSize = MAX_MESSAGE_SIZE;
-    message.sentByThisNode = true;
-    message.logOffset = logOffset;
+    message->reqBuffer = &req;
+    message->reqBufferSize = MAX_MESSAGE_SIZE;
+	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+	message->respBufferSize = MAX_MESSAGE_SIZE;
+    message->sentByThisNode = true;
+    message->logOffset = logOffset;
 
-    message.messageType = APPEND;
-    memcpy(message.reqBuffer->buf, data, dataLength);
+    message->messageType = APPEND;
+    memcpy(message->reqBuffer->buf, data, dataLength);
 
-    DEBUG_MSG("run_node.send_append_message(Message: Type: " << std::to_string(message.messageType) << "; logOffset: " << std::to_string(message.logOffset) << " ; sentByThisNode: " << message.sentByThisNode << " ; reqBufferSize: " << std::to_string(message.reqBufferSize) << " ; respBufferSize: " << std::to_string(message.respBufferSize) <<")");
+    DEBUG_MSG("run_node.send_append_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
 	if ( node == HEAD )
         localNode->append(&message);
     else if ( node == TAIL )
-        localNode->NetworkManager_->send_message(HEAD, &message);
+        localNode->NetworkManager_->send_message(HEAD, message);
 	else
-	    localNode->NetworkManager_->send_message(MIDDLE, &message);
+	    localNode->NetworkManager_->send_message(MIDDLE, message);
 
     messagesInFlight_++;
     messagesSent_++;
@@ -111,14 +114,12 @@ int main(int argc, char** argv) {
     if ( argc == 2 ) { 
         std::string cmd_arg(argv[1]);
 
-        if ( cmd_arg.compare("head") == 0 ) {
+        if ( cmd_arg.compare("head") == 0 )
             node = HEAD;
-        } else if ( cmd_arg.compare("tail") == 0 ) {
+        else if ( cmd_arg.compare("tail") == 0 )
             node = TAIL;
-        }
     }
     DEBUG_MSG("This node is: " << node << "(HEAD= 0, MIDDLE= 1, TAIL= 2)");
-    ReplicationManager *localNode{nullptr};
 
     switch(node) {
         case HEAD: localNode = new ReplicationManager(node, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &receive_locally); break;

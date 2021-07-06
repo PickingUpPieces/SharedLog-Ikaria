@@ -39,7 +39,7 @@ void ReplicationManager::init() {
 
         /* Answer/Forward SETUP accordingly */
         if (NodeType_ == TAIL)
-            NetworkManager_->receive_response(setupMessage_);
+            NetworkManager_->send_response(setupMessage_);
         else
             NetworkManager_->send_message(SUCCESSOR, setupMessage_);
 
@@ -91,7 +91,7 @@ void ReplicationManager::append(Message *message) {
             message->logOffset = logEntryInFlight->logOffset;
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND response */
-            NetworkManager_->receive_response(message);
+            NetworkManager_->send_response(message);
         }; 
     }
 }
@@ -121,7 +121,7 @@ void ReplicationManager::read(Message *message) {
             message->respBufferSize = logEntrySize;
             memcpy(message->respBuffer.buf, logEntry, logEntrySize);
             /* Send READ response */
-            NetworkManager_->receive_response(message);
+            NetworkManager_->send_response(message);
         }; 
     }
 }
