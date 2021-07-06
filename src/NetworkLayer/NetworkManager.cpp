@@ -37,6 +37,9 @@ void NetworkManager::init() {
 }
 
 void NetworkManager::send_message(NodeType targetNode, Message *message) {
+    messagesInFlight_++;
+    DEBUG_MSG("NetworkManager.send_message(messagesInFlight: " << std::to_string(messagesInFlight_) << ")");
+
     switch (targetNode)
     {
     case HEAD: 
@@ -52,6 +55,10 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
 }
 
 void NetworkManager::receive_message(Message *message) {
+    messagesInFlight_--;
+    totalMessagesCompleted_++;
+    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << ")");
+
     switch (message->messageType) 
     {
         case SETUP: 

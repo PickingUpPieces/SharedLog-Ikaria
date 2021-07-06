@@ -29,13 +29,14 @@ class NetworkManager {
     public:
         NetworkManager(string hostURI, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
         void init();
-	    void connect();
         void send_message(NodeType targetNode, Message *message); 
         void receive_message(Message *message); 
         void receive_response(Message *message);
         void sync(int numberOfRuns);
 
         erpc::Rpc<erpc::CTransport> rpc_;
+        int messagesInFlight_;
+        int totalMessagesCompleted_;
 };
 
 #endif //REPLICATIONNODE_NETWORKMANAGER_H
