@@ -92,6 +92,7 @@ void ReplicationManager::append(Message *message) {
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND response */
             NetworkManager_->send_response(message);
+            free(message);
         }; 
     }
 }
@@ -123,6 +124,7 @@ void ReplicationManager::read(Message *message) {
             DEBUG_MSG("ReplicationManager.read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
             /* Send READ response */
             NetworkManager_->send_response(message);
+            free(message);
         }; 
     }
 }

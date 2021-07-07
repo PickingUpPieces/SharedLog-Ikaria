@@ -115,7 +115,7 @@ void testing(Modus modus) {
         }
 
         while (messagesInFlight_ > 1000)
-            localNode->NetworkManager_->sync(100);
+            localNode->NetworkManager_->sync(10);
 
         DEBUG_MSG("------------------------------------");
     }
