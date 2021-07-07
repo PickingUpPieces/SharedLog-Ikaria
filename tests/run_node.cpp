@@ -27,7 +27,7 @@ void receive_locally(Message *message) {
     DEBUG_MSG("run_node.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     DEBUG_MSG("run_node.receive_locally(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
     DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << "messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << ")");
-    free(message->reqBuffer);
+    localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
 }
 
 void send_read_message(uint64_t logOffset) {
@@ -90,12 +90,10 @@ void testing(Modus modus) {
     //DEBUG_MSG("Start testing...");
 
     uint64_t counter{0};
-    uint64_t changer{0};
+    int changer{0};
 
     while (true) {
         DEBUG_MSG("Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()));
-        DEBUG_MSG("Paket rx: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()));
-        DEBUG_MSG("Paket tx: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()));
 
         if(changer) {
             send_read_message(counter);
@@ -111,7 +109,7 @@ void testing(Modus modus) {
         if(modus == SLOW)
             sleep(1);
         else {
-            if ((counter % 1000) == 0)
+            if ((counter % 10000) == 0)
                 std::cout << "messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << endl;
         }
 

@@ -98,6 +98,9 @@ void Inbound::send_response(Message *message) {
     
     NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
     NetworkManager_->rpc_.run_event_loop_once();
+
+    if(message->messageType == READ)
+        NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
 }
 
 
