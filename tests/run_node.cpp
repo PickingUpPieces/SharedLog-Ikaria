@@ -8,6 +8,7 @@
 int messagesInFlight_{0};
 int messagesSent_{0};
 int messagesFinished_{0};
+bool ActiveMode = true;
 ReplicationManager *localNode;
 Message *message;
 erpc::MsgBuffer *reqRead; 
@@ -94,7 +95,6 @@ void testing(Modus modus) {
     int changer{0};
 
     while (true) {
-        DEBUG_MSG("Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()));
 
         if(changer) {
             send_read_message(counter);
@@ -110,12 +110,16 @@ void testing(Modus modus) {
         if(modus == SLOW)
             sleep(1);
         else {
-            if ((messagesSent_ % 1000) == 0)
-                std::cout << "messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << endl;
+            if ((messagesSent_ % 10000) == 0) {
+                std::cout << "tests: messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << endl;
+                std::cout << "localNode: messagesInFlight_: " << std::to_string(localNode->NetworkManager_->messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(localNode->NetworkManager_->totalMessagesCompleted_) << endl;
+                std::cout << "HugePage allocated: " << std::to_string(localNode->NetworkManager_->rpc_.get_stat_user_alloc_tot()) << "; Average RX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()) << "; Average TX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()) << endl;
+                std::cout << "Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()) << endl;
+            }
         }
 
         while (messagesInFlight_ > 1000)
-            localNode->NetworkManager_->sync(10);
+            localNode->NetworkManager_->sync(100);
 
         DEBUG_MSG("------------------------------------");
     }
@@ -144,5 +148,11 @@ int main(int argc, char** argv) {
     }
     localNode->init();
 
-    testing(FAST);
+    if (ActiveMode)
+        testing(FAST);
+    else {
+        while (true) {
+           localNode->NetworkManager_->sync(100); 
+        }
+    }
 }
