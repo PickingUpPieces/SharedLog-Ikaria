@@ -94,7 +94,8 @@ void testing(Modus modus) {
 
     while (true) {
         DEBUG_MSG("Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()));
-        DEBUG_MSG("Paket loss stats: " << std::to_string(localNode->NetworkManager_->rpc_.pkt_loss_stats));
+        DEBUG_MSG("Paket rx: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()));
+        DEBUG_MSG("Paket tx: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()));
 
         if(changer) {
             send_read_message(counter);
