@@ -10,6 +10,8 @@ int messagesSent_{0};
 int messagesFinished_{0};
 ReplicationManager *localNode;
 Message *message;
+erpc::MsgBuffer reqRead[1000]; 
+erpc::MsgBuffer reqAppend[1000]; 
 // Check which type this node should be
 NodeType node{HEAD};
 
@@ -30,8 +32,8 @@ void receive_locally(Message *message) {
 void send_read_message(uint64_t logOffset) {
     message = (Message *) malloc(sizeof(Message));
     /* Fill message struct */
-	erpc::MsgBuffer req = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-    message->reqBuffer = &req;
+    reqRead[logOffset] = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    message->reqBuffer = &reqRead[logOffset];
     message->reqBufferSize = MAX_MESSAGE_SIZE;
 	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 	message->respBufferSize = MAX_MESSAGE_SIZE;
@@ -44,7 +46,13 @@ void send_read_message(uint64_t logOffset) {
 
     DEBUG_MSG("run_node.send_read_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
-    localNode->read(message);
+    if ( node == HEAD )
+        localNode->read(message);
+    else if ( node == TAIL )
+        localNode->NetworkManager_->send_message(HEAD, message);
+    else
+	localNode->NetworkManager_->send_message(MIDDLE, message);
+
     messagesInFlight_++;
     messagesSent_++;
     DEBUG_MSG("run_node.send_read_message(messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; messagesSent_: " << std::to_string(messagesSent_) << ")");
@@ -53,8 +61,8 @@ void send_read_message(uint64_t logOffset) {
 void send_append_message(uint64_t logOffset, void *data, size_t dataLength) {
     message = (Message *) malloc(sizeof(Message));
     /* Fill message struct */
-	erpc::MsgBuffer req = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-    message->reqBuffer = &req;
+    reqAppend[logOffset] = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    message->reqBuffer = &reqAppend[logOffset];
     message->reqBufferSize = MAX_MESSAGE_SIZE;
 	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 	message->respBufferSize = MAX_MESSAGE_SIZE;
@@ -67,7 +75,7 @@ void send_append_message(uint64_t logOffset, void *data, size_t dataLength) {
     DEBUG_MSG("run_node.send_append_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
 	if ( node == HEAD )
-        localNode->append(&message);
+        localNode->append(message);
     else if ( node == TAIL )
         localNode->NetworkManager_->send_message(HEAD, message);
 	else
@@ -75,12 +83,12 @@ void send_append_message(uint64_t logOffset, void *data, size_t dataLength) {
 
     messagesInFlight_++;
     messagesSent_++;
-    DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; messagesSent_: " << std::to_string(messagesSent_) << ")");
+    DEBUG_MSG("run_node.send_append_message(messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; messagesSent_: " << std::to_string(messagesSent_) << ")");
 }
 
 void testing(Modus modus) {
     DEBUG_MSG("-------------------------------------");
-    DEBUG_MSG("Start testing...");
+    //DEBUG_MSG("Start testing...");
 
     uint64_t counter{0};
     uint64_t changer{0};
@@ -105,6 +113,8 @@ void testing(Modus modus) {
         }
         DEBUG_MSG("------------------------------------");
     }
+
+    localNode->NetworkManager_->sync(100);
 }
 
 int main(int argc, char** argv) {
@@ -127,6 +137,8 @@ int main(int argc, char** argv) {
         case MIDDLE: break;
     }
     localNode->init();
+
+//    req = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 
     testing(SLOW);
 }

@@ -16,7 +16,7 @@ void cont_func(void *context, void *tag) {
     auto networkManager = static_cast<NetworkManager *>(context);
     networkManager->receive_response((Message *) tag);
 
-    free((Message *) tag);
+//    free((Message *) tag);
 }
 
 
