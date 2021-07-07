@@ -10,8 +10,8 @@ int messagesSent_{0};
 int messagesFinished_{0};
 ReplicationManager *localNode;
 Message *message;
-erpc::MsgBuffer reqRead[1000]; 
-erpc::MsgBuffer reqAppend[1000]; 
+erpc::MsgBuffer *reqRead; 
+erpc::MsgBuffer *reqAppend; 
 // Check which type this node should be
 NodeType node{HEAD};
 
@@ -27,14 +27,16 @@ void receive_locally(Message *message) {
     DEBUG_MSG("run_node.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     DEBUG_MSG("run_node.receive_locally(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
     DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << "messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << ")");
+    free(message->reqBuffer);
 }
 
 void send_read_message(uint64_t logOffset) {
     message = (Message *) malloc(sizeof(Message));
-    reqRead[logOffset] = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
+    *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 
     /* Fill message struct */
-    message->reqBuffer = &(reqRead[logOffset]);
+    message->reqBuffer = reqRead;
     message->reqBufferSize = MAX_MESSAGE_SIZE;
 	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 	message->respBufferSize = MAX_MESSAGE_SIZE;
@@ -58,9 +60,11 @@ void send_read_message(uint64_t logOffset) {
 
 void send_append_message(uint64_t logOffset, void *data, size_t dataLength) {
     message = (Message *) malloc(sizeof(Message));
-    reqAppend[logOffset] = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
+    *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+
     /* Fill message struct */
-    message->reqBuffer = &(reqAppend[logOffset]);
+    message->reqBuffer = reqRead;
     message->reqBufferSize = MAX_MESSAGE_SIZE;
 	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 	message->respBufferSize = MAX_MESSAGE_SIZE;
@@ -136,7 +140,5 @@ int main(int argc, char** argv) {
     }
     localNode->init();
 
-//    req = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    testing(SLOW);
+    testing(FAST);
 }
