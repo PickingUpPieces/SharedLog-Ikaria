@@ -113,12 +113,13 @@ void testing(Modus modus) {
             if ((messagesSent_ % 10000) == 0) {
                 std::cout << "tests: messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << endl;
                 std::cout << "localNode: messagesInFlight_: " << std::to_string(localNode->NetworkManager_->messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(localNode->NetworkManager_->totalMessagesCompleted_) << endl;
-                std::cout << "HugePage allocated: " << std::to_string(localNode->NetworkManager_->rpc_.get_stat_user_alloc_tot()) << "; Average RX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()) << "; Average TX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()) << endl;
+                std::cout << "HugePage allocated in MB: " << std::to_string(localNode->NetworkManager_->rpc_.get_stat_user_alloc_tot() / 1024 / 1024) << "; Average RX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()) << "; Average TX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()) << endl;
                 std::cout << "Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()) << endl;
+		std::cout << "-------------------------" << endl;
             }
         }
 
-        while (messagesInFlight_ > 1000)
+        while (messagesInFlight_ > 10000)
             localNode->NetworkManager_->sync(100);
 
         DEBUG_MSG("------------------------------------");
