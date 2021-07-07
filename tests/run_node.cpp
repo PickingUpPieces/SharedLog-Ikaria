@@ -28,6 +28,7 @@ void receive_locally(Message *message) {
     DEBUG_MSG("run_node.receive_locally(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
     DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << "messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << ")");
     localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
+    localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
 }
 
 void send_read_message(uint64_t logOffset) {
@@ -109,7 +110,7 @@ void testing(Modus modus) {
         if(modus == SLOW)
             sleep(1);
         else {
-            if ((counter % 10000) == 0)
+            if ((messagesSent_ % 1000) == 0)
                 std::cout << "messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << endl;
         }
 
