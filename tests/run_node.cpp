@@ -31,15 +31,15 @@ void receive_locally(Message *message) {
 
 void send_read_message(uint64_t logOffset) {
     message = (Message *) malloc(sizeof(Message));
-    /* Fill message struct */
     reqRead[logOffset] = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-    message->reqBuffer = &reqRead[logOffset];
+
+    /* Fill message struct */
+    message->reqBuffer = &(reqRead[logOffset]);
     message->reqBufferSize = MAX_MESSAGE_SIZE;
 	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
     message->logOffset = logOffset;
-
     message->messageType = READ;
     LogEntryInFlight logEntryInFlight{logOffset, { 1, ""}};
     memcpy(message->reqBuffer->buf, &logEntryInFlight, sizeof(logEntryInFlight));
@@ -48,10 +48,8 @@ void send_read_message(uint64_t logOffset) {
 
     if ( node == HEAD )
         localNode->read(message);
-    else if ( node == TAIL )
+    else 
         localNode->NetworkManager_->send_message(HEAD, message);
-    else
-	localNode->NetworkManager_->send_message(MIDDLE, message);
 
     messagesInFlight_++;
     messagesSent_++;
@@ -60,15 +58,14 @@ void send_read_message(uint64_t logOffset) {
 
 void send_append_message(uint64_t logOffset, void *data, size_t dataLength) {
     message = (Message *) malloc(sizeof(Message));
-    /* Fill message struct */
     reqAppend[logOffset] = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-    message->reqBuffer = &reqAppend[logOffset];
+    /* Fill message struct */
+    message->reqBuffer = &(reqAppend[logOffset]);
     message->reqBufferSize = MAX_MESSAGE_SIZE;
 	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
     message->logOffset = logOffset;
-
     message->messageType = APPEND;
     memcpy(message->reqBuffer->buf, data, dataLength);
 
@@ -76,10 +73,8 @@ void send_append_message(uint64_t logOffset, void *data, size_t dataLength) {
 
 	if ( node == HEAD )
         localNode->append(message);
-    else if ( node == TAIL )
+    else 
         localNode->NetworkManager_->send_message(HEAD, message);
-	else
-	    localNode->NetworkManager_->send_message(MIDDLE, message);
 
     messagesInFlight_++;
     messagesSent_++;
@@ -94,6 +89,9 @@ void testing(Modus modus) {
     uint64_t changer{0};
 
     while (true) {
+        DEBUG_MSG("Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()));
+        DEBUG_MSG("Paket loss stats: " << std::to_string(localNode->NetworkManager_->rpc_.pkt_loss_stats));
+
         if(changer) {
             send_read_message(counter);
             ++changer;

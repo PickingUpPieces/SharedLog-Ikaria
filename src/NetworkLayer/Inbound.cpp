@@ -97,8 +97,7 @@ void Inbound::send_response(Message *message) {
     }
     
     NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
-    for(int i = 0; i < 10; i++)
-        NetworkManager_->rpc_.run_event_loop_once();
+    NetworkManager_->rpc_.run_event_loop_once();
 }
 
 
