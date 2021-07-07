@@ -111,9 +111,13 @@ void testing(Modus modus) {
         if(modus == SLOW)
             sleep(1);
         else {
-            if (counter % 10)
-                std::cout << "messagesInFlight_: " << std::to_string(messagesInFlight_) << "messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << endl;
+            if ((counter % 1000) == 0)
+                std::cout << "messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << endl;
         }
+
+        while (messagesInFlight_ > 1000)
+            localNode->NetworkManager_->sync(100);
+
         DEBUG_MSG("------------------------------------");
     }
 
