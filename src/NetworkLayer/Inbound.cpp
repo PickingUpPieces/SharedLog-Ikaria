@@ -99,6 +99,8 @@ void Inbound::send_response(Message *message) {
 
     if(message->messageType == READ)
         NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
+
+    free(message);
 }
 
 

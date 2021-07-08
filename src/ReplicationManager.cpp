@@ -92,7 +92,6 @@ void ReplicationManager::append(Message *message) {
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND response */
             NetworkManager_->send_response(message);
-            free(message);
         }; 
     }
 }
