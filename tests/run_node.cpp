@@ -35,8 +35,8 @@ void receive_locally(Message *message) {
 
 
     if (message->messageType == READ) {
-        string uniqueString = randomString + "-ID-" + std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logOffset);
-	string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
+        string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
+	    string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
         DEBUG_MSG("generatedString vs returnedString: '" << uniqueString << "' vs '" << tempString << "'");
 
 	if (uniqueString.compare(tempString) == 0)

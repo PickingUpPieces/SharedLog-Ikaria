@@ -127,12 +127,14 @@ void ReplicationManager::read(Message *message) {
         }; break;
         case TAIL:
         {
-            LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
-            void *logEntry = Log_.read(logEntryInFlight->logOffset, &logEntrySize);
+            LogEntryInFlight *reqlogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+            LogEntryInFlight *resplogEntryInFlight = (LogEntryInFlight *) message->respBuffer.buf;
+            void *logEntry = Log_.read(reqlogEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read was successful
-            message->logOffset = logEntryInFlight->logOffset;
-            message->respBufferSize = logEntrySize + sizeof(logEntryInFlight->logOffset);
-            memcpy(&(((LogEntryInFlight *) message->respBuffer.buf)->logEntry), logEntry, logEntrySize);
+            message->logOffset = reqlogEntryInFlight->logOffset;
+            resplogEntryInFlight->logOffset = reqlogEntryInFlight->logOffset;
+            message->respBufferSize = logEntrySize + sizeof(reqlogEntryInFlight->logOffset);
+            memcpy(&resplogEntryInFlight->logEntry, logEntry, logEntrySize);
             DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
             DEBUG_MSG("ReplicationManager.read(ReqBuffer: LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
     	    DEBUG_MSG("ReplicationManager.read(RespBuffer: LogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
