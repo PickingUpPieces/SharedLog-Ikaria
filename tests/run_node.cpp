@@ -29,18 +29,17 @@ void receive_locally(Message *message) {
     messagesInFlight_--;
     messagesFinished_++;
     DEBUG_MSG("run_node.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    DEBUG_MSG("run_node.receive_locally(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+    DEBUG_MSG("run_node.receive_locally(ReqBuffer: LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+    DEBUG_MSG("run_node.receive_locally(RespBuffer: LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
+
 
     if (message->messageType == READ) {
         string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
-        char returnedRead[((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength + 1];
-        strncat(returnedRead, ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data, ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength);
-        string compUniqueString(returnedRead);
-        DEBUG_MSG("generatedString vs returnedString: " << uniqueString << " vs " << compUniqueString);
+        DEBUG_MSG("generatedString: " << uniqueString);
 
-        if (uniqueString.compare(compUniqueString) == 0)
+        if (strncmp(uniqueString.c_str(), ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data, uniqueString.length()) == 0)
             messagesValidated_++;
-    } 
+    }
 
 
     DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << "messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << " ; messagesValidated_: " << std::to_string(messagesValidated_) << ")");
@@ -113,7 +112,7 @@ void testing(Modus modus) {
     uint64_t returnedLogOffset;
 
     /* Generate random string */
-    string possibleCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     mt19937 generator{random_device{}()};
     uniform_int_distribution<> dist(0, possibleCharacters.size()-1);
     for(int i = 0; i < 16; i++){
@@ -180,7 +179,7 @@ int main(int argc, char** argv) {
     localNode->init();
 
     if (ACTIVE_MODE)
-        testing(FAST);
+        testing(SLOW);
     else {
         while (true) {
            localNode->NetworkManager_->sync(1000); 
