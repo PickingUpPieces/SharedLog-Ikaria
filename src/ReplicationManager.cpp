@@ -71,6 +71,10 @@ void ReplicationManager::append(Message *message) {
             /* Count Sequencer up and set the log entry number */
             logEntryInFlight->logOffset = softCounter_;
             ++softCounter_;
+            // FIXME: Remove these three lines
+            string temp = (string) logEntryInFlight->logEntry.data;
+            temp += std::to_string(logEntryInFlight->logOffset);
+            temp.copy(logEntryInFlight->logEntry.data, temp.length());
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Send APPEND to next node in chain */
