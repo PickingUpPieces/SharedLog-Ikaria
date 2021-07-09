@@ -59,6 +59,10 @@ void NetworkManager::send_response(Message *message) {
 }
 
 void NetworkManager::receive_message(Message *message) {
+    totalMessagesProcessed_++;
+    if (!(totalMessagesProcessed_ % 10000))
+        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << endl;
+
     switch (message->messageType) 
     {
         case SETUP: 
