@@ -69,8 +69,9 @@ void ReplicationManager::append(Message *message) {
         {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Count Sequencer up and set the log entry number */
-            logEntryInFlight->logOffset = softCounter_;
+	    // FIXME: No sequence number 0, when counting up before
             ++softCounter_;
+            logEntryInFlight->logOffset = softCounter_;
 
             // FIXME: Remove these three lines
             string temp = (string) logEntryInFlight->logEntry.data;

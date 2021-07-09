@@ -35,13 +35,14 @@ void receive_locally(Message *message) {
 
     if (message->messageType == READ) {
         string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
-        DEBUG_MSG("generatedString vs returnedString: " << uniqueString << " vs " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data );
+	string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
+        DEBUG_MSG("generatedString vs returnedString: '" << uniqueString << "' vs '" << tempString << "'");
 
-        if (strncmp(uniqueString.c_str(), ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data, uniqueString.length()) == 0)
+	if (uniqueString.compare(tempString) == 0)
             messagesValidated_++;
     }
 
-    DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << "messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << " ; messagesValidated_: " << std::to_string(messagesValidated_) << ")");
+    DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << " ; messagesValidated_: " << std::to_string(messagesValidated_) << ")");
     localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
     localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
 }
@@ -102,7 +103,7 @@ void send_append_message(void *data, size_t dataLength) {
 
 void testing(Modus modus) {
     DEBUG_MSG("-------------------------------------");
-    uint64_t counter{0};
+    uint64_t counter{1};
 
     /* Generate random string */
     string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
