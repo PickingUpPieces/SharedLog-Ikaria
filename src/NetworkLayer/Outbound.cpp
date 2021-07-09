@@ -13,6 +13,7 @@ Outbound::Outbound(string connectURI, NetworkManager *NetworkManager, erpc::Rpc<
 
 void cont_func(void *context, void *tag) {
     DEBUG_MSG("Outbound.cont_func(Message: Type: " << std::to_string(((Message *) tag)->messageType) << "; logOffset: " << std::to_string(((Message *) tag)->logOffset) << " ; sentByThisNode: " << ((Message *) tag)->sentByThisNode << " ; reqBufferSize: " << std::to_string(((Message *) tag)->reqBufferSize) << " ; respBufferSize: " << std::to_string(((Message *) tag)->respBufferSize) << ")");
+    ((Message *) tag)->respBufferSize = ((Message *) tag)->respBuffer.get_data_size();
     auto networkManager = static_cast<NetworkManager *>(context);
     networkManager->receive_response((Message *) tag);
 }

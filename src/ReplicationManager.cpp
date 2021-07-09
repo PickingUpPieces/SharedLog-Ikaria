@@ -73,10 +73,6 @@ void ReplicationManager::append(Message *message) {
             ++softCounter_;
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
-            /* Set respBuffer */
-            uint64_t *respPointer = (uint64_t *) message->respBuffer.buf;
-            *respPointer = message->logOffset;
-            message->respBufferSize = sizeof(message->logOffset);
             /* Send APPEND to next node in chain */
             NetworkManager_->send_message(SUCCESSOR, message);
         }; break;
@@ -85,8 +81,6 @@ void ReplicationManager::append(Message *message) {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
-            /* Set respBuffer */
-            message->respBufferSize = 1;
             /* Send APPEND to next node in chain */
             NetworkManager_->send_message(SUCCESSOR, message);
         }; break;
@@ -97,12 +91,15 @@ void ReplicationManager::append(Message *message) {
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
             /* Set respBuffer */
-            message->respBufferSize = 1;
+            uint64_t *respPointer = (uint64_t *) message->respBuffer.buf;
+            *respPointer = ((LogEntryInFlight *) message->reqBuffer->buf)->logOffset;
+            message->respBufferSize = sizeof(message->logOffset);
             /* Send APPEND response */
             NetworkManager_->send_response(message);
         }; 
     }
 }
+
 
 void ReplicationManager::read(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
@@ -126,7 +123,7 @@ void ReplicationManager::read(Message *message) {
             // TODO: Check respBufferSize == 0, if read was successful
             message->logOffset = logEntryInFlight->logOffset;
             message->respBufferSize = logEntrySize;
-            memcpy(&logEntryInFlight->logEntry, logEntry, logEntrySize);
+            memcpy(&(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry), logEntry, logEntrySize);
             DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
             DEBUG_MSG("ReplicationManager.read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
             /* Send READ response */
