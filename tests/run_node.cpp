@@ -3,9 +3,15 @@
 #include <iostream>
 #include <random>
 
+enum Modus {
+    SLOW,
+    FAST
+};
+
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
 #define ACTIVE_MODE true
+#define MODUS SLOW
 
 int messagesInFlight_{0};
 int messagesSent_{0};
@@ -19,11 +25,6 @@ erpc::MsgBuffer *reqAppend;
 NodeType node{HEAD};
 string randomString = "";
 
-enum Modus {
-    SLOW,
-    FAST
-};
-
 
 void receive_locally(Message *message) {
     messagesInFlight_--;
@@ -34,7 +35,7 @@ void receive_locally(Message *message) {
 
 
     if (message->messageType == READ) {
-        string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
+        string uniqueString = randomString + "-ID-" + std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logOffset);
 	string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
         DEBUG_MSG("generatedString vs returnedString: '" << uniqueString << "' vs '" << tempString << "'");
 
@@ -170,7 +171,7 @@ int main(int argc, char** argv) {
     localNode->init();
 
     if (ACTIVE_MODE)
-        testing(SLOW);
+        testing(MODUS);
     else {
         while (true)
            localNode->NetworkManager_->sync(1000); 
