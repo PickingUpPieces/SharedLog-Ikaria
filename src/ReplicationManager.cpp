@@ -68,12 +68,15 @@ void ReplicationManager::append(Message *message) {
         case HEAD: 
         {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
-            /* Set logOffset */
-            ++softCounter_;
+            /* Count Sequencer up and set the log entry number */
             logEntryInFlight->logOffset = softCounter_;
-            message->logOffset = softCounter_;
+            ++softCounter_;
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
+            /* Set respBuffer */
+            uint64_t *respPointer = (uint64_t *) message->respBuffer.buf;
+            *respPointer = message->logOffset;
+            message->respBufferSize = sizeof(message->logOffset);
             /* Send APPEND to next node in chain */
             NetworkManager_->send_message(SUCCESSOR, message);
         }; break;
@@ -82,6 +85,8 @@ void ReplicationManager::append(Message *message) {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
+            /* Set respBuffer */
+            message->respBufferSize = 1;
             /* Send APPEND to next node in chain */
             NetworkManager_->send_message(SUCCESSOR, message);
         }; break;
@@ -89,7 +94,10 @@ void ReplicationManager::append(Message *message) {
         {
             LogEntryInFlight *logEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             message->logOffset = logEntryInFlight->logOffset;
+            /* Append the log entry to the local log */
             Log_.append(logEntryInFlight->logOffset, &logEntryInFlight->logEntry);
+            /* Set respBuffer */
+            message->respBufferSize = 1;
             /* Send APPEND response */
             NetworkManager_->send_response(message);
         }; 

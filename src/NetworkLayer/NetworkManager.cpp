@@ -29,7 +29,6 @@ NetworkManager::NetworkManager(string hostURI, string headURI, string successorU
         Successor_ = new Outbound(successorURI, this, &rpc_);
 }
 
-
 void NetworkManager::init() {
     if (Head_) Head_->connect();
     if (Successor_) Successor_->connect();

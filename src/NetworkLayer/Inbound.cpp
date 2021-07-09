@@ -87,8 +87,8 @@ void Inbound::send_response(Message *message) {
         }
         case APPEND: 
         {
-            if (message->respBufferSize > 1)
-                    NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 1);
+	        if (message->respBufferSize < MAX_MESSAGE_SIZE)
+                NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
             break;
         }
         default: break;

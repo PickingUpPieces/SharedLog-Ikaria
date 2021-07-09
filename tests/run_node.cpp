@@ -31,14 +31,17 @@ void receive_locally(Message *message) {
     DEBUG_MSG("run_node.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     DEBUG_MSG("run_node.receive_locally(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
 
-    // TODO: Verify rec if READ
-    string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
-    char returnedRead[((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength + 1];
-    strncat(returnedRead, ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data, ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength);
-    string compUniqueString(returnedRead); 
+    if (message->messageType == READ) {
+        string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
+        char returnedRead[((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength + 1];
+        strncat(returnedRead, ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data, ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength);
+        string compUniqueString(returnedRead);
+        DEBUG_MSG("generatedString vs returnedString: " << uniqueString << " vs " << compUniqueString);
 
-    if (uniqueString.compare(compUniqueString) == 0)
-        messagesValidated_++;
+        if (uniqueString.compare(compUniqueString) == 0)
+            messagesValidated_++;
+    } 
+
 
     DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << "messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << " ; messagesValidated_: " << std::to_string(messagesValidated_) << ")");
     localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
@@ -73,7 +76,6 @@ void send_read_message(uint64_t logOffset) {
     DEBUG_MSG("run_node.send_read_message(messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; messagesSent_: " << std::to_string(messagesSent_) << ")");
 }
 
-// TODO: Remove logOffset
 uint64_t send_append_message(uint64_t logOffset, void *data, size_t dataLength) {
     message = (Message *) malloc(sizeof(Message));
     reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
@@ -143,7 +145,7 @@ void testing(Modus modus) {
                 std::cout << "localNode: messagesInFlight_: " << std::to_string(localNode->NetworkManager_->messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(localNode->NetworkManager_->totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(localNode->NetworkManager_->totalMessagesProcessed_) << endl;
                 std::cout << "HugePage allocated in MB: " << std::to_string(localNode->NetworkManager_->rpc_.get_stat_user_alloc_tot() / 1024 / 1024) << "; Average RX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()) << "; Average TX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()) << endl;
                 std::cout << "Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()) << endl;
-		std::cout << "-------------------------" << endl;
+		        std::cout << "-------------------------" << endl;
             }
         }
 
