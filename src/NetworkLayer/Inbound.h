@@ -23,7 +23,6 @@ class Inbound {
     public:
         Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager);
         void send_response(Message *message);
-        void terminate();
 };
 
 #endif //REPLICATIONNODE_INBOUND_H
