@@ -30,10 +30,11 @@ void receive_locally(Message *message) {
     messagesInFlight_--;
     messagesFinished_++;
     DEBUG_MSG("run_node.receive_locally(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    DEBUG_MSG("run_node.receive_locally(ReqBuffer: LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
-    DEBUG_MSG("run_node.receive_locally(RespBuffer: LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
+    DEBUG_MSG("run_node.receive_locally(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+    DEBUG_MSG("run_node.receive_locally(respLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
 
+    /* Verify the entry */
     if (message->messageType == READ) {
         string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
 	    string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
@@ -80,6 +81,7 @@ void send_append_message(void *data, size_t dataLength) {
     message = (Message *) malloc(sizeof(Message));
     reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
     *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    memcpy(reqRead->buf, data, dataLength);
 
     /* Fill message struct */
     message->reqBuffer = reqRead;
@@ -88,7 +90,6 @@ void send_append_message(void *data, size_t dataLength) {
 	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
     message->messageType = APPEND;
-    memcpy(message->reqBuffer->buf, data, dataLength);
 
     DEBUG_MSG("run_node.send_append_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
@@ -111,7 +112,7 @@ void testing(Modus modus) {
     mt19937 generator{random_device{}()};
     uniform_int_distribution<> dist(0, possibleCharacters.size()-1);
     for(int i = 0; i < 16; i++){
-        size_t random_index = dist(generator); //get index between 0 and possible_characters.size()-1
+        size_t random_index = static_cast<size_t>(dist(generator)); //get index between 0 and possible_characters.size()-1
         randomString += possibleCharacters[random_index];
     }
 
