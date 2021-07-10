@@ -13,6 +13,7 @@ NetworkManager::NetworkManager(string hostURI, string headURI, string successorU
         rpc_{&Nexus_, this, 0, empty_sm_handler, 0}
 {
     rpc_.retry_connect_on_invalid_rpc_id = true;
+    rpc_.set_pre_resp_msgbuf_size(MAX_MESSAGE_SIZE);
 
     if (!headURI.empty())
         Head_ = new Outbound(headURI, this, &rpc_);

@@ -45,8 +45,8 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     message->reqHandle = req_handle;
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
-    message->respBuffer = networkManager->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-    message->respBufferSize = MAX_MESSAGE_SIZE;
+    message->respBuffer = req_handle->pre_resp_msgbuf;
+    message->respBufferSize = message->respBuffer.get_data_size();
 
     DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << ")"); 
 
@@ -97,9 +97,6 @@ void Inbound::send_response(Message *message) {
     
     NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
     NetworkManager_->rpc_.run_event_loop_once();
-
-    if(message->messageType == READ)
-        NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
 
     free(message);
 }
