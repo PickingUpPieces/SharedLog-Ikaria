@@ -77,6 +77,7 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
 
 void Inbound::send_response(Message *message) {
     DEBUG_MSG("Inbound.send_response(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+    DEBUG_MSG("Inbound.send_response(LogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
     switch (message->messageType) {
         case READ: 
@@ -87,8 +88,8 @@ void Inbound::send_response(Message *message) {
         }
         case APPEND: 
         {
-            if (message->respBufferSize > 1)
-                    NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, 1);
+	        if (message->respBufferSize < MAX_MESSAGE_SIZE)
+                NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
             break;
         }
         default: break;
