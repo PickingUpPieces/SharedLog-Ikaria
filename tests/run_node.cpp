@@ -10,8 +10,8 @@ enum Modus {
 
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
-#define ACTIVE_MODE false
-#define MODUS SLOW
+#define ACTIVE_MODE true
+#define MODUS FAST
 
 int messagesInFlight_{0};
 int messagesSent_{0};
@@ -65,7 +65,8 @@ void send_read_message(uint64_t logOffset) {
     /* Fill request data */
     uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
     *reqPointer = message->logOffset;
-    message->respBufferSize = sizeof(message->logOffset);
+    message->reqBufferSize = sizeof(message->logOffset);
+    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
     DEBUG_MSG("run_node.send_read_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
@@ -95,7 +96,6 @@ void send_append_message(void *data, size_t dataLength) {
     /* Fill request data */
     memcpy(message->reqBuffer->buf, data, dataLength);
     message->reqBufferSize = dataLength;
-    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
     DEBUG_MSG("run_node.send_append_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
