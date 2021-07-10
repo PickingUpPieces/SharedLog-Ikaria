@@ -45,8 +45,8 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     message->reqHandle = req_handle;
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
-    message->respBuffer = networkManager->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-    message->respBufferSize = MAX_MESSAGE_SIZE;
+    message->respBuffer = req_handle->pre_resp_msgbuf;
+    message->respBufferSize = message->respBuffer.get_data_size();
 
     DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << ")"); 
 
@@ -75,35 +75,6 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     networkManager->receive_message(message);
 }
 
-void Inbound::send_response(Message *message) {
-    DEBUG_MSG("Inbound.send_response(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    DEBUG_MSG("Inbound.send_response(LogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
-
-    switch (message->messageType) {
-        case READ: 
-        {
-	        if (message->respBufferSize < MAX_MESSAGE_SIZE)
-               	NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
-            break;
-        }
-        case APPEND: 
-        {
-	        if (message->respBufferSize < MAX_MESSAGE_SIZE)
-                NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
-            break;
-        }
-        default: break;
-    }
-    
-    NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
-    NetworkManager_->rpc_.run_event_loop_once();
-
-    if(message->messageType == READ)
-        NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
-
-    free(message);
-}
-
 
 void Inbound::init(erpc::Nexus *nexus) {
     // Register request handler for Request Type INIT
@@ -125,4 +96,17 @@ void Inbound::init(erpc::Nexus *nexus) {
     }
 }
 
-void Inbound::terminate() {}
+
+void Inbound::send_response(Message *message) {
+    DEBUG_MSG("Inbound.send_response(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+    DEBUG_MSG("Inbound.send_response(LogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
+
+    /* Resize respBuffer if necessary */
+	if (message->respBufferSize < message->respBuffer.get_data_size())
+        NetworkManager_->rpc_.resize_msg_buffer((erpc::MsgBuffer *) &message->respBuffer, message->respBufferSize);
+    
+    NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
+    NetworkManager_->rpc_.run_event_loop_once();
+
+    free(message);
+}
