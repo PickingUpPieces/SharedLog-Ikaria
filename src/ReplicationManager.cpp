@@ -79,6 +79,8 @@ void ReplicationManager::append(Message *message) {
             temp.copy(reqLogEntryInFlight->logEntry.data, temp.length());
             reqLogEntryInFlight->logEntry.dataLength = temp.length();
             message->logOffset = reqLogEntryInFlight->logOffset;
+	    message->reqBufferSize = sizeof(reqLogEntryInFlight->logOffset) + sizeof(reqLogEntryInFlight->logEntry.dataLength) + reqLogEntryInFlight->logEntry.dataLength;
+    	    NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
             /* Append the log entry to the local Log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);

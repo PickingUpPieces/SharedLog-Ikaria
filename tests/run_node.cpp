@@ -10,7 +10,7 @@ enum Modus {
 
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
-#define ACTIVE_MODE true
+#define ACTIVE_MODE false
 #define MODUS SLOW
 
 int messagesInFlight_{0};
@@ -63,10 +63,9 @@ void send_read_message(uint64_t logOffset) {
     message->messageType = READ;
 
     /* Fill request data */
-    LogEntryInFlight reqLogEntryInFlight{logOffset, { 1, ""}};
-    memcpy(message->reqBuffer->buf, &reqLogEntryInFlight, sizeof(reqLogEntryInFlight));
-    message->reqBufferSize = sizeof(reqLogEntryInFlight.logOffset);
-    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
+    *reqPointer = message->logOffset;
+    message->respBufferSize = sizeof(message->logOffset);
 
     DEBUG_MSG("run_node.send_read_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
@@ -181,6 +180,9 @@ int main(int argc, char** argv) {
     if (ACTIVE_MODE)
         testing(MODUS);
     else {
+	if (node == HEAD)
+	    send_read_message(0);
+
         while (true)
            localNode->NetworkManager_->sync(1000); 
     }
