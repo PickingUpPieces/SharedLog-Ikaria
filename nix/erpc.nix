@@ -4,21 +4,14 @@ let
 in stdenv.mkDerivation {
     name = "env";
     buildInputs = [
-        bashInteractive
         numactl
         pkg-config
-        boost
-        linuxHeaders
         cmake
         gcc8
-        valgrind
         protobuf
-        clang-tools
         rdma-core
-        gtest
-        gflags
-        gdb
-	unzip
+	gtest
+	gflags
     ];
   cmakeFlags = [ "-DTRANSPORT=infiniband" "-DROCE=ON" "-DPERF=ON" ];
   NIX_CFLAGS_COMPILE = [
