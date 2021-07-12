@@ -5,6 +5,15 @@
 /* Init static softCounter */
 uint64_t ReplicationManager::softCounter_ = 0;
 
+/**
+ * Constructs the ReplicationManager 
+ * @param NodeType Specifys the type of this node (HEAD, MIDDLE or TAIL)
+ * @param hostURI String "hostname:port" where this node can be reached 
+ * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
+ * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
+ * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
+ * @param rec Callback function which is called when a message response is received which has been created by this node
+*/
 ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec): 
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         nodeReady_{false},
@@ -15,6 +24,9 @@ ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string
         NetworkManager_{new NetworkManager(hostURI, headURI, successorURI, tailURI, this)} {}
 
 
+/**
+ * Handles the SETUP process for this node
+*/
 void ReplicationManager::init() {
     NetworkManager_->init();
     nodeReady_ = true;
@@ -37,28 +49,41 @@ void ReplicationManager::init() {
         while (!setupMessage_)
             NetworkManager_->sync(10);
 
-        /* Answer/Forward SETUP accordingly */
+        /* Answer/Forward SETUP message accordingly */
         if (NodeType_ == TAIL)
             NetworkManager_->send_response(setupMessage_);
         else
             NetworkManager_->send_message(SUCCESSOR, setupMessage_);
 
-        /* Wait for first APPEND/READ from the HEAD */
+        /* Wait for first APPEND/READ message from the HEAD node */
         while (!chainReady_) 
             NetworkManager_->sync(10);
     }
 }
 
+/**
+ * Handles an incoming SETUP message
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void ReplicationManager::setup(Message *message) {
     DEBUG_MSG("ReplicationManager.setup()");
     setupMessage_ = message;
 }
 
+/**
+ * Handles an incoming response for a previous send out SETUP message
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void ReplicationManager::setup_response() {
     if (NodeType_ == HEAD)
         chainReady_ = true;
 }
 
+/**
+ * Handles an incoming APPEND message
+ * Depending on the NodeType the message has to be processed differently
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void ReplicationManager::append(Message *message) {
     DEBUG_MSG("ReplicationManager.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
@@ -74,7 +99,7 @@ void ReplicationManager::append(Message *message) {
             reqLogEntryInFlight->logOffset = softCounter_;
             
             // FIXME: Remove this when benchmark is on
-            add_logOffset_to_data(message):
+            add_logOffset_to_data(message);
 
             /* Append the log entry to the local Log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
@@ -108,7 +133,11 @@ void ReplicationManager::append(Message *message) {
     }
 }
 
-
+/**
+ * Handles an incoming READ message
+ * Depending on the NodeType the message has to be processed differently
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void ReplicationManager::read(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
@@ -153,7 +182,7 @@ void ReplicationManager::read(Message *message) {
  * Adds the logOffset number to the data, so it can be validated later if the right entries are written in the write logOffsets.
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void ReplicationManager::add_logOffset_to_data(Message *message) {
+void ReplicationManager::add_logOffset_to_data(Message *message) {
     LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
     string temp = (string) reqLogEntryInFlight->logEntry.data;
     temp += std::to_string(reqLogEntryInFlight->logOffset);
