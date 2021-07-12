@@ -100,8 +100,15 @@ struct PmemlogWalkArg {
  * @param arg TODO:
  */
 static int callbackWalkLog(const void *buf, size_t len, void *arg) {
-	LogEntry *logEntry = (LogEntry *) buf;
 	PmemlogWalkArg *pmemlogWalkArg = (PmemlogWalkArg *) arg;
+
+	while (true) {
+	LogEntry *logEntry = (LogEntry *) (((uint8_t *) buf) + (pmemlogWalkArg->currentLogOffset * LOG_BLOCK_TOTAL_SIZE));
+
+	if (pmemlogWalkArg->currentLogOffset == 0) {
+pmemlogWalkArg->currentLogOffset++; 
+	    continue;
+	}
 
 	string compString = "";
 	if (pmemlogWalkArg->logsSavedWithLogOffset)
@@ -110,12 +117,14 @@ static int callbackWalkLog(const void *buf, size_t len, void *arg) {
 	    compString = *(pmemlogWalkArg->data); 
 
 	string dataString(logEntry->data);
-    DEBUG_MSG("generatedString vs returnedString: '" << compString << "' vs '" << dataString << "'");
+	DEBUG_MSG("generatedString vs returnedString: '" << compString << "' vs '" << dataString << "'");
 
-	if (compString.compare(dataString) == 0) {
-        pmemlogWalkArg->currentLogOffset++;
-		/* Procced to walk through the log */
+	if (compString.compare(dataString) != 0) {
+        	pmemlogWalkArg->currentLogOffset--;
+		/* Stop walking through the log */
 		return 1;
+	}
+        pmemlogWalkArg->currentLogOffset++;
 	}
 
 	return 0;
@@ -129,7 +138,7 @@ static int callbackWalkLog(const void *buf, size_t len, void *arg) {
 uint64_t Log::validate_log(string *data, bool logsSavedWithLogOffset) {
 	PmemlogWalkArg pmemlogWalkArg{0, data, logsSavedWithLogOffset};
 
-	pmemlog_walk(plp_, LOG_BLOCK_TOTAL_SIZE, callbackWalkLog, &pmemlogWalkArg);
+	pmemlog_walk(plp_, 0, callbackWalkLog, &pmemlogWalkArg);
 
 	return pmemlogWalkArg.currentLogOffset;
 }
