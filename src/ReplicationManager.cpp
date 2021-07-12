@@ -74,7 +74,7 @@ void ReplicationManager::append(Message *message) {
             reqLogEntryInFlight->logOffset = softCounter_;
             
             // FIXME: Remove this when benchmark is on
-            add_logOffset_to_data(message):
+            add_logOffset_to_data(message);
 
             /* Append the log entry to the local Log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
@@ -153,7 +153,7 @@ void ReplicationManager::read(Message *message) {
  * Adds the logOffset number to the data, so it can be validated later if the right entries are written in the write logOffsets.
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void ReplicationManager::add_logOffset_to_data(Message *message) {
+void ReplicationManager::add_logOffset_to_data(Message *message) {
     LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
     string temp = (string) reqLogEntryInFlight->logEntry.data;
     temp += std::to_string(reqLogEntryInFlight->logOffset);
