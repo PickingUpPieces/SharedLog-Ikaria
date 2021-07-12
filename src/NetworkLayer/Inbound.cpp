@@ -1,6 +1,11 @@
 #include <iostream>
 #include "Inbound.h"
 
+/**
+ * Constructs an Inbound Object and registers the request handlers
+ * @param nexus Nexus needed for the eRPC connection
+ * @param NetworkManager Reference needed for the message flow e.g. handing of messages for further process 
+ */
 Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
         NetworkManager_{NetworkManager}
 {
@@ -8,6 +13,11 @@ Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
     Inbound::init(nexus);
 }
 
+/**
+ * The request handler for SETUP requests
+ * @param req_handle Request Handle used as reference for the incoming message
+ * @param context Pointer to the NetworkManager for handing of the message
+ */
 void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
 
@@ -31,7 +41,11 @@ void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
 }
 
 
-// Request handler for read requests
+/**
+ * The request handler for READ requests
+ * @param req_handle Request Handle used as reference for the incoming message
+ * @param context Pointer to the NetworkManager for handing of the message
+ */
 void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
 
@@ -54,7 +68,11 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
 }
 
 
-// Request handler for append requests
+/**
+ * The request handler for APPEND requests
+ * @param req_handle Request Handle used as reference for the incoming message
+ * @param context Pointer to the NetworkManager for handing of the message
+ */
 void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
@@ -76,6 +94,10 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
 }
 
 
+/**
+ * Registers the request handlers at the Nexus Object
+ * @param nexus Nexus needed for registering the request handlers
+ */
 void Inbound::init(erpc::Nexus *nexus) {
     // Register request handler for Request Type INIT
     if (nexus->register_req_func(SETUP, req_handler_setup)) {
@@ -97,6 +119,10 @@ void Inbound::init(erpc::Nexus *nexus) {
 }
 
 
+/**
+ * Sends response for a previous received message
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void Inbound::send_response(Message *message) {
     DEBUG_MSG("Inbound.send_response(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     DEBUG_MSG("Inbound.send_response(LogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
