@@ -3,6 +3,16 @@
 
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
+/**
+ * Constructs the NetworkManager. Creates and configures the RPC Object. 
+ * Creates the Inbound and the needed Outbounds.
+ * @param nexus Nexus needed for the eRPC connection
+ * @param hostURI String "hostname:port" where this node can be reached 
+ * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
+ * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
+ * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
+ * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
+ */
 NetworkManager::NetworkManager(string hostURI, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
         ReplicationManager_{ReplicationManager},
         Nexus_{hostURI, 0, 0},
@@ -30,12 +40,20 @@ NetworkManager::NetworkManager(string hostURI, string headURI, string successorU
         Successor_ = new Outbound(successorURI, this, &rpc_);
 }
 
+/**
+ * Establishes the connection for all Outbounds
+ */
 void NetworkManager::init() {
     if (Head_) Head_->connect();
     if (Successor_) Successor_->connect();
     if (Tail_ && (Tail_ != Successor_)) Tail_->connect();
 }
 
+/**
+ * Further delegates a message which should be send out to the responsible Outbound
+ * @param targetNode Specifying the node in the chain the message should be send to
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void NetworkManager::send_message(NodeType targetNode, Message *message) {
     messagesInFlight_++;
     DEBUG_MSG("NetworkManager.send_message(messagesInFlight: " << std::to_string(messagesInFlight_) << ")");
@@ -54,10 +72,18 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
     }
 }
 
+/**
+ * Further delegates a response message for a previous received message to the Inbound
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void NetworkManager::send_response(Message *message) {
     Inbound_->send_response(message);
 }
 
+/**
+ * Further delegates a received message from the Inbound to the ReplicationManager 
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
     if (!(totalMessagesProcessed_ % 10000))
@@ -77,6 +103,11 @@ void NetworkManager::receive_message(Message *message) {
     }
 }
 
+/**
+ * Further delegates a received response from an Outbound
+ * SentByThisNode is needed when traffic for the chain on this node is created
+ * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
+ */
 void NetworkManager::receive_response(Message *message) {
     messagesInFlight_--;
     totalMessagesCompleted_++;
@@ -98,6 +129,10 @@ void NetworkManager::receive_response(Message *message) {
     }
 }
 
+/**
+ * Runs the event loop
+ * @param numberOfRuns How often the event loop should run
+ */
 void NetworkManager::sync(int numberOfRuns) {
     for (int i = 0; i < numberOfRuns; i++)
         rpc_.run_event_loop_once();
