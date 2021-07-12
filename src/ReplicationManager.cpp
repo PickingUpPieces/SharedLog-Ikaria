@@ -74,6 +74,7 @@ void ReplicationManager::append(Message *message) {
             reqLogEntryInFlight->logOffset = softCounter_;
             
             // FIXME: Remove this when benchmark is on
+	    
             add_logOffset_to_data(message);
 
             /* Append the log entry to the local Log */
