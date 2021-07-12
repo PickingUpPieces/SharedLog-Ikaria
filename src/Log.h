@@ -22,6 +22,7 @@ class Log {
         void append(uint64_t logOffset, void *data);
         void* read(uint64_t logOffset, size_t *logEntryLength);
         void terminate();
+        uint64_t validate_log(string *data, bool logsSavedWithLogOffset);
 };
 
 #endif // REPLICATIONNODE_LOG_H

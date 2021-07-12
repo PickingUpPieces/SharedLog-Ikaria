@@ -15,10 +15,10 @@ uint64_t ReplicationManager::softCounter_ = 0;
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */
 ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec): 
-        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         nodeReady_{false},
         chainReady_{false},
         setupMessage_{nullptr},
+        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         NodeType_{NodeType},
         rec{rec},
         NetworkManager_{new NetworkManager(hostURI, headURI, successorURI, tailURI, this)} {}

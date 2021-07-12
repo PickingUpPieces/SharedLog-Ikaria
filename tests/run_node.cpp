@@ -140,11 +140,15 @@ void testing(Modus modus) {
         if(modus == SLOW)
             sleep(1);
         else {
-            if ((messagesSent_ % 10000) == 0) {
+            if ((messagesSent_ % 100000) == 0) {
                 std::cout << "tests: messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << " ; messagesValidated_: " << std::to_string(messagesValidated_) << endl;
                 std::cout << "localNode: messagesInFlight_: " << std::to_string(localNode->NetworkManager_->messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(localNode->NetworkManager_->totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(localNode->NetworkManager_->totalMessagesProcessed_) << endl;
                 std::cout << "HugePage allocated in MB: " << std::to_string(localNode->NetworkManager_->rpc_.get_stat_user_alloc_tot() / 1024 / 1024) << "; Average RX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()) << "; Average TX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()) << endl;
                 std::cout << "Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()) << endl;
+
+                std::cout << "Validating Log..." << endl;
+                uint64_t untilThisEntryValid = localNode->Log_.validate_log(&randomString, true);
+                std::cout << "Until this Entry is Log Valid: " << std::to_string(untilThisEntryValid) << endl;
 		        std::cout << "-------------------------" << endl;
             }
         }

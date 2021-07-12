@@ -15,7 +15,6 @@ class ReplicationManager {
     friend NetworkManager;
 
     private:
-        Log Log_;
         bool nodeReady_;
         bool chainReady_;
         Message *setupMessage_;
@@ -29,6 +28,7 @@ class ReplicationManager {
         void read(Message *message);
         void init();
 
+        Log Log_;
         static uint64_t softCounter_; /* TODO: Not thread safe */
         NodeType NodeType_;
         receive_local rec;

@@ -82,3 +82,61 @@ void Log::terminate() {
 
     exit(EXIT_SUCCESS);
 }
+
+/* DEBUG functions */
+
+/* Struct for passing informations between the callback function calls */
+struct PmemlogWalkArg {
+	uint64_t currentLogOffset;
+	string *data;
+	bool logsSavedWithLogOffset;
+};
+
+/**
+ * Callback function for the pmemlog_walk function. Gets called for every LogEntry saved in the current log.
+ * The Log is blocked when this callback function is running.
+ * @param buf Pointer to logEntry
+ * @param len Length of buf, in this case LOG_BLOCK_TOTAL_SIZE
+ * @param arg context argument passed by pmemlog_walk. Here: Struct PmemlogWalkArg
+ */
+static int callbackWalkLog(const void *buf, size_t len, void *arg) {
+	PmemlogWalkArg *pmemlogWalkArg = (PmemlogWalkArg *) arg;
+
+	while (true) {
+		LogEntry *logEntry = (LogEntry *) (((uint8_t *) buf) + (pmemlogWalkArg->currentLogOffset * LOG_BLOCK_TOTAL_SIZE));
+		string compString = "";
+
+		if (pmemlogWalkArg->currentLogOffset == 0) {
+			pmemlogWalkArg->currentLogOffset++; 
+			continue;
+		}
+
+		if (pmemlogWalkArg->logsSavedWithLogOffset)
+			compString = *(pmemlogWalkArg->data) + "-ID-" + std::to_string(pmemlogWalkArg->currentLogOffset);
+		else
+			compString = *(pmemlogWalkArg->data); 
+
+		string dataString(logEntry->data);
+		DEBUG_MSG("generatedString vs returnedString: '" << compString << "' vs '" << dataString << "'");
+
+		if (compString.compare(dataString) != 0) {
+			pmemlogWalkArg->currentLogOffset--;
+			/* Stop walking through the log */
+			return 1;
+		}
+		pmemlogWalkArg->currentLogOffset++;
+	}
+
+	return 0;
+} 
+
+/**
+ * Handles an incoming response for a previous send out SETUP message
+ * @param data Data string which is written in every LogEntry
+ * @param logsSavedWithLogOffset True, if the IDs are added at the end of the entry
+ */
+uint64_t Log::validate_log(string *data, bool logsSavedWithLogOffset) {
+	PmemlogWalkArg pmemlogWalkArg{0, data, logsSavedWithLogOffset};
+	pmemlog_walk(plp_, 0, callbackWalkLog, &pmemlogWalkArg);
+	return pmemlogWalkArg.currentLogOffset;
+}
