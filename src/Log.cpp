@@ -82,3 +82,54 @@ void Log::terminate() {
 
     exit(EXIT_SUCCESS);
 }
+
+/* DEBUG functions */
+
+/* Struct for passing informations between the callback function calls */
+struct PmemlogWalkArg {
+	uint64_t currentLogOffset;
+	string *data;
+	bool logsSavedWithLogOffset;
+};
+
+/**
+ * Callback function for the pmemlog_walk function. Gets called for every LogEntry saved in the current log.
+ * The Log is blocked when this callback function is running.
+ * @param buf TODO:
+ * @param len Length of buf, in this case LOG_BLOCK_TOTAL_SIZE
+ * @param arg TODO:
+ */
+static int callbackWalkLog(const void *buf, size_t len, void *arg) {
+	LogEntry *logEntry = (LogEntry *) buf;
+	PmemlogWalkArg *pmemlogWalkArg = (PmemlogWalkArg *) arg;
+
+	string compString = "";
+	if (pmemlogWalkArg->logsSavedWithLogOffset)
+	    compString = *(pmemlogWalkArg->data) + "-ID-" + std::to_string(pmemlogWalkArg->currentLogOffset);
+	else
+	    compString = *(pmemlogWalkArg->data); 
+
+	string dataString(logEntry->data);
+    DEBUG_MSG("generatedString vs returnedString: '" << compString << "' vs '" << dataString << "'");
+
+	if (compString.compare(dataString) == 0) {
+        pmemlogWalkArg->currentLogOffset++;
+		/* Procced to walk through the log */
+		return 1;
+	}
+
+	return 0;
+} 
+
+/**
+ * Handles an incoming response for a previous send out SETUP message
+ * @param data TODO:
+ * @param logsSavedWithLogOffset TODO:
+ */
+uint64_t Log::validate_log(string *data, bool logsSavedWithLogOffset) {
+	PmemlogWalkArg pmemlogWalkArg{0, data, logsSavedWithLogOffset};
+
+	pmemlog_walk(plp_, LOG_BLOCK_TOTAL_SIZE, callbackWalkLog, &pmemlogWalkArg);
+
+	return pmemlogWalkArg.currentLogOffset;
+}
