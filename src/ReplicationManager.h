@@ -21,6 +21,7 @@ class ReplicationManager {
         Message *setupMessage_;
         void setup(Message *message);
         void setup_response(); 
+        void add_logOffset_to_data(Message *message);
 
     public:
         ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec);
