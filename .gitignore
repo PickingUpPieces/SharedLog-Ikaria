@@ -6,3 +6,4 @@ Makefile
 cmake_install.cmake
 libreplication_node.a
 run_node
+benchmark
