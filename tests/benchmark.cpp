@@ -16,7 +16,7 @@ struct MeasureData {
     size_t amountReadsReceived{0};
     size_t amountAppendsReceived{0};
     size_t totalMessagesProcessed{0};
-    std::chrono::duration<double> totalExecutionTime;
+    std::chrono::duration<double> totalExecutionTime{};
     double operationsPerSecond{0.0}; // Op/s
     double dataOut{0.0}; // MB/s
     double dataIn{0.0}; // MB/s
@@ -67,7 +67,7 @@ void send_read_message(uint64_t logOffset) {
     /* Fill request data */
     uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
     *reqPointer = message->logOffset;
-    message->reqBufferSize = sizeof(message->logOffset);
+    message->reqBufferSize = sizeof(uint64_t);
     localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
     if (progArgs.nodeType == HEAD)
@@ -95,6 +95,7 @@ void send_append_message(void *data, size_t dataLength) {
     /* Fill request data */
     memcpy(message->reqBuffer->buf, data, dataLength);
     message->reqBufferSize = dataLength;
+    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
 	if (progArgs.nodeType == HEAD )
         localNode->append(message);
@@ -137,10 +138,10 @@ void parser(int amountArgs, char **argv) {
                 //progArgs.nodeType = std::strtol(&(argv[i][3]), nullptr, 0);
                 break;
             case 't': // Threads amount
-                progArgs.amountThreads = std::strtol(&(argv[i][3]), nullptr, 0);
+                progArgs.amountThreads = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
             case 'r': // Request amount
-                progArgs.totalNumberOfRequests = std::strtol(&(argv[i][3]), nullptr, 0) * 1000000;
+                progArgs.totalNumberOfRequests = std::stoul(&(argv[i][3]), nullptr, 0) * 1000000;
                 measureData.totalNumberOfRequests = progArgs.totalNumberOfRequests;
                 measureData.remainderNumberOfRequests = progArgs.totalNumberOfRequests;
                 break;
@@ -148,7 +149,7 @@ void parser(int amountArgs, char **argv) {
                 progArgs.percentageOfReads = std::strtol(&(argv[i][3]), nullptr, 0);
                 break;
             case 's': // Size value
-                progArgs.valueSize = std::strtol(&(argv[i][3]), nullptr, 0);
+                progArgs.valueSize = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
         }
     }
@@ -157,8 +158,8 @@ void parser(int amountArgs, char **argv) {
 
 void printMeasureData() {
     measureData.totalMessagesProcessed = localNode->NetworkManager_->totalMessagesProcessed_ + measureData.totalNumberOfRequests;
-    size_t totalMBSent = (measureData.amountAppendsSent * ( 8 + 8 + progArgs.valueSize)) + measureData.amountReadsSent * 8;
-    size_t totalMBReceived = (measureData.amountAppendsReceived * 8) + (measureData.amountReadsReceived * ((8 + 8) + progArgs.valueSize)); 
+    size_t totalMBSent = ((measureData.amountAppendsSent * ( 8 + 8 + progArgs.valueSize)) + measureData.amountReadsSent * 8 ) / 1024 / 1024;
+    size_t totalMBReceived = ((measureData.amountAppendsReceived * 8) + (measureData.amountReadsReceived * ((8 + 8) + progArgs.valueSize))) / 1024 / 1024; 
 
     std::cout << "-------------------------------------" << endl;
     std::cout << "Benchmark Summary" << endl;
@@ -168,9 +169,9 @@ void printMeasureData() {
     std::cout << "Total Requests Received: " << (measureData.amountReadsReceived + measureData.amountAppendsReceived) << endl;
     std::cout << "Read Sent/Received: " << measureData.amountReadsSent << "/" << measureData.amountReadsReceived << endl;
     std::cout << "Append Sent/Received: " << measureData.amountAppendsSent << "/" << measureData.amountAppendsReceived << endl;
-    std::cout << "Operations per Second: " << (measureData.totalMessagesProcessed / measureData.totalExecutionTime.count()) << " Op/s" << endl;
-    std::cout << "Total MB Sent/Received: " << totalMBSent << "/" << totalMBReceived << endl;
-    std::cout << "Total MB/s Sent/Received: " << (totalMBSent / measureData.totalExecutionTime.count() ) << " MB/s / " << (totalMBReceived / measureData.totalExecutionTime.count()) << " MB/s" << endl;
+    std::cout << "Operations per Second: " << (static_cast<double>(measureData.totalMessagesProcessed) / measureData.totalExecutionTime.count()) << " Op/s" << endl;
+    std::cout << "Total MB Sent/Received: " << totalMBSent << " MB / " << totalMBReceived << " MB" << endl;
+    std::cout << "Total MB/s Sent/Received: " << (static_cast<double>(totalMBSent) / measureData.totalExecutionTime.count() ) << " MB/s / " << (static_cast<double>(totalMBReceived) / measureData.totalExecutionTime.count()) << " MB/s" << endl;
     std::cout << "-------------------------------------" << endl;
 }
 
@@ -207,10 +208,6 @@ int main(int argc, char** argv) {
 
     std::cout << "...Finished benchmarking" << endl;
     std::cout << "-------------------------------------" << endl;
-
-    std::cout << "Validating Log..." << endl;
-    uint64_t untilThisEntryValid = localNode->Log_.validate_log(&randomString, true);
-    std::cout << "Until this Entry is Log Valid: " << std::to_string(untilThisEntryValid) << endl;
 
     printMeasureData();
 }

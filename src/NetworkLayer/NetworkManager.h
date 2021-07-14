@@ -36,9 +36,9 @@ class NetworkManager {
         void sync(int numberOfRuns);
 
         erpc::Rpc<erpc::CTransport> rpc_;
-        int messagesInFlight_;
-        int totalMessagesCompleted_;
-        int totalMessagesProcessed_;
+        size_t messagesInFlight_;
+        size_t totalMessagesCompleted_;
+        size_t totalMessagesProcessed_;
 };
 
 #endif //REPLICATIONNODE_NETWORKMANAGER_H
