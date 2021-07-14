@@ -30,6 +30,8 @@ string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
   message(STATUS "Debugging enabled. Compiling with address sanitizer and debug messages")
   add_compile_definitions(DEBUG)
+  # Adds IDs to log entries
+  add_compile_definitions(TESTING)
   add_definitions(-g -fsanitize=address)
   link_libraries(-fsanitize=address)
 else()
@@ -100,11 +102,12 @@ target_link_libraries(benchmark
   replication_node
 )
 
+
 # Compile run_node test
-add_compile_definitions(TESTS)
 add_executable(run_node
   ${TEST_UTILS}
 )
+
 
 target_link_libraries(run_node
   replication_node
