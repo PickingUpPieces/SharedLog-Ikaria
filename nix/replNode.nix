@@ -5,6 +5,7 @@ stdenv.mkDerivation {
 	stdenv
 	rdma-core
 	numactl
+    pmdk
     ];
   nativeBuildInputs = [
     cmake
