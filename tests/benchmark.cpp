@@ -41,13 +41,14 @@ int messagesInFlight;
 void receive_locally(Message *message) {
     messagesInFlight--;
     
-    if (message->messageType == READ)
+    if (message->messageType == READ) {
         measureData.amountReadsReceived++;
-    else if (message->messageType == APPEND) 
+        localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
+        localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
+        free(message);
+    } else if (message->messageType == APPEND) 
         measureData.amountAppendsReceived++;
 
-    localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
-    localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
 }
 
 // FIXME: Use the same message object for all reads. Just exchange the logOffset
@@ -79,7 +80,7 @@ void send_read_message(uint64_t logOffset) {
 }
 
 // FIXME: Use the same message object for all appends
-void send_append_message(void *data, size_t dataLength) {
+Message *create_append_message(void *data, size_t dataLength) {
     Message *message = (Message *) malloc(sizeof(Message));
     erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
     *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
@@ -97,6 +98,10 @@ void send_append_message(void *data, size_t dataLength) {
     message->reqBufferSize = dataLength;
     localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
+    return message;
+}
+
+void send_append_message(Message *message) {
 	if (progArgs.nodeType == HEAD )
         localNode->append(message);
     else 
@@ -109,6 +114,7 @@ void start_benchmarking() {
     LogEntryInFlight logEntryInFlight{1, { 0, ""}};
     randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
     logEntryInFlight.logEntry.dataLength = randomString.length();
+    Message *message = create_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -116,7 +122,7 @@ void start_benchmarking() {
         if (( rand() % 100 ) < progArgs.percentageOfReads)
             send_read_message(1);
         else 
-            send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+            send_append_message(message);
 
 
 	messagesInFlight++;
@@ -169,6 +175,7 @@ void printMeasureData() {
     std::cout << "Total Requests Received: " << (measureData.amountReadsReceived + measureData.amountAppendsReceived) << endl;
     std::cout << "Read Sent/Received: " << measureData.amountReadsSent << "/" << measureData.amountReadsReceived << endl;
     std::cout << "Append Sent/Received: " << measureData.amountAppendsSent << "/" << measureData.amountAppendsReceived << endl;
+    std::cout << "Total time: " << measureData.totalExecutionTime.count() << "s" << endl;
     std::cout << "Operations per Second: " << (static_cast<double>(measureData.totalMessagesProcessed) / measureData.totalExecutionTime.count()) << " Op/s" << endl;
     std::cout << "Total MB Sent/Received: " << totalMBSent << " MB / " << totalMBReceived << " MB" << endl;
     std::cout << "Total MB/s Sent/Received: " << (static_cast<double>(totalMBSent) / measureData.totalExecutionTime.count() ) << " MB/s / " << (static_cast<double>(totalMBReceived) / measureData.totalExecutionTime.count()) << " MB/s" << endl;

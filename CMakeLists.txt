@@ -91,20 +91,21 @@ add_library(replication_node STATIC
   ${LOG_SOURCE}
 )
 
-# Compile run_node test
-add_executable(run_node
-  ${TEST_UTILS}
-)
-
-target_link_libraries(run_node
-  replication_node
-)
-
 # Compile benchmark
 add_executable(benchmark
   ${BENCHMARK}
 )
 
 target_link_libraries(benchmark
+  replication_node
+)
+
+# Compile run_node test
+add_compile_definitions(TESTS)
+add_executable(run_node
+  ${TEST_UTILS}
+)
+
+target_link_libraries(run_node
   replication_node
 )
