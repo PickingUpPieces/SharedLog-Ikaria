@@ -1,31 +1,24 @@
 with import <nixpkgs> {};
 stdenv.mkDerivation {
-    name = "env";
+    name = "pmdk";
     buildInputs = [
-        bashInteractive
-        numactl
+	stdenv
+	autoconf
         pkg-config
-        boost
-        linuxHeaders
-        gcc8
-        valgrind
-        vimPlugins.vim-clang-format
-        clang-tools
-        gtest
-        gflags
-        gdb
-	unzip
 	libndctl
 	gnum4
 	pandoc
+	glib
+	libfabric
     ];
   makeFlags = ["DESTDIR=/home/vincent/ba-single-node/pmdk/lib" "prefix="];
-  NIX_CFLAGS_COMPILE = [
-    # nobody got time to fix all these errors!
-    "-Wno-error"
-  ];
   nativeBuildInputs = [
     cmake
     pkg-config
   ];
+  NIX_CFLAGS_COMPILE = [
+    # nobody got time to fix all these errors!
+    "-Wno-error"
+  ];
+  enableParallelBuilding = true;
 }
