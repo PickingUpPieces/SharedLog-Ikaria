@@ -17,7 +17,7 @@ static constexpr size_t kAppMaxConcurrency = 32;  // Outstanding reqs per thread
 
 // Log variables
 /* size of the pmemlog pool -- 1 GB = 2^30 */
-#define POOL_SIZE ((off_t)(1 << 30))
+#define POOL_SIZE ((off_t)(1 << 33))
 /* log data size in B */
 #define LOG_BLOCK_DATA_SIZE 4096
 /* log block size in B */

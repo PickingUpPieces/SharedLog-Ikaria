@@ -33,12 +33,14 @@ struct ProgArgs {
 
 ReplicationManager *localNode;
 ProgArgs progArgs{HEAD, 1, 1000000, 50, 64};
-MeasureData measureData;
+MeasureData measureData{1000000, 1000000};
 string randomString = "";
+int messagesInFlight;
 
 
 void receive_locally(Message *message) {
-
+    messagesInFlight--;
+    
     if (message->messageType == READ)
         measureData.amountReadsReceived++;
     else if (message->messageType == APPEND) 
@@ -115,6 +117,11 @@ void start_benchmarking() {
         else 
             send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
 
+
+	messagesInFlight++;
+	while(messagesInFlight > 20000)
+	   localNode->NetworkManager_->sync(10); 
+
         measureData.remainderNumberOfRequests--;
     }
 
@@ -161,9 +168,9 @@ void printMeasureData() {
     std::cout << "Total Requests Received: " << (measureData.amountReadsReceived + measureData.amountAppendsReceived) << endl;
     std::cout << "Read Sent/Received: " << measureData.amountReadsSent << "/" << measureData.amountReadsReceived << endl;
     std::cout << "Append Sent/Received: " << measureData.amountAppendsSent << "/" << measureData.amountAppendsReceived << endl;
-    std::cout << "Operations per Second: " << (measureData.totalMessagesProcessed / measureData.totalExecutionTime.count()) << "Op/s" << endl;
+    std::cout << "Operations per Second: " << (measureData.totalMessagesProcessed / measureData.totalExecutionTime.count()) << " Op/s" << endl;
     std::cout << "Total MB Sent/Received: " << totalMBSent << "/" << totalMBReceived << endl;
-    std::cout << "Total MB/s Sent/Received: " << (totalMBSent / measureData.totalExecutionTime.count() ) << "MB/s / " << (totalMBReceived / measureData.totalExecutionTime.count()) << "MB/s" << endl;
+    std::cout << "Total MB/s Sent/Received: " << (totalMBSent / measureData.totalExecutionTime.count() ) << " MB/s / " << (totalMBReceived / measureData.totalExecutionTime.count()) << " MB/s" << endl;
     std::cout << "-------------------------------------" << endl;
 }
 
