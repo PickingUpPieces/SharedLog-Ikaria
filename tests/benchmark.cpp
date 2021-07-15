@@ -20,7 +20,7 @@ struct MeasureData {
     double operationsPerSecond{0.0}; // Op/s
     double dataOut{0.0}; // MB/s
     double dataIn{0.0}; // MB/s
-    uint64_t highestKnownLogOffset{0}; // So reads are performed on offset smaller than this
+    int highestKnownLogOffset{0}; // So reads are performed on offset smaller than this
 };
 
 struct ProgArgs {
@@ -32,8 +32,8 @@ struct ProgArgs {
 };
 
 ReplicationManager *localNode;
-ProgArgs progArgs{HEAD, 1, 1000000, 50, 64};
-MeasureData measureData{1000000, 1000000};
+ProgArgs progArgs{HEAD, 1, 500000, 50, 64};
+MeasureData measureData{500000, 500000};
 string randomString = "";
 int messagesInFlight;
 
@@ -44,21 +44,21 @@ void receive_locally(Message *message) {
     
     if (message->messageType == READ) {
         measureData.amountReadsReceived++;
+    } else if (message->messageType == APPEND) {
+        measureData.amountAppendsReceived++;
+        uint64_t *returnedLogOffset = (uint64_t *) message->respBuffer.buf;
+
+        if (measureData.highestKnownLogOffset < *returnedLogOffset)
+            measureData.highestKnownLogOffset = *returnedLogOffset;
+    }  
         localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
         localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
         free(message);
-    } else if (message->messageType == APPEND) {
-        measureData.amountAppendsReceived++;
-        uint64_t returnedLogOffset = (uint64_t) message->respBuffer.buf;
-
-        if (measureData.highestKnownLogOffset < returnedLogOffset)
-            measureData.highestKnownLogOffset = returnedLogOffset;
-    }  
 }
 
 
 /* Send a READ message */
-void send_read_message(uint64_t logOffset) {
+void send_read_message(int logOffset) {
     Message *message = (Message *) malloc(sizeof(Message));
     erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
     *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
@@ -86,19 +86,8 @@ void send_read_message(uint64_t logOffset) {
 }
 
 
-/* Send an APPEND message */
-void send_append_message(Message *message) {
-	if (progArgs.nodeType == HEAD )
-        localNode->append(message);
-    else 
-        localNode->NetworkManager_->send_message(HEAD, message);
-
-    measureData.amountAppendsSent++;
-}
-
-
 /* Create an APPEND message, which is always sent */
-Message *create_append_message(void *data, size_t dataLength) {
+void send_append_message(void *data, size_t dataLength) {
     Message *message = (Message *) malloc(sizeof(Message));
     erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
     *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
@@ -116,7 +105,12 @@ Message *create_append_message(void *data, size_t dataLength) {
     message->reqBufferSize = dataLength;
     localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
-    return message;
+    if (progArgs.nodeType == HEAD )
+        localNode->append(message);
+    else 
+        localNode->NetworkManager_->send_message(HEAD, message);
+
+    measureData.amountAppendsSent++;
 }
 
 
@@ -125,17 +119,20 @@ void start_benchmarking() {
     LogEntryInFlight logEntryInFlight{1, { 0, ""}};
     randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
     logEntryInFlight.logEntry.dataLength = randomString.length();
-    Message *message = create_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+    measureData.highestKnownLogOffset = 0;
 
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
 
     while(measureData.remainderNumberOfRequests) {
         if (( rand() % 100 ) < progArgs.percentageOfReads) {
-            uint64_t randReadOffset = static_cast<uint64_t>(rand()) % measureData.highestKnownLogOffset;
-            send_read_message(randReadOffset);
+	    if ( measureData.highestKnownLogOffset < 1)
+		continue;
+
+            int randReadOffset = rand() % measureData.highestKnownLogOffset; 
+            send_read_message(randReadOffset); 
         } else {
-            send_append_message(message);
+    	    send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
         }
 
 	    while(messagesInFlight > 20000)

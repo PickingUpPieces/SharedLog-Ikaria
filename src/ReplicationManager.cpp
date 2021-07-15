@@ -94,12 +94,14 @@ void ReplicationManager::append(Message *message) {
         {
             LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Count Sequencer up and set the log entry number */
-	        // FIXME: No sequence number 0, when counting up before
+            #ifdef TESTS
             ++softCounter_;
             reqLogEntryInFlight->logOffset = softCounter_;
-            
-            #ifdef TESTS
             add_logOffset_to_data(message);
+            #else
+            reqLogEntryInFlight->logOffset = softCounter_;
+	    // FIXME: get_softCounter function for threads needed
+            ++softCounter_;
             #endif
 
             /* Append the log entry to the local Log */
