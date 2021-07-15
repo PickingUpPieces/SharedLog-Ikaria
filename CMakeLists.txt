@@ -30,14 +30,15 @@ string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
   message(STATUS "Debugging enabled. Compiling with address sanitizer and debug messages")
   add_compile_definitions(DEBUG)
-  # Adds IDs to log entries
-  add_compile_definitions(TESTING)
   add_definitions(-g -fsanitize=address)
   link_libraries(-fsanitize=address)
 else()
   message(STATUS "Debugging disabled")
   add_definitions(-O2)
 endif()
+
+# Adds IDs to log entries
+add_compile_definitions(TESTING)
 
 message(STATUS "Compiling with infiniband")
 add_definitions(-DERPC_INFINIBAND=true)

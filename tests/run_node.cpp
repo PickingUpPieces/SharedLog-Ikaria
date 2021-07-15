@@ -11,6 +11,7 @@ enum Modus {
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
 #define ACTIVE_MODE true
+//#define MODUS SLOW
 #define MODUS FAST
 
 int messagesInFlight_{0};
@@ -36,9 +37,14 @@ void receive_locally(Message *message) {
 
     /* Verify the entry */
     if (message->messageType == READ) {
+	#ifdef TESTING
         string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
-	    string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
-        DEBUG_MSG("generatedString vs returnedString: '" << uniqueString << "' vs '" << tempString << "'");
+	string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
+	#else
+        string uniqueString = randomString; 
+	string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
+	#endif
+        DEBUG_MSG("rec generatedString vs returnedString: '" << uniqueString << "' vs '" << tempString << "'");
 
 	if (uniqueString.compare(tempString) == 0)
             messagesValidated_++;
@@ -111,7 +117,7 @@ void send_append_message(void *data, size_t dataLength) {
 
 void testing(Modus modus) {
     DEBUG_MSG("-------------------------------------");
-    uint64_t counter{1};
+    uint64_t counter{0};
 
     /* Generate random string */
     string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -125,7 +131,7 @@ void testing(Modus modus) {
 
     while (true) {
         /* Create string and LogEntryInFlight */
-        string uniqueString = randomString + "-ID-";
+        string uniqueString = randomString;
         LogEntryInFlight logEntryInFlight{counter, { 0, ""}};
         uniqueString.copy(logEntryInFlight.logEntry.data, uniqueString.length());
         logEntryInFlight.logEntry.dataLength = uniqueString.length();
@@ -140,16 +146,21 @@ void testing(Modus modus) {
         if(modus == SLOW)
             sleep(1);
         else {
-            if ((messagesSent_ % 100000) == 0) {
+            if ((messagesSent_ % 10000) == 0) {
                 std::cout << "tests: messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << " ; messagesValidated_: " << std::to_string(messagesValidated_) << endl;
                 std::cout << "localNode: messagesInFlight_: " << std::to_string(localNode->NetworkManager_->messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(localNode->NetworkManager_->totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(localNode->NetworkManager_->totalMessagesProcessed_) << endl;
                 std::cout << "HugePage allocated in MB: " << std::to_string(localNode->NetworkManager_->rpc_.get_stat_user_alloc_tot() / 1024 / 1024) << "; Average RX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()) << "; Average TX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()) << endl;
                 std::cout << "Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()) << endl;
 
                 std::cout << "Validating Log..." << endl;
+		#ifdef TESTING
                 uint64_t untilThisEntryValid = localNode->Log_.validate_log(&randomString, true);
+		#else
+                uint64_t untilThisEntryValid = localNode->Log_.validate_log(&randomString, false);
+		#endif
                 std::cout << "Until this Entry is Log Valid: " << std::to_string(untilThisEntryValid) << endl;
 		        std::cout << "-------------------------" << endl;
+
             }
         }
 

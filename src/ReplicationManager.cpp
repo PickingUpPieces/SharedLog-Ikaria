@@ -13,9 +13,7 @@ uint64_t ReplicationManager::softCounter_ = 0;
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
-*/
-ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec): 
-        nodeReady_{false},
+*/ ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec): nodeReady_{false},
         chainReady_{false},
         setupMessage_{nullptr},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
@@ -94,7 +92,7 @@ void ReplicationManager::append(Message *message) {
         {
             LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Count Sequencer up and set the log entry number */
-            #ifdef TESTS
+            #ifdef TESTING
             ++softCounter_;
             reqLogEntryInFlight->logOffset = softCounter_;
             add_logOffset_to_data(message);
@@ -102,7 +100,7 @@ void ReplicationManager::append(Message *message) {
             reqLogEntryInFlight->logOffset = softCounter_;
 	    // FIXME: get_softCounter function for threads needed
             ++softCounter_;
-            #endif
+            #endif // TESTING
 
             /* Append the log entry to the local Log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
@@ -188,9 +186,9 @@ void ReplicationManager::read(Message *message) {
 void ReplicationManager::add_logOffset_to_data(Message *message) {
     LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
     string temp = (string) reqLogEntryInFlight->logEntry.data;
-    temp += std::to_string(reqLogEntryInFlight->logOffset);
+    temp += "-ID-" + std::to_string(reqLogEntryInFlight->logOffset);
     temp.copy(reqLogEntryInFlight->logEntry.data, temp.length());
-    reqLogEntryInFlight->logEntry.dataLength = temp.length();
+    reqLogEntryInFlight->logEntry.dataLength = temp.length() + 1;
     message->logOffset = reqLogEntryInFlight->logOffset;
     message->reqBufferSize = sizeof(reqLogEntryInFlight->logOffset) + sizeof(reqLogEntryInFlight->logEntry.dataLength) + reqLogEntryInFlight->logEntry.dataLength;
     NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
