@@ -20,7 +20,7 @@ struct MeasureData {
     double operationsPerSecond{0.0}; // Op/s
     double dataOut{0.0}; // MB/s
     double dataIn{0.0}; // MB/s
-    size_t highestKnownLogOffset{0}; // So reads are performed on offset smaller than this
+    uint64_t highestKnownLogOffset{0}; // So reads are performed on offset smaller than this
 };
 
 struct ProgArgs {
@@ -38,6 +38,7 @@ string randomString = "";
 int messagesInFlight;
 
 
+/* Callback function when a response is received */
 void receive_locally(Message *message) {
     messagesInFlight--;
     
@@ -46,12 +47,17 @@ void receive_locally(Message *message) {
         localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
         localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
         free(message);
-    } else if (message->messageType == APPEND) 
+    } else if (message->messageType == APPEND) {
         measureData.amountAppendsReceived++;
+        uint64_t returnedLogOffset = (uint64_t) message->respBuffer.buf;
 
+        if (measureData.highestKnownLogOffset < returnedLogOffset)
+            measureData.highestKnownLogOffset = returnedLogOffset;
+    }  
 }
 
-// FIXME: Use the same message object for all reads. Just exchange the logOffset
+
+/* Send a READ message */
 void send_read_message(uint64_t logOffset) {
     Message *message = (Message *) malloc(sizeof(Message));
     erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
@@ -79,7 +85,19 @@ void send_read_message(uint64_t logOffset) {
     measureData.amountReadsSent++;
 }
 
-// FIXME: Use the same message object for all appends
+
+/* Send an APPEND message */
+void send_append_message(Message *message) {
+	if (progArgs.nodeType == HEAD )
+        localNode->append(message);
+    else 
+        localNode->NetworkManager_->send_message(HEAD, message);
+
+    measureData.amountAppendsSent++;
+}
+
+
+/* Create an APPEND message, which is always sent */
 Message *create_append_message(void *data, size_t dataLength) {
     Message *message = (Message *) malloc(sizeof(Message));
     erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
@@ -101,42 +119,62 @@ Message *create_append_message(void *data, size_t dataLength) {
     return message;
 }
 
-void send_append_message(Message *message) {
-	if (progArgs.nodeType == HEAD )
-        localNode->append(message);
-    else 
-        localNode->NetworkManager_->send_message(HEAD, message);
 
-    measureData.amountAppendsSent++;
-}
-
+/* Benchmarking function */
 void start_benchmarking() {
     LogEntryInFlight logEntryInFlight{1, { 0, ""}};
     randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
     logEntryInFlight.logEntry.dataLength = randomString.length();
     Message *message = create_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
 
+    /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
 
     while(measureData.remainderNumberOfRequests) {
-        if (( rand() % 100 ) < progArgs.percentageOfReads)
-            send_read_message(1);
-        else 
+        if (( rand() % 100 ) < progArgs.percentageOfReads) {
+            uint64_t randReadOffset = static_cast<uint64_t>(rand()) % measureData.highestKnownLogOffset;
+            send_read_message(randReadOffset);
+        } else {
             send_append_message(message);
+        }
 
+	    while(messagesInFlight > 20000)
+	        localNode->NetworkManager_->sync(10); 
 
-	messagesInFlight++;
-	while(messagesInFlight > 20000)
-	   localNode->NetworkManager_->sync(10); 
-
+	    messagesInFlight++;
         measureData.remainderNumberOfRequests--;
     }
 
+    /* Take end time */
     auto end = std::chrono::high_resolution_clock::now();
     measureData.totalExecutionTime = end - start;
     std::cout << "Time measured: seconds. " << std::to_string(measureData.totalExecutionTime.count())  << endl;
 }
 
+
+/* Print out the MeasureData struct and calculate additional information */
+void printMeasureData() {
+    measureData.totalMessagesProcessed = localNode->NetworkManager_->totalMessagesProcessed_ + measureData.totalNumberOfRequests;
+    size_t totalMBSent = ((measureData.amountAppendsSent * ( 8 + 8 + progArgs.valueSize)) + measureData.amountReadsSent * 8 ) / 1024 / 1024;
+    size_t totalMBReceived = ((measureData.amountAppendsReceived * 8) + (measureData.amountReadsReceived * ((8 + 8) + progArgs.valueSize))) / 1024 / 1024; 
+
+    std::cout << "-------------------------------------" << endl;
+    std::cout << "Benchmark Summary" << endl;
+    std::cout << "-------------------------------------" << endl;
+    std::cout << "Total Requests: " << measureData.totalNumberOfRequests << endl;
+    std::cout << "Total Requests Processed: " << measureData.totalMessagesProcessed << endl;
+    std::cout << "Total Requests Received: " << (measureData.amountReadsReceived + measureData.amountAppendsReceived) << endl;
+    std::cout << "Read Sent/Received: " << measureData.amountReadsSent << "/" << measureData.amountReadsReceived << endl;
+    std::cout << "Append Sent/Received: " << measureData.amountAppendsSent << "/" << measureData.amountAppendsReceived << endl;
+    std::cout << "Total time: " << measureData.totalExecutionTime.count() << "s" << endl;
+    std::cout << "Operations per Second: " << (static_cast<double>(measureData.totalMessagesProcessed) / measureData.totalExecutionTime.count()) << " Op/s" << endl;
+    std::cout << "Total MB Sent/Received: " << totalMBSent << " MB / " << totalMBReceived << " MB" << endl;
+    std::cout << "Total MB/s Sent/Received: " << (static_cast<double>(totalMBSent) / measureData.totalExecutionTime.count() ) << " MB/s / " << (static_cast<double>(totalMBReceived) / measureData.totalExecutionTime.count()) << " MB/s" << endl;
+    std::cout << "-------------------------------------" << endl;
+}
+
+
+/* Parse the input arguments */
 void parser(int amountArgs, char **argv) {
     for (int i = 1; i < amountArgs; i++) {
         switch (argv[i][1]) {
@@ -159,40 +197,23 @@ void parser(int amountArgs, char **argv) {
                 break;
         }
     }
-    std::cout << "Parameter: nodeType: " << progArgs.nodeType << " amountThreads: " << progArgs.amountThreads << " totalNum: " << progArgs.totalNumberOfRequests << " percentage: " << progArgs.percentageOfReads << " valueSize: " << progArgs.valueSize << endl;
+    std::cout << "Input Parameters: nodeType: " << progArgs.nodeType << " amountThreads: " << progArgs.amountThreads << " totalNumOfRequests: " << progArgs.totalNumberOfRequests << " Percentage of Reads: " << progArgs.percentageOfReads << " valueSize: " << progArgs.valueSize << endl;
 }
 
-void printMeasureData() {
-    measureData.totalMessagesProcessed = localNode->NetworkManager_->totalMessagesProcessed_ + measureData.totalNumberOfRequests;
-    size_t totalMBSent = ((measureData.amountAppendsSent * ( 8 + 8 + progArgs.valueSize)) + measureData.amountReadsSent * 8 ) / 1024 / 1024;
-    size_t totalMBReceived = ((measureData.amountAppendsReceived * 8) + (measureData.amountReadsReceived * ((8 + 8) + progArgs.valueSize))) / 1024 / 1024; 
 
-    std::cout << "-------------------------------------" << endl;
-    std::cout << "Benchmark Summary" << endl;
-    std::cout << "-------------------------------------" << endl;
-    std::cout << "Total Requests: " << measureData.totalNumberOfRequests << endl;
-    std::cout << "Total Requests Processed: " << measureData.totalMessagesProcessed << endl;
-    std::cout << "Total Requests Received: " << (measureData.amountReadsReceived + measureData.amountAppendsReceived) << endl;
-    std::cout << "Read Sent/Received: " << measureData.amountReadsSent << "/" << measureData.amountReadsReceived << endl;
-    std::cout << "Append Sent/Received: " << measureData.amountAppendsSent << "/" << measureData.amountAppendsReceived << endl;
-    std::cout << "Total time: " << measureData.totalExecutionTime.count() << "s" << endl;
-    std::cout << "Operations per Second: " << (static_cast<double>(measureData.totalMessagesProcessed) / measureData.totalExecutionTime.count()) << " Op/s" << endl;
-    std::cout << "Total MB Sent/Received: " << totalMBSent << " MB / " << totalMBReceived << " MB" << endl;
-    std::cout << "Total MB/s Sent/Received: " << (static_cast<double>(totalMBSent) / measureData.totalExecutionTime.count() ) << " MB/s / " << (static_cast<double>(totalMBReceived) / measureData.totalExecutionTime.count()) << " MB/s" << endl;
-    std::cout << "-------------------------------------" << endl;
-}
-
+/* Generate a random string for sending in append requests */
 void generateValueSize(int valueSize){
-    /* Generate random string */
     string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     mt19937 generator{random_device{}()};
     uniform_int_distribution<> dist(0, possibleCharacters.size()-1);
 
-    for(int i = 0; i < valueSize; i++){
+    for(int i = 0; i < valueSize; i++) {
         size_t random_index = static_cast<size_t>(dist(generator)); //get index between 0 and possible_characters.size()-1
         randomString += possibleCharacters[random_index];
     }
 }
+
+
 
 int main(int argc, char** argv) {
     std::cout << "-------------------------------------" << endl;
