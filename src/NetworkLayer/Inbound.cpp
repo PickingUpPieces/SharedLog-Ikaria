@@ -29,7 +29,6 @@ void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
     message->sentByThisNode = false;
     message->logOffset = 0;
     message->reqHandle = req_handle;
-    // FIXME: Is this const_cast a good idea?
     message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
     message->reqBufferSize = req->get_data_size();
     message->respBuffer = req_handle->pre_resp_msgbuf;
@@ -48,7 +47,6 @@ void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
  */
 void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
-
     const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
 
     /* Alloc space for the message meta information and fill it */

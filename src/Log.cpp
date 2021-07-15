@@ -136,6 +136,7 @@ static int callbackWalkLog(const void *buf, size_t len, void *arg) {
  * @param logsSavedWithLogOffset True, if the IDs are added at the end of the entry
  */
 uint64_t Log::validate_log(string *data, bool logsSavedWithLogOffset) {
+	
 	PmemlogWalkArg pmemlogWalkArg{0, data, logsSavedWithLogOffset};
 	pmemlog_walk(plp_, 0, callbackWalkLog, &pmemlogWalkArg);
 	return pmemlogWalkArg.currentLogOffset;
