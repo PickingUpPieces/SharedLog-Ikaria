@@ -119,7 +119,7 @@ void start_benchmarking() {
     LogEntryInFlight logEntryInFlight{1, { 0, ""}};
     randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
     logEntryInFlight.logEntry.dataLength = randomString.length();
-    measureData.highestKnownLogOffset = 0;
+    measureData.highestKnownLogOffset = 1;
 
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();

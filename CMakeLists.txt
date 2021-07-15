@@ -38,7 +38,7 @@ else()
 endif()
 
 # Adds IDs to log entries
-add_compile_definitions(TESTING)
+#add_compile_definitions(TESTING)
 
 message(STATUS "Compiling with infiniband")
 add_definitions(-DERPC_INFINIBAND=true)

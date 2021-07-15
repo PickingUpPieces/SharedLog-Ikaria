@@ -102,6 +102,11 @@ void send_append_message(void *data, size_t dataLength) {
     /* Fill request data */
     memcpy(message->reqBuffer->buf, data, dataLength);
     message->reqBufferSize = dataLength;
+    #ifndef TESTING
+    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    #endif
+
+
 
     DEBUG_MSG("run_node.send_append_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
