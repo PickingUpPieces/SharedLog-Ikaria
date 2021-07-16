@@ -10,6 +10,7 @@ stdenv.mkDerivation {
 	pandoc
 	glib
 	libfabric
+	fuse
     ];
   makeFlags = ["DESTDIR=/home/vincent/ba-single-node/pmdk/lib" "prefix="];
   nativeBuildInputs = [

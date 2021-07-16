@@ -37,6 +37,9 @@ else()
   add_definitions(-O2)
 endif()
 
+# Adds IDs to log entries
+#add_compile_definitions(TESTING)
+
 message(STATUS "Compiling with infiniband")
 add_definitions(-DERPC_INFINIBAND=true)
 
@@ -80,6 +83,10 @@ set(TEST_UTILS
   ${TESTS}/run_node.cpp 
 )
 
+set(BENCHMARK
+  ${TESTS}/benchmark.cpp
+)
+
 # Compile as static library
 add_library(replication_node STATIC
   ${NETWORK_SOURCE}
@@ -87,10 +94,21 @@ add_library(replication_node STATIC
   ${LOG_SOURCE}
 )
 
-# Compile tests
+# Compile benchmark
+add_executable(benchmark
+  ${BENCHMARK}
+)
+
+target_link_libraries(benchmark
+  replication_node
+)
+
+
+# Compile run_node test
 add_executable(run_node
   ${TEST_UTILS}
 )
+
 
 target_link_libraries(run_node
   replication_node
