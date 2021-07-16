@@ -6,6 +6,7 @@
 #include <chrono>
 
 /* FIXME: In case IPs change */
+#define NODE_TYPE HEAD
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850"
 
@@ -35,7 +36,7 @@ struct ProgArgs {
 };
 
 ReplicationManager *localNode;
-ProgArgs progArgs{HEAD, 1, 500000, 50, 64};
+ProgArgs progArgs{NODE_TYPE, 1, 500000, 50, 64};
 MeasureData measureData{500000, 500000};
 string randomString = "";
 int messagesInFlight;
@@ -81,10 +82,15 @@ void send_read_message(int logOffset) {
     message->reqBufferSize = sizeof(uint64_t);
 
     /* WORKAROUND resizing problem */
-    if (message->reqBufferSize < 969)
-        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    else
+    #if NODE_TYPE != HEAD
+    	if (message->reqBufferSize < 969)
+    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
+    	else
+    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    #else
         localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    #endif
+
 
     /* Send message */
     if (progArgs.nodeType == HEAD)
@@ -115,10 +121,14 @@ void send_append_message(void *data, size_t dataLength) {
     message->reqBufferSize = dataLength;
 
     /* WORKAROUND resizing problem */
-    if (message->reqBufferSize < 969)
-        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    else
+    #if NODE_TYPE != HEAD
+    	if (message->reqBufferSize < 969)
+    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
+    	else
+    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    #else
         localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    #endif
 
     /* Send message */
     if (progArgs.nodeType == HEAD )
