@@ -101,6 +101,7 @@ struct PmemlogWalkArg {
  */
 static int callbackWalkLog(const void *buf, size_t len, void *arg) {
 	PmemlogWalkArg *pmemlogWalkArg = (PmemlogWalkArg *) arg;
+	(void) len;
 
 	while (true) {
 		LogEntry *logEntry = (LogEntry *) (((uint8_t *) buf) + (pmemlogWalkArg->currentLogOffset * LOG_BLOCK_TOTAL_SIZE));

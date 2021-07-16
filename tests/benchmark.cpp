@@ -23,7 +23,7 @@ struct MeasureData {
     double operationsPerSecond{0.0}; // Op/s
     double dataOut{0.0}; // MB/s
     double dataIn{0.0}; // MB/s
-    int highestKnownLogOffset{0}; // So reads are performed on offset smaller than this
+    uint64_t highestKnownLogOffset{0}; // So reads are performed on offset smaller than this
 };
 
 /* Holds the input arguments */
@@ -63,7 +63,7 @@ void receive_locally(Message *message) {
 
 
 /* Send a READ message */
-void send_read_message(int logOffset) {
+void send_read_message(uint64_t logOffset) {
     Message *message = (Message *) malloc(sizeof(Message));
     erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
     *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
@@ -156,7 +156,8 @@ void start_benchmarking() {
 	        if ( measureData.highestKnownLogOffset < 1)
 		        continue;
 
-            int randReadOffset = rand() % measureData.highestKnownLogOffset; 
+	    uint64_t randuint = static_cast<uint64_t>(rand());
+            uint64_t randReadOffset = randuint % measureData.highestKnownLogOffset; 
             send_read_message(randReadOffset); 
         } else {
     	    send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
