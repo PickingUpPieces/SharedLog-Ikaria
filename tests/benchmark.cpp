@@ -5,9 +5,11 @@
 #include <random>
 #include <chrono>
 
+/* FIXME: In case IPs change */
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850"
 
+/* Collects the measured data */
 struct MeasureData {
     size_t totalNumberOfRequests{0};
     size_t remainderNumberOfRequests{0};
@@ -23,6 +25,7 @@ struct MeasureData {
     int highestKnownLogOffset{0}; // So reads are performed on offset smaller than this
 };
 
+/* Holds the input arguments */
 struct ProgArgs {
     NodeType nodeType; // -n
     size_t amountThreads; // -t
@@ -51,9 +54,10 @@ void receive_locally(Message *message) {
         if (measureData.highestKnownLogOffset < *returnedLogOffset)
             measureData.highestKnownLogOffset = *returnedLogOffset;
     }  
-        localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
-        localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
-        free(message);
+
+    localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
+    localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
+    free(message);
 }
 
 
@@ -75,8 +79,14 @@ void send_read_message(int logOffset) {
     uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
     *reqPointer = message->logOffset;
     message->reqBufferSize = sizeof(uint64_t);
-    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
+    /* WORKAROUND resizing problem */
+    if (message->reqBufferSize < 969)
+        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
+    else
+        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+
+    /* Send message */
     if (progArgs.nodeType == HEAD)
         localNode->read(message);
     else
@@ -103,8 +113,14 @@ void send_append_message(void *data, size_t dataLength) {
     /* Fill request data */
     memcpy(message->reqBuffer->buf, data, dataLength);
     message->reqBufferSize = dataLength;
-    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 
+    /* WORKAROUND resizing problem */
+    if (message->reqBufferSize < 969)
+        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
+    else
+        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+
+    /* Send message */
     if (progArgs.nodeType == HEAD )
         localNode->append(message);
     else 
@@ -116,6 +132,7 @@ void send_append_message(void *data, size_t dataLength) {
 
 /* Benchmarking function */
 void start_benchmarking() {
+    /* Create data struct for APPEND */
     LogEntryInFlight logEntryInFlight{1, { 0, ""}};
     randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
     logEntryInFlight.logEntry.dataLength = randomString.length();
@@ -126,8 +143,8 @@ void start_benchmarking() {
 
     while(measureData.remainderNumberOfRequests) {
         if (( rand() % 100 ) < progArgs.percentageOfReads) {
-	    if ( measureData.highestKnownLogOffset < 1)
-		continue;
+	        if ( measureData.highestKnownLogOffset < 1)
+		        continue;
 
             int randReadOffset = rand() % measureData.highestKnownLogOffset; 
             send_read_message(randReadOffset); 
@@ -145,7 +162,6 @@ void start_benchmarking() {
     /* Take end time */
     auto end = std::chrono::high_resolution_clock::now();
     measureData.totalExecutionTime = end - start;
-    std::cout << "Time measured: seconds. " << std::to_string(measureData.totalExecutionTime.count())  << endl;
 }
 
 
