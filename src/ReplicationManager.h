@@ -25,7 +25,7 @@ class ReplicationManager {
         void add_logOffset_to_data(Message *message);
 
     public:
-        ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string hostURI, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec);
+        ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec);
         void append(Message *message);
         void read(Message *message);
         void init();

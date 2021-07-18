@@ -13,7 +13,7 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string hostURI, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
+NetworkManager::NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
         ReplicationManager_{ReplicationManager},
         Nexus_{Nexus},
         Inbound_{new Inbound(Nexus_, this)},

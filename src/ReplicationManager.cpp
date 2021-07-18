@@ -8,19 +8,18 @@ uint64_t ReplicationManager::softCounter_ = 0;
 /**
  * Constructs the ReplicationManager 
  * @param NodeType Specifys the type of this node (HEAD, MIDDLE or TAIL)
- * @param hostURI String "hostname:port" where this node can be reached 
  * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
-*/ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string hostURI, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec): 
+*/ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec): 
         nodeReady_{false},
         chainReady_{false},
         setupMessage_{nullptr},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         NodeType_{NodeType},
         rec{rec},
-        NetworkManager_{new NetworkManager(Nexus, erpcID, hostURI, headURI, successorURI, tailURI, this)} 
+        NetworkManager_{new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, this)} 
     {
         if (runAsThread)
             thread_ = std::thread(run, this); 

@@ -27,7 +27,7 @@ class NetworkManager {
         Outbound *Tail_;
 
     public:
-        NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string hostURI, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
+        NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
         void init();
         void send_message(NodeType targetNode, Message *message); 
         void send_response(Message *message); 

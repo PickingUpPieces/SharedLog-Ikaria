@@ -19,10 +19,10 @@
     if (numberOfThreads) {
         threaded_ = true;
         for (int i = 0; i < numberOfThreads; i++) {
-            threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, hostURI, headURI, successorURI, tailURI, true, rec));
+            threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, headURI, successorURI, tailURI, true, rec));
         }
     } else
-        threads_.push_back(new ReplicationManager(NodeType, &Nexus_, 0, hostURI, headURI, successorURI, tailURI, false, rec));
+        threads_.push_back(new ReplicationManager(NodeType, &Nexus_, 0, headURI, successorURI, tailURI, false, rec));
 }
 
 /* TODO: Documentation */
@@ -31,6 +31,7 @@ void SharedLogNode::terminate_threads() {
         rp->terminate();
 }
 
+/* TODO: Documentation */
 void SharedLogNode::send_message(Message *message) {
     ReplicationManager *rp;
 
