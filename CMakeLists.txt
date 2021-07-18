@@ -71,7 +71,11 @@ set(NETWORK_SOURCE
 set(REPLICATION_SOURCE
   ${SRC}/ReplicationManager.h
   ${SRC}/ReplicationManager.cpp
-  ${SRC}/common_info.h
+)
+
+set(SHAREDLOGNODE_SOURCE
+  ${SRC}/SharedLogNode.h
+  ${SRC}/SharedLogNode.cpp
 )
 
 set(LOG_SOURCE
@@ -91,25 +95,26 @@ set(BENCHMARK
 add_library(replication_node STATIC
   ${NETWORK_SOURCE}
   ${REPLICATION_SOURCE}
+  ${SHAREDLOGNODE_SOURCE}
   ${LOG_SOURCE}
 )
 
 # Compile benchmark
-add_executable(benchmark
-  ${BENCHMARK}
-)
-
-target_link_libraries(benchmark
-  replication_node
-)
+#add_executable(benchmark
+#  ${BENCHMARK}
+#)
+#
+#target_link_libraries(benchmark
+#  replication_node
+#)
 
 
 # Compile run_node test
-add_executable(run_node
-  ${TEST_UTILS}
-)
+#add_executable(run_node
+#  ${TEST_UTILS}
+#)
 
 
-target_link_libraries(run_node
-  replication_node
-)
+#target_link_libraries(run_node
+#  replication_node
+#)

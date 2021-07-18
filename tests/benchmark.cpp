@@ -247,8 +247,8 @@ int main(int argc, char** argv) {
     generateValueSize(progArgs.valueSize);
 
     switch(progArgs.nodeType) {
-        case HEAD: localNode = new ReplicationManager(progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &receive_locally); break;
-        case TAIL: localNode = new ReplicationManager(progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &receive_locally ); break;
+        case HEAD: localNode = new ReplicationManager(progArgs.nodeType, 0, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, false, &receive_locally); break;
+        case TAIL: localNode = new ReplicationManager(progArgs.nodeType, 0, NARDOLE_URI, BILL_URI, std::string(), std::string(), false, &receive_locally ); break;
         case MIDDLE: break;
     }
     localNode->init();

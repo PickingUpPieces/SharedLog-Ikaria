@@ -18,15 +18,18 @@ class ReplicationManager {
         bool nodeReady_;
         bool chainReady_;
         Message *setupMessage_;
+        std::thread thread_;
+        static void run(ReplicationManager *replicationManager);
         void setup(Message *message);
         void setup_response(); 
         void add_logOffset_to_data(Message *message);
 
     public:
-        ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec);
+        ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string hostURI, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec);
         void append(Message *message);
         void read(Message *message);
         void init();
+        void terminate();
 
         Log Log_;
         static uint64_t softCounter_; /* TODO: Not thread safe */

@@ -191,8 +191,8 @@ int main(int argc, char** argv) {
     DEBUG_MSG("This node is: " << node << "(HEAD=0, MIDDLE=1, TAIL=2)");
 
     switch(node) {
-        case HEAD: localNode = new ReplicationManager(node, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &receive_locally); break;
-        case TAIL: localNode = new ReplicationManager(node, NARDOLE_URI, BILL_URI, std::string(), std::string(), &receive_locally ); break;
+        case HEAD: localNode = new ReplicationManager(node, 0, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, false, &receive_locally); break;
+        case TAIL: localNode = new ReplicationManager(node, 0, NARDOLE_URI, BILL_URI, std::string(), std::string(), false, &receive_locally ); break;
         case MIDDLE: break;
     }
     localNode->init();

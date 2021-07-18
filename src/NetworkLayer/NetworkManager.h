@@ -20,14 +20,14 @@ class ReplicationManager;
 class NetworkManager {
     private:
         ReplicationManager *ReplicationManager_;
-        erpc::Nexus Nexus_;
+        erpc::Nexus *Nexus_;
         Inbound *Inbound_;
         Outbound *Head_;
         Outbound *Successor_;
         Outbound *Tail_;
 
     public:
-        NetworkManager(string hostURI, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
+        NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string hostURI, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
         void init();
         void send_message(NodeType targetNode, Message *message); 
         void send_response(Message *message); 

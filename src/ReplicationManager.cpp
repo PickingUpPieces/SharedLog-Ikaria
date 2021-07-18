@@ -13,14 +13,28 @@ uint64_t ReplicationManager::softCounter_ = 0;
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
-*/ ReplicationManager::ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec): nodeReady_{false},
+*/ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string hostURI, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec): 
+        nodeReady_{false},
         chainReady_{false},
         setupMessage_{nullptr},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         NodeType_{NodeType},
         rec{rec},
-        NetworkManager_{new NetworkManager(hostURI, headURI, successorURI, tailURI, this)} {}
+        NetworkManager_{new NetworkManager(Nexus, erpcID, hostURI, headURI, successorURI, tailURI, this)} 
+    {
+        if (runAsThread)
+            thread_ = std::thread(run, this); 
+    }
 
+
+/* TODO: Documentation */
+/* Thread function */
+void ReplicationManager::run(ReplicationManager *rp) {
+    rp->init();
+
+    while(likely(rp->nodeReady_))
+        rp->NetworkManager_->sync(1);
+}
 
 /**
  * Handles the SETUP process for this node
@@ -175,6 +189,12 @@ void ReplicationManager::read(Message *message) {
             NetworkManager_->send_response(message);
         }; 
     }
+}
+
+/* TODO: Documentation */
+void ReplicationManager::terminate() {
+    nodeReady_ = false;
+    thread_.join();
 }
 
 
