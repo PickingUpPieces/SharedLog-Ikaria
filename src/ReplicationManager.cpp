@@ -111,7 +111,7 @@ void ReplicationManager::append(Message *message) {
             add_logOffset_to_data(message);
             #else
             reqLogEntryInFlight->logOffset = softCounter_;
-	    // FIXME: get_softCounter function for threads needed
+	        // FIXME: get_softCounter function for threads needed
             ++softCounter_;
             #endif // TESTING
 

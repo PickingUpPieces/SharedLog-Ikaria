@@ -13,14 +13,17 @@ class SharedLogNode
 private:
     std::vector<ReplicationManager *> threads_;
     erpc::Nexus Nexus_;
-    NodeType NodeType_;
+    const NodeType NodeType_;
     bool threaded_;
     int numberOfThreads_;
     int roundRobinCounter_;
 
 public:
     SharedLogNode(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, int numberOfThreads, receive_local rec);
-    void send_message(Message *message);
+    void read(uint64_t logOffset);
+    void append(void *data, size_t dataLength);
+    void sync(int numberOfRuns);
+    uint64_t validate_log(string *randomString, bool logsSavedWithLogOffset);
     void terminate_threads();
 };
 

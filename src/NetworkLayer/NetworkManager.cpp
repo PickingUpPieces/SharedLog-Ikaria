@@ -115,6 +115,8 @@ void NetworkManager::receive_response(Message *message) {
 
     if (message->sentByThisNode) {
         ReplicationManager_->rec(message);
+        rpc_.free_msg_buffer(*(message->reqBuffer));
+        rpc_.free_msg_buffer(message->respBuffer);
         return;
     }
 
