@@ -7,6 +7,7 @@
 #include "common_info.h"
 using namespace std;
 
+static void init(const char *pathToLog, uint64_t logTotalSize);
 
 class Log {
     private:
@@ -14,7 +15,6 @@ class Log {
         const uint64_t logBlockSize_;
         const char *pathToLog_;
 
-        void init(const char *pathToLog, uint64_t logTotalSize);
 
     public:
         Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog);

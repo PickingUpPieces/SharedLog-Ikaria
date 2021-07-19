@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Log.h"
 
+std::once_flag flag;
 static uint64_t logEntryTotalSize = sizeof(LogEntry);
 static PMEMlogpool *plp_;
 
@@ -15,13 +16,13 @@ Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog):
     logBlockSize_{logBlockSize},
     pathToLog_{pathToLog}
 {
-    init(pathToLog, logTotalSize);
+    std::call_once(flag, init, pathToLog, logTotalSize);
 }
 
 /**
  * Creates a new / Opens an existing log and creates the Log Handler plp_
 */
-void Log::init(const char *pathToLog, uint64_t logTotalSize) {
+static void init(const char *pathToLog, uint64_t logTotalSize) {
 	/* create the pmemlog pool or open it if it already exists */
 	plp_ = pmemlog_create(pathToLog, logTotalSize, 0666);
 
