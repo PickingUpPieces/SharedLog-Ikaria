@@ -1,6 +1,9 @@
 #include <iostream>
 #include "Inbound.h"
 
+std::once_flag req_handler_once;
+static void register_req_handlers(erpc::Nexus *nexus);
+
 /**
  * Constructs an Inbound Object and registers the request handlers
  * @param nexus Nexus needed for the eRPC connection
@@ -10,8 +13,9 @@ Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
         NetworkManager_{NetworkManager}
 {
     DEBUG_MSG("Inbound()");
-    Inbound::init(nexus);
+    std::call_once(req_handler_once, register_req_handlers, nexus);
 }
+
 
 /**
  * The request handler for SETUP requests
@@ -95,31 +99,6 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
 
 
 /**
- * Registers the request handlers at the Nexus Object
- * @param nexus Nexus needed for registering the request handlers
- */
-void Inbound::init(erpc::Nexus *nexus) {
-    // Register request handler for Request Type INIT
-    if (nexus->register_req_func(SETUP, req_handler_setup)) {
-        cerr << "Failed to initialize req INIT" << endl;
-        std::terminate();
-    } 
-
-    // Register request handler for Request Type READ
-    if (nexus->register_req_func(READ, req_handler_read)) {
-        cerr << "Failed to initialize req READ" << endl;
-        std::terminate();
-    } 
-
-    // Register request handler for Request Type APPEND
-    if (nexus->register_req_func(APPEND, req_handler_append)) {
-        cerr << "Failed to initialize req APPEND" << endl;
-        std::terminate();
-    }
-}
-
-
-/**
  * Sends response for a previous received message
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
@@ -138,4 +117,28 @@ void Inbound::send_response(Message *message) {
         NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
 
     free(message);
+}
+
+/**
+ * Registers the request handlers at the Nexus Object
+ * @param nexus Nexus needed for registering the request handlers
+ */
+static void register_req_handlers(erpc::Nexus *nexus) {
+    // Register request handler for Request Type INIT
+    if (nexus->register_req_func(SETUP, req_handler_setup)) {
+        cerr << "Failed to initialize req INIT" << endl;
+        std::terminate();
+    } 
+
+    // Register request handler for Request Type READ
+    if (nexus->register_req_func(READ, req_handler_read)) {
+        cerr << "Failed to initialize req READ" << endl;
+        std::terminate();
+    } 
+
+    // Register request handler for Request Type APPEND
+    if (nexus->register_req_func(APPEND, req_handler_append)) {
+        cerr << "Failed to initialize req APPEND" << endl;
+        std::terminate();
+    }
 }
