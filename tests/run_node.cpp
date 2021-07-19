@@ -10,7 +10,7 @@ enum Modus {
 
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
-#define ACTIVE_MODE false
+#define ACTIVE_MODE true
 //#define MODUS SLOW
 #define MODUS FAST
 

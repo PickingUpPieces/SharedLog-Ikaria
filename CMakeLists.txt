@@ -110,11 +110,11 @@ add_library(replication_node STATIC
 
 
 # Compile run_node test
-#add_executable(run_node
-#  ${TEST_UTILS}
-#)
+add_executable(run_node
+  ${TEST_UTILS}
+)
 
 
-#target_link_libraries(run_node
-#  replication_node
-#)
+target_link_libraries(run_node
+  replication_node
+)

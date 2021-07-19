@@ -1,6 +1,8 @@
 #include <iostream>
 #include "SharedLogNode.h"
 
+#define NODE_TYPE 2
+
 /* TODO: Documentation */
 /**
  * Constructs the SharedLogNode
@@ -9,15 +11,14 @@
  * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
- * @param rec Callback function which is called when a message response is received which has been created by this node
-*/ SharedLogNode::SharedLogNode(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, int numberOfThreads, receive_local rec):
+ * @param rec Callback function which is called when a message response is received which has been created by this node */ SharedLogNode::SharedLogNode(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, int numberOfThreads, receive_local rec):
         Nexus_{hostURI, 0, 0},
         NodeType_{NodeType},
         threaded_{false},
         numberOfThreads_{numberOfThreads},
         roundRobinCounter_{0}
 {
-    if (numberOfThreads) {
+    if (numberOfThreads > 1) {
         threaded_ = true;
         for (int i = 0; i < numberOfThreads; i++) {
             threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, headURI, successorURI, tailURI, true, rec));
@@ -59,13 +60,13 @@ void SharedLogNode::read(uint64_t logOffset) {
     message->reqBufferSize = sizeof(uint64_t);
 
     /* WORKAROUND resizing problem */
-    #if NodeType_ != HEAD
+    #if NODE_TYPE == 0
+        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    #else
     	if (message->reqBufferSize < 969)
     	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
     	else
     	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
     #endif
 
     /* Send the message */
@@ -99,13 +100,13 @@ void SharedLogNode::append(void *data, size_t dataLength) {
     message->reqBufferSize = dataLength;
 
     /* WORKAROUND resizing problem */
-    #if NodeType_ != HEAD
+    #if NODE_TYPE == 0
+        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    #else
     	if (message->reqBufferSize < 969)
     	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
     	else
     	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
     #endif
 
     DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
