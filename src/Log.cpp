@@ -2,6 +2,7 @@
 #include "Log.h"
 
 static uint64_t logEntryTotalSize = sizeof(LogEntry);
+static PMEMlogpool *plp_;
 
 /**
  * Constructs the Log
@@ -12,22 +13,21 @@ static uint64_t logEntryTotalSize = sizeof(LogEntry);
 Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog):
     logTotalSize_{logTotalSize},
     logBlockSize_{logBlockSize},
-    pathToLog_{pathToLog},
-    plp_{nullptr}
+    pathToLog_{pathToLog}
 {
-    init();
+    init(pathToLog, logTotalSize);
 }
 
 /**
  * Creates a new / Opens an existing log and creates the Log Handler plp_
 */
-void Log::init() {
+void Log::init(const char *pathToLog, uint64_t logTotalSize) {
 	/* create the pmemlog pool or open it if it already exists */
-	plp_ = pmemlog_create(pathToLog_, logTotalSize_, 0666);
+	plp_ = pmemlog_create(pathToLog, logTotalSize, 0666);
 
 	if (plp_ == NULL &&
-	    (plp_ = pmemlog_open(pathToLog_)) == NULL) {
-		perror(pathToLog_);
+	    (plp_ = pmemlog_open(pathToLog)) == NULL) {
+		perror(pathToLog);
 		exit(EXIT_FAILURE);
 	}
 }

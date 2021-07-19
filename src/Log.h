@@ -13,9 +13,8 @@ class Log {
         const uint64_t logTotalSize_;
         const uint64_t logBlockSize_;
         const char *pathToLog_;
-        PMEMlogpool *plp_;
 
-        void init();
+        void init(const char *pathToLog, uint64_t logTotalSize);
 
     public:
         Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog);
