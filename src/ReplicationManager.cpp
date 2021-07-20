@@ -3,7 +3,7 @@
 #include "ReplicationManager.h"
 
 /* Init static softCounter */
-uint64_t ReplicationManager::softCounter_ = 0;
+static std::atomic<uint64_t> softCounter_{0}; 
 
 /**
  * Constructs the ReplicationManager 
@@ -105,14 +105,10 @@ void ReplicationManager::append(Message *message) {
         {
             LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             /* Count Sequencer up and set the log entry number */
+            reqLogEntryInFlight->logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
+
             #ifdef TESTING
-            ++softCounter_;
-            reqLogEntryInFlight->logOffset = softCounter_;
             add_logOffset_to_data(message);
-            #else
-            reqLogEntryInFlight->logOffset = softCounter_;
-	        // FIXME: get_softCounter function for threads needed
-            ++softCounter_;
             #endif // TESTING
 
             /* Append the log entry to the local Log */

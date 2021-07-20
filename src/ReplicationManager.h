@@ -32,7 +32,6 @@ class ReplicationManager {
 
         Log Log_;
         bool chainReady_;
-        static uint64_t softCounter_; /* TODO: Not thread safe */
         NodeType NodeType_;
         receive_local rec;
         NetworkManager *NetworkManager_;
