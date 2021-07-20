@@ -1,7 +1,7 @@
 #include <iostream>
 #include "SharedLogNode.h"
 
-#define NODE_TYPE 2
+#define NODE_TYPE 0
 
 /* TODO: Documentation */
 /**
@@ -21,11 +21,12 @@
     if (numberOfThreads > 1) {
         threaded_ = true;
         for (int i = 0; i < numberOfThreads; i++) {
+	    DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
             threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, headURI, successorURI, tailURI, true, rec));
         }
         /* Wait for threads to be ready */
         for ( ReplicationManager *rp : threads_) {
-		    while(!rp->chainReady_) { sleep(1); }
+		    while(!rp->chainReady_) { std::this_thread::sleep_for(1s); }
             if (NodeType_ == HEAD){ 
                 LogEntryInFlight logEntryInFlight{0, { 0, ""}};
                 append(&logEntryInFlight, sizeof(LogEntryInFlight));
