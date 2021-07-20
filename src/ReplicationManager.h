@@ -15,7 +15,6 @@ class ReplicationManager {
     friend NetworkManager;
 
     private:
-        bool nodeReady_;
         bool chainReady_;
         Message *setupMessage_;
         std::thread thread_;
@@ -31,6 +30,7 @@ class ReplicationManager {
         void init();
         void terminate();
 
+        bool nodeReady_;
         Log Log_;
         static uint64_t softCounter_; /* TODO: Not thread safe */
         NodeType NodeType_;

@@ -13,9 +13,9 @@ uint64_t ReplicationManager::softCounter_ = 0;
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec): 
-        nodeReady_{false},
         chainReady_{false},
         setupMessage_{nullptr},
+        nodeReady_{false},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         NodeType_{NodeType},
         rec{rec},

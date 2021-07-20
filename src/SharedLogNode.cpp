@@ -23,6 +23,8 @@
         for (int i = 0; i < numberOfThreads; i++) {
             threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, headURI, successorURI, tailURI, true, rec));
         }
+        for ( ReplicationManager *rp : threads_)
+		while(rp->nodeReady_ == false) {sleep(1);}
     } else {
         threads_.push_back(new ReplicationManager(NodeType, &Nexus_, 0, headURI, successorURI, tailURI, false, rec));
         threads_.front()->init();
