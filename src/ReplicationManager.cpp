@@ -13,10 +13,10 @@ uint64_t ReplicationManager::softCounter_ = 0;
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec): 
-        chainReady_{false},
-        setupMessage_{nullptr},
         nodeReady_{false},
+        setupMessage_{nullptr},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
+        chainReady_{false},
         NodeType_{NodeType},
         rec{rec},
         NetworkManager_{new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, this)} 
@@ -66,7 +66,7 @@ void ReplicationManager::init() {
         else
             NetworkManager_->send_message(SUCCESSOR, setupMessage_);
 
-        /* Wait for first APPEND/READ message from the HEAD node */
+        /* Wait for first READ/APPEND message from the HEAD node */
         while (!chainReady_) 
             NetworkManager_->sync(10);
     }
@@ -153,9 +153,6 @@ void ReplicationManager::append(Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void ReplicationManager::read(Message *message) {
-    /* Assumes that the HEAD only sends messages, when it received the SETUP response */
-    chainReady_ = true;
-
     switch(NodeType_) {
         case MIDDLE: ;
         case HEAD: 

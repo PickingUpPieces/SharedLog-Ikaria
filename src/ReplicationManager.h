@@ -15,7 +15,7 @@ class ReplicationManager {
     friend NetworkManager;
 
     private:
-        bool chainReady_;
+        bool nodeReady_;
         Message *setupMessage_;
         std::thread thread_;
         static void run(ReplicationManager *replicationManager);
@@ -30,8 +30,8 @@ class ReplicationManager {
         void init();
         void terminate();
 
-        bool nodeReady_;
         Log Log_;
+        bool chainReady_;
         static uint64_t softCounter_; /* TODO: Not thread safe */
         NodeType NodeType_;
         receive_local rec;

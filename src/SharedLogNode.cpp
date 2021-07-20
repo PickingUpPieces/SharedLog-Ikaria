@@ -24,8 +24,13 @@
             threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, headURI, successorURI, tailURI, true, rec));
         }
         /* Wait for threads to be ready */
-        for ( ReplicationManager *rp : threads_)
-		    while(!rp->nodeReady_) { sleep(1); }
+        for ( ReplicationManager *rp : threads_) {
+		    while(!rp->chainReady_) { sleep(1); }
+            if (NodeType_ == HEAD){ 
+                LogEntryInFlight logEntryInFlight{0, { 0, ""}};
+                append(&logEntryInFlight, sizeof(LogEntryInFlight));
+            }
+        }
     } else {
         threads_.push_back(new ReplicationManager(NodeType, &Nexus_, 0, headURI, successorURI, tailURI, false, rec));
         threads_.front()->init();

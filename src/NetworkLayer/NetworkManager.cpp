@@ -61,13 +61,13 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
 
     switch (targetNode)
     {
-    case HEAD: 
+    case HEAD:
         Head_->send_message(message); 
         break;
-    case SUCCESSOR: 
+    case SUCCESSOR:
         Successor_->send_message(message); 
         break;
-    case TAIL: 
+    case TAIL:
         Tail_->send_message(message); 
         break;
     }
@@ -125,8 +125,9 @@ void NetworkManager::receive_response(Message *message) {
     switch (message->messageType)
     {
     case SETUP:
+        // TODO: A response message needs to be sent on the SETUP message when MIDDLE node
         ReplicationManager_->setup_response();
-	break;
+	    break;
     default:
         Inbound_->send_response(message);
         break;
