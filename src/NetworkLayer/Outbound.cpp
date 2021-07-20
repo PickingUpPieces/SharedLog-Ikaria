@@ -49,6 +49,7 @@ void Outbound::send_message(Message *message) {
  * Establishes the connection to the client
  */
 void Outbound::connect() {
+    DEBUG_MSG("Outbound.connect(): Establishing Connection...");
     /* Try until Client is connected */
     while (!rpc_->is_connected(sessionNum_)) 
     	rpc_->run_event_loop_once();

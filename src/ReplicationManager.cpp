@@ -30,9 +30,10 @@ static std::atomic<uint64_t> softCounter_{0};
 /* Thread function */
 void ReplicationManager::run(ReplicationManager *rp) {
     rp->init();
+    DEBUG_MSG("ReplicationManager.run(ReplMan init done)");
 
     while(likely(rp->nodeReady_))
-        rp->NetworkManager_->sync(1);
+        rp->NetworkManager_->sync(100);
 }
 
 /**
@@ -40,6 +41,7 @@ void ReplicationManager::run(ReplicationManager *rp) {
 */
 void ReplicationManager::init() {
     NetworkManager_->init();
+    DEBUG_MSG("ReplicationManager.init(NetMan init done)");
     nodeReady_ = true;
 
     if (NodeType_ == HEAD) {
@@ -56,9 +58,13 @@ void ReplicationManager::init() {
         while(!chainReady_)
             NetworkManager_->sync(10);
     } else {
+    	DEBUG_MSG("ReplicationManager.init(Wait for Setup)");
+
         /* Wait for the SETUP message */
         while (!setupMessage_)
             NetworkManager_->sync(10);
+
+    	DEBUG_MSG("ReplicationManager.init(Setup arrived)");
 
         /* Answer/Forward SETUP message accordingly */
         if (NodeType_ == TAIL)
@@ -66,7 +72,9 @@ void ReplicationManager::init() {
         else
             NetworkManager_->send_message(SUCCESSOR, setupMessage_);
 
-        /* Wait for first READ/APPEND message from the HEAD node */
+    	DEBUG_MSG("ReplicationManager.init(Wait for first APPEND)");
+
+        /* Wait for first APPEND/READ message from the HEAD node */
         while (!chainReady_) 
             NetworkManager_->sync(10);
     }
@@ -149,6 +157,9 @@ void ReplicationManager::append(Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void ReplicationManager::read(Message *message) {
+    /* Assumes that the HEAD only sends messages, when it received the SETUP response */
+    chainReady_ = true;
+
     switch(NodeType_) {
         case MIDDLE: ;
         case HEAD: 

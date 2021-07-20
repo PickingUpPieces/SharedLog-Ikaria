@@ -18,14 +18,16 @@
         numberOfThreads_{numberOfThreads},
         roundRobinCounter_{0}
 {
-    if (numberOfThreads > 1) {
+    if (numberOfThreads >= 1) {
         threaded_ = true;
         for (int i = 0; i < numberOfThreads; i++) {
             threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, headURI, successorURI, tailURI, true, rec));
         }
+	DEBUG_MSG("Threads created");
+	    std::this_thread::sleep_for(5s);
         /* Wait for threads to be ready */
         for ( ReplicationManager *rp : threads_) {
-		    while(!rp->chainReady_) { sleep(1); }
+		    while(!rp->chainReady_) { rp->NetworkManager_->sync(1); }
             if (NodeType_ == HEAD){ 
                 LogEntryInFlight logEntryInFlight{0, { 0, ""}};
                 append(&logEntryInFlight, sizeof(LogEntryInFlight));
