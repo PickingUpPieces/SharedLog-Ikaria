@@ -26,10 +26,10 @@ NetworkManager::NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string headUR
     rpc_.set_pre_resp_msgbuf_size(MAX_MESSAGE_SIZE);
 
     if (!headURI.empty())
-        Head_ = new Outbound(headURI, this, &rpc_);
+        Head_ = new Outbound(headURI, erpcID, this, &rpc_);
 
     if (!tailURI.empty())
-        Tail_ = new Outbound(tailURI, this, &rpc_);
+        Tail_ = new Outbound(tailURI, erpcID, this, &rpc_);
     
     if (successorURI.empty())
         /* This node is the tail node */
@@ -37,7 +37,7 @@ NetworkManager::NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string headUR
     else if (successorURI.compare(tailURI) == 0)
         Successor_ = Tail_;
     else
-        Successor_ = new Outbound(successorURI, this, &rpc_);
+        Successor_ = new Outbound(successorURI, erpcID, this, &rpc_);
 }
 
 /**

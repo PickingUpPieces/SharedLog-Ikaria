@@ -7,12 +7,12 @@
  * @param NetworkManager Reference needed for the message flow e.g. handing of messages for further process 
  * @param rpc RPC Object for creating the session and sending messages / receiving responses
  */
-Outbound::Outbound(string connectURI, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc):
+Outbound::Outbound(string connectURI, uint8_t erpcID, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc):
         sessionNum_{-1}, 
         NetworkManager_{NetworkManager},
         rpc_{rpc}
 {
-    sessionNum_ = rpc_->create_session(connectURI, 0);
+    sessionNum_ = rpc_->create_session(connectURI, erpcID);
     DEBUG_MSG("Outbound(): sessionNum " << std::to_string(this->sessionNum_) << " ; connectURI: " << connectURI);
 }
 
