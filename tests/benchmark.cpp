@@ -1,5 +1,5 @@
 #include "rpc.h"
-#include "ReplicationManager.h"
+#include "SharedLogNode.h"
 #include "common_info.h"
 #include <iostream>
 #include <random>
@@ -35,7 +35,7 @@ struct ProgArgs {
     size_t valueSize; // -s ; Bytes
 };
 
-ReplicationManager *localNode;
+SharedLogNode *localNode;
 ProgArgs progArgs{NODE_TYPE, 1, 500000, 50, 64};
 MeasureData measureData{500000, 500000};
 string randomString = "";
@@ -55,87 +55,19 @@ void receive_locally(Message *message) {
         if (measureData.highestKnownLogOffset < *returnedLogOffset)
             measureData.highestKnownLogOffset = *returnedLogOffset;
     }  
-
-    localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
-    localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
-    free(message);
 }
 
 
 /* Send a READ message */
 void send_read_message(uint64_t logOffset) {
-    Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->logOffset = logOffset;
-    message->messageType = READ;
-
-    /* Fill request data */
-    uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
-    *reqPointer = message->logOffset;
-    message->reqBufferSize = sizeof(uint64_t);
-
-    /* WORKAROUND resizing problem */
-    #if NODE_TYPE != HEAD
-    	if (message->reqBufferSize < 969)
-    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-
-    /* Send message */
-    if (progArgs.nodeType == HEAD)
-        localNode->read(message);
-    else
-        localNode->NetworkManager_->send_message(HEAD, message);
-
+    localNode->read(logOffset);
     measureData.amountReadsSent++;
 }
 
 
 /* Create an APPEND message, which is always sent */
 void send_append_message(void *data, size_t dataLength) {
-    Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-    message->reqBufferSize = MAX_MESSAGE_SIZE;
-	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->messageType = APPEND;
-
-    /* Fill request data */
-    memcpy(message->reqBuffer->buf, data, dataLength);
-    message->reqBufferSize = dataLength;
-
-    /* WORKAROUND resizing problem */
-    #if NODE_TYPE != HEAD
-    	if (message->reqBufferSize < 969)
-    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-    /* Send message */
-    if (progArgs.nodeType == HEAD )
-        localNode->append(message);
-    else 
-        localNode->NetworkManager_->send_message(HEAD, message);
-
+    localNode->append(data, dataLength);
     measureData.amountAppendsSent++;
 }
 
@@ -164,7 +96,7 @@ void start_benchmarking() {
         }
 
 	    while(messagesInFlight > 20000)
-	        localNode->NetworkManager_->sync(10); 
+	        localNode->sync(10); 
 
 	    messagesInFlight++;
         measureData.remainderNumberOfRequests--;
@@ -178,7 +110,6 @@ void start_benchmarking() {
 
 /* Print out the MeasureData struct and calculate additional information */
 void printMeasureData() {
-    measureData.totalMessagesProcessed = localNode->NetworkManager_->totalMessagesProcessed_ + measureData.totalNumberOfRequests;
     size_t totalMBSent = ((measureData.amountAppendsSent * ( 8 + 8 + progArgs.valueSize)) + measureData.amountReadsSent * 8 ) / 1024 / 1024;
     size_t totalMBReceived = ((measureData.amountAppendsReceived * 8) + (measureData.amountReadsReceived * ((8 + 8) + progArgs.valueSize))) / 1024 / 1024; 
 
@@ -186,12 +117,12 @@ void printMeasureData() {
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
     std::cout << "Total Requests: " << measureData.totalNumberOfRequests << endl;
-    std::cout << "Total Requests Processed: " << measureData.totalMessagesProcessed << endl;
+    //std::cout << "Total Requests Processed: " << measureData.totalMessagesProcessed << endl;
     std::cout << "Total Requests Received: " << (measureData.amountReadsReceived + measureData.amountAppendsReceived) << endl;
     std::cout << "Read Sent/Received: " << measureData.amountReadsSent << "/" << measureData.amountReadsReceived << endl;
     std::cout << "Append Sent/Received: " << measureData.amountAppendsSent << "/" << measureData.amountAppendsReceived << endl;
     std::cout << "Total time: " << measureData.totalExecutionTime.count() << "s" << endl;
-    std::cout << "Operations per Second: " << (static_cast<double>(measureData.totalMessagesProcessed) / measureData.totalExecutionTime.count()) << " Op/s" << endl;
+    std::cout << "Operations per Second: " << (static_cast<double>(measureData.totalNumberOfRequests) / measureData.totalExecutionTime.count()) << " Op/s" << endl;
     std::cout << "Total MB Sent/Received: " << totalMBSent << " MB / " << totalMBReceived << " MB" << endl;
     std::cout << "Total MB/s Sent/Received: " << (static_cast<double>(totalMBSent) / measureData.totalExecutionTime.count() ) << " MB/s / " << (static_cast<double>(totalMBReceived) / measureData.totalExecutionTime.count()) << " MB/s" << endl;
     std::cout << "-------------------------------------" << endl;
@@ -247,11 +178,10 @@ int main(int argc, char** argv) {
     generateValueSize(progArgs.valueSize);
 
     switch(progArgs.nodeType) {
-        case HEAD: localNode = new ReplicationManager(progArgs.nodeType, 0, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, false, &receive_locally); break;
-        case TAIL: localNode = new ReplicationManager(progArgs.nodeType, 0, NARDOLE_URI, BILL_URI, std::string(), std::string(), false, &receive_locally ); break;
+        case HEAD: localNode = new SharedLogNode(progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, 1, &receive_locally); break;
+        case TAIL: localNode = new SharedLogNode(progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), 1, &receive_locally ); break;
         case MIDDLE: break;
     }
-    localNode->init();
 
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking..." << endl;
