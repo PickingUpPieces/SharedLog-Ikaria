@@ -124,6 +124,7 @@ void Inbound::send_response(Message *message) {
  * @param nexus Nexus needed for registering the request handlers
  */
 static void register_req_handlers(erpc::Nexus *nexus) {
+    DEBUG_MSG("Inbound.register_req_handlers()");
     // Register request handler for Request Type INIT
     if (nexus->register_req_func(SETUP, req_handler_setup)) {
         cerr << "Failed to initialize req INIT" << endl;

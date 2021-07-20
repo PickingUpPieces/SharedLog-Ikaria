@@ -26,6 +26,8 @@ NetworkManager::NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string headUR
     rpc_.retry_connect_on_invalid_rpc_id = true;
     rpc_.set_pre_resp_msgbuf_size(MAX_MESSAGE_SIZE);
 
+    DEBUG_MSG("NetworkManager(erpcID: " << std::to_string(erpcID_) << ")");
+
     if (!headURI.empty())
         Head_ = new Outbound(headURI, erpcID, this, &rpc_);
 
@@ -119,6 +121,7 @@ void NetworkManager::receive_response(Message *message) {
         ReplicationManager_->rec(message);
         rpc_.free_msg_buffer(*(message->reqBuffer));
         rpc_.free_msg_buffer(message->respBuffer);
+        free(message);
         return;
     }
 
