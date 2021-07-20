@@ -100,13 +100,13 @@ add_library(replication_node STATIC
 )
 
 # Compile benchmark
-#add_executable(benchmark
-#  ${BENCHMARK}
-#)
-#
-#target_link_libraries(benchmark
-#  replication_node
-#)
+add_executable(benchmark
+  ${BENCHMARK}
+)
+
+target_link_libraries(benchmark
+  replication_node
+)
 
 
 # Compile run_node test
