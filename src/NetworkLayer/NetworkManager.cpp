@@ -14,6 +14,7 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
 NetworkManager::NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
+        erpcID_{erpcID},
         ReplicationManager_{ReplicationManager},
         Nexus_{Nexus},
         Inbound_{new Inbound(Nexus_, this)},
@@ -56,7 +57,7 @@ void NetworkManager::init() {
  */
 void NetworkManager::send_message(NodeType targetNode, Message *message) {
     messagesInFlight_++;
-    DEBUG_MSG("NetworkManager.send_message(messagesInFlight: " << std::to_string(messagesInFlight_) << ")");
+    DEBUG_MSG("NetworkManager.send_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
     switch (targetNode)
     {
@@ -77,6 +78,7 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void NetworkManager::send_response(Message *message) {
+    DEBUG_MSG("NetworkManager.send_response(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
     Inbound_->send_response(message);
 }
 
@@ -87,7 +89,7 @@ void NetworkManager::send_response(Message *message) {
 void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
     if (!(totalMessagesProcessed_ % 100000))
-        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << endl;
+        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
     switch (message->messageType) 
     {
@@ -111,7 +113,7 @@ void NetworkManager::receive_message(Message *message) {
 void NetworkManager::receive_response(Message *message) {
     messagesInFlight_--;
     totalMessagesCompleted_++;
-    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << ")");
+    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
     if (message->sentByThisNode) {
         ReplicationManager_->rec(message);

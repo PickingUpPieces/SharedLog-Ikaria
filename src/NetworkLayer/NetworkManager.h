@@ -19,6 +19,7 @@ class ReplicationManager;
 // Creates and holds connections to the other nodes
 class NetworkManager {
     private:
+        uint8_t erpcID_;
         ReplicationManager *ReplicationManager_;
         erpc::Nexus *Nexus_;
         Inbound *Inbound_;
