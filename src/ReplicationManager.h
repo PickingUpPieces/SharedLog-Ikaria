@@ -18,7 +18,7 @@ class ReplicationManager {
         bool nodeReady_;
         Message *setupMessage_;
         std::thread thread_;
-        static void run(ReplicationManager *replicationManager);
+        static void run(ReplicationManager *replicationManager, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
         void setup_response(); 
         void add_logOffset_to_data(Message *message);
@@ -29,6 +29,7 @@ class ReplicationManager {
         void read(Message *message);
         void init();
         void terminate();
+        void join_thread();
 
         Log Log_;
         bool chainReady_;

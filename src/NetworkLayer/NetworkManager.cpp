@@ -90,6 +90,7 @@ void NetworkManager::send_response(Message *message) {
  */
 void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
+    // FIXME: Can be deleted
     if (!(totalMessagesProcessed_ % 100000))
         std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 

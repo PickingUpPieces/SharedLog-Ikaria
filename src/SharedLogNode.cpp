@@ -1,7 +1,6 @@
 #include <iostream>
 #include "SharedLogNode.h"
 
-#define NODE_TYPE 0
 
 /* TODO: Documentation */
 /**
@@ -18,34 +17,44 @@
         numberOfThreads_{numberOfThreads},
         roundRobinCounter_{0}
 {
-    if (numberOfThreads >= 1) {
+    if (numberOfThreads > 1) {
         threaded_ = true;
+        /* Create threads */
         for (int i = 0; i < numberOfThreads; i++) {
-	    DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
+	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
             threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, headURI, successorURI, tailURI, true, rec));
         }
-	DEBUG_MSG("Threads created");
-	    std::this_thread::sleep_for(5s);
         /* Wait for threads to be ready */
-        for ( ReplicationManager *rp : threads_) {
-		    while(!rp->chainReady_) { std::this_thread::sleep_for(1s); }
-            if (NodeType_ == HEAD){ 
-                LogEntryInFlight logEntryInFlight{0, { 0, ""}};
-                append(&logEntryInFlight, sizeof(LogEntryInFlight));
-            }
-        }
+        //for ( ReplicationManager *rp : threads_) {
+		    //while(!rp->chainReady_) { std::this_thread::sleep_for(1s); }
+            //if (NodeType_ == HEAD){ 
+                //LogEntryInFlight logEntryInFlight{0, { 0, ""}};
+                //append(&logEntryInFlight, sizeof(LogEntryInFlight));
+            //}
+        //}
     } else {
+        /* Just create the Object */
         threads_.push_back(new ReplicationManager(NodeType, &Nexus_, 0, headURI, successorURI, tailURI, false, rec));
         threads_.front()->init();
     }
 }
 
 /* TODO: Documentation */
+/* TODO: Merge together */
 void SharedLogNode::terminate_threads() {
     for ( ReplicationManager *rp : threads_)
         rp->terminate();
 }
 
+/* TODO: Documentation */
+void SharedLogNode::join_threads() {
+    for ( ReplicationManager *rp : threads_)
+        rp->join_thread();
+}
+
+
+// FIXME: NODE_TYPE needed here
+//#define NODE_TYPE 0
 /* TODO: Documentation */
 void SharedLogNode::read(uint64_t logOffset) {
     /* Get the right thread/ReplicationManager */

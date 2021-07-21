@@ -25,6 +25,7 @@ public:
     void sync(int numberOfRuns);
     uint64_t validate_log(string *randomString, bool logsSavedWithLogOffset);
     void terminate_threads();
+    void join_threads();
 };
 
 

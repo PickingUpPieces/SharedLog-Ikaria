@@ -39,7 +39,7 @@ SharedLogNode *localNode;
 ProgArgs progArgs{NODE_TYPE, 1, 500000, 50, 64};
 MeasureData measureData{500000, 500000};
 string randomString = "";
-int messagesInFlight;
+static int messagesInFlight;
 
 
 /* Callback function when a response is received */
@@ -64,7 +64,6 @@ void send_read_message(uint64_t logOffset) {
     measureData.amountReadsSent++;
 }
 
-
 /* Create an APPEND message, which is always sent */
 void send_append_message(void *data, size_t dataLength) {
     localNode->append(data, dataLength);
@@ -72,8 +71,22 @@ void send_append_message(void *data, size_t dataLength) {
 }
 
 
-/* Benchmarking function */
-void start_benchmarking() {
+/* Benchmarking function for multiple threads */
+void start_benchmarking_threads() {
+
+    /* Take start time */
+    auto start = std::chrono::high_resolution_clock::now();
+
+    localNode->join_threads();
+
+    /* Take end time */
+    auto end = std::chrono::high_resolution_clock::now();
+    measureData.totalExecutionTime = end - start;
+}
+
+
+/* Benchmarking function for single thread */
+void start_benchmarking_single() {
     /* Create data struct for APPEND */
     LogEntryInFlight logEntryInFlight{1, { 0, ""}};
     randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
@@ -178,15 +191,20 @@ int main(int argc, char** argv) {
     generateValueSize(progArgs.valueSize);
 
     switch(progArgs.nodeType) {
-        case HEAD: localNode = new SharedLogNode(progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, 1, &receive_locally); break;
-        case TAIL: localNode = new SharedLogNode(progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), 1, &receive_locally ); break;
+        case HEAD: localNode = new SharedLogNode(progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, progArgs.amountThreads, &receive_locally); break;
+        case TAIL: localNode = new SharedLogNode(progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), progArgs.amountThreads, &receive_locally ); break;
         case MIDDLE: break;
     }
 
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking..." << endl;
 
-    start_benchmarking();
+
+    if (progArgs.amountThreads < 2)
+        start_benchmarking_single();
+    else
+        start_benchmarking_threads();
+
 
     std::cout << "...Finished benchmarking" << endl;
     std::cout << "-------------------------------------" << endl;

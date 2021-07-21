@@ -11,8 +11,9 @@ enum Modus {
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
 #define ACTIVE_MODE true
-//#define MODUS SLOW
 #define MODUS FAST
+//#define THREADED
+#define AMOUNT_THREADS 1
 
 int messagesInFlight_{0};
 int messagesSent_{0};
@@ -114,7 +115,6 @@ void testing(Modus modus) {
 		#endif
                 std::cout << "Until this Entry is Log Valid: " << std::to_string(untilThisEntryValid) << endl;
 		        std::cout << "-------------------------" << endl;
-
             }
         }
 
@@ -124,6 +124,7 @@ void testing(Modus modus) {
         DEBUG_MSG("------------------------------------");
     }
 }
+
 
 int main(int argc, char** argv) {
     DEBUG_MSG("-------------------------------------");
@@ -140,18 +141,23 @@ int main(int argc, char** argv) {
     DEBUG_MSG("This node is: " << node << "(HEAD=0, MIDDLE=1, TAIL=2)");
 
     switch(node) {
-        case HEAD: localNode = new SharedLogNode(node, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, 1, &receive_locally); break;
-        case TAIL: localNode = new SharedLogNode(node, NARDOLE_URI, BILL_URI, std::string(), std::string(), 1, &receive_locally ); break;
+        case HEAD: localNode = new SharedLogNode(node, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, AMOUNT_THREADS, &receive_locally); break;
+        case TAIL: localNode = new SharedLogNode(node, NARDOLE_URI, BILL_URI, std::string(), std::string(), AMOUNT_THREADS, &receive_locally ); break;
         case MIDDLE: break;
     }
 
+    #if THREADED
+        int i = 0;
+        while(true) {i++;}
+    #else
     if (ACTIVE_MODE)
         testing(MODUS);
     else {
-	if (node == HEAD)
-	    send_read_message(0);
+	    if(node == HEAD)
+	        send_read_message(0);
 
         while (true)
            localNode->sync(1000); 
     }
+    #endif 
 }
