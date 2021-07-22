@@ -6,7 +6,7 @@
 #include <chrono>
 
 /* FIXME: In case IPs change */
-#define NODE_TYPE HEAD
+#define NODETYPE TAIL
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850"
 
@@ -36,7 +36,7 @@ struct ProgArgs {
 };
 
 SharedLogNode *localNode;
-ProgArgs progArgs{NODE_TYPE, 1, 500000, 50, 64};
+ProgArgs progArgs{NODETYPE, 1, 500000, 50, 64};
 MeasureData measureData{500000, 500000};
 string randomString = "";
 static int messagesInFlight;

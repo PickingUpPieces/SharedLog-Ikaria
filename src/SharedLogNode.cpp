@@ -1,6 +1,7 @@
 #include <iostream>
 #include "SharedLogNode.h"
 
+//#define SHAREDLOG_HEAD
 
 /* TODO: Documentation */
 /**
@@ -54,7 +55,6 @@ void SharedLogNode::join_threads() {
 
 
 // FIXME: NODE_TYPE needed here
-//#define NODE_TYPE 0
 /* TODO: Documentation */
 void SharedLogNode::read(uint64_t logOffset) {
     /* Get the right thread/ReplicationManager */
@@ -80,7 +80,7 @@ void SharedLogNode::read(uint64_t logOffset) {
     message->reqBufferSize = sizeof(uint64_t);
 
     /* WORKAROUND resizing problem */
-    #if NODE_TYPE == 0
+    #ifdef SHAREDLOG_HEAD
         rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
     #else
     	if (message->reqBufferSize < 969)
@@ -120,7 +120,7 @@ void SharedLogNode::append(void *data, size_t dataLength) {
     message->reqBufferSize = dataLength;
 
     /* WORKAROUND resizing problem */
-    #if NODE_TYPE == 0
+    #ifdef SHAREDLOG_HEAD
         rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
     #else
     	if (message->reqBufferSize < 969)

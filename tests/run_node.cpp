@@ -10,10 +10,10 @@ enum Modus {
 
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
-#define ACTIVE_MODE true
+#define ACTIVE_MODE false
 #define MODUS FAST
-//#define THREADED
-#define AMOUNT_THREADS 1
+#define THREADED
+#define AMOUNT_THREADS 5
 
 int messagesInFlight_{0};
 int messagesSent_{0};
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
         case MIDDLE: break;
     }
 
-    #if THREADED
+    #ifdef THREADED
         int i = 0;
         while(true) {i++;}
     #else

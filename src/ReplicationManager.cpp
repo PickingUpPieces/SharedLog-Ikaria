@@ -8,7 +8,7 @@ static std::atomic<uint64_t> softCounter_{0};
 
 void appendLog(ReplicationManager *rp, void *data, size_t dataLength);
 void readLog(ReplicationManager *rp, uint64_t logOffset);
-#define NODE_TYPE 0
+//#define REPLMAN_HEAD
 
 /**
  * Constructs the ReplicationManager 
@@ -47,6 +47,9 @@ void ReplicationManager::run(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t
     while(likely(rp->nodeReady_)) {
         appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
         readLog(rp, 1);
+
+	while (rp->NetworkManager_->messagesInFlight_ > 10000)
+		rp->NetworkManager_->sync(10);
     }
 }
 
@@ -257,7 +260,7 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
     message->reqBufferSize = sizeof(uint64_t);
 
     /* WORKAROUND resizing problem */
-    #if NODE_TYPE == 0
+    #if REPLMAN_HEAD
         rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
     #else
     	if (message->reqBufferSize < 969)
@@ -293,7 +296,7 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     message->reqBufferSize = dataLength;
 
     /* WORKAROUND resizing problem */
-    #if NODE_TYPE == 0
+    #if REPLMAN_HEAD
         rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
     #else
     	if (message->reqBufferSize < 969)
