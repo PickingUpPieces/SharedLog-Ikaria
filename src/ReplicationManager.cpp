@@ -1,14 +1,11 @@
 #include <iostream>
 #include <unistd.h>
 #include "ReplicationManager.h"
+#include "helperFunctions.cpp"
 
 /* Init static softCounter */
 static std::atomic<uint64_t> softCounter_{0}; 
 
-
-void appendLog(ReplicationManager *rp, void *data, size_t dataLength);
-void readLog(ReplicationManager *rp, uint64_t logOffset);
-//#define REPLMAN_HEAD
 
 /**
  * Constructs the ReplicationManager 
@@ -37,16 +34,21 @@ void readLog(ReplicationManager *rp, uint64_t logOffset);
 void ReplicationManager::run(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
     rp->NetworkManager_ = new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
-    DEBUG_MSG("ReplicationManager.run(SETUP done)");
 
-    LogEntryInFlight logEntryInFlight{1, { 0, ""}};
-    string randomString = "help";
-    randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
-    logEntryInFlight.logEntry.dataLength = randomString.length();
+    LogEntryInFlight logEntryInFlight;
+    generate_random_logEntryInFlight(&logEntryInFlight, 64);
 
     while(likely(rp->nodeReady_)) {
-        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
-        readLog(rp, 1);
+        if (( rand() % 100 ) < 50) {
+	        //if ( measureData.highestKnownLogOffset < 1)
+		    //    continue;
+
+	        uint64_t randuint = static_cast<uint64_t>(rand());
+       //     uint64_t randReadOffset = randuint % measureData.highestKnownLogOffset; 
+            readLog(rp, 1);
+        } else {
+            appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+        }
 
 	while (rp->NetworkManager_->messagesInFlight_ > 10000)
 		rp->NetworkManager_->sync(10);
@@ -237,80 +239,3 @@ void ReplicationManager::add_logOffset_to_data(Message *message) {
     message->reqBufferSize = sizeof(reqLogEntryInFlight->logOffset) + sizeof(reqLogEntryInFlight->logEntry.dataLength) + reqLogEntryInFlight->logEntry.dataLength;
     NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
 }
-
-
-/* TODO: Documentation */
-/* readLog method */
-void readLog(ReplicationManager *rp, uint64_t logOffset) {
-    /* Allocate message struct */
-    Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-	message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->logOffset = logOffset;
-    message->messageType = READ;
-
-    /* Fill request data */
-    uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
-    *reqPointer = message->logOffset;
-    message->reqBufferSize = sizeof(uint64_t);
-
-    /* WORKAROUND resizing problem */
-    #if REPLMAN_HEAD
-        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-    	if (message->reqBufferSize < 969)
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-    /* Send the message */
-    if (rp->NodeType_ == HEAD)
-        rp->read(message);
-    else 
-        rp->NetworkManager_->send_message(HEAD, message);
-}
-
-/* TODO: Documentation */
-void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
-    /* Allocate message struct */
-    Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-    message->reqBufferSize = MAX_MESSAGE_SIZE;
-	message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->messageType = APPEND;
-
-    /* Fill request data */
-    memcpy(message->reqBuffer->buf, data, dataLength);
-    message->reqBufferSize = dataLength;
-
-    /* WORKAROUND resizing problem */
-    #if REPLMAN_HEAD
-        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-    	if (message->reqBufferSize < 969)
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-    DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-
-    /* Send the message */
-    if (rp->NodeType_ == HEAD)
-        rp->append(message);
-    else 
-        rp->NetworkManager_->send_message(HEAD, message);
-} 

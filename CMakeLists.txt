@@ -71,6 +71,7 @@ set(NETWORK_SOURCE
 set(REPLICATION_SOURCE
   ${SRC}/ReplicationManager.h
   ${SRC}/ReplicationManager.cpp
+  ${SRC}/helperFunctions.cpp
 )
 
 set(SHAREDLOGNODE_SOURCE

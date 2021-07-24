@@ -1,7 +1,8 @@
 #include <iostream>
 #include "SharedLogNode.h"
 
-//#define SHAREDLOG_HEAD
+void appendLog(ReplicationManager *rp, void *data, size_t dataLength);
+void readLog(ReplicationManager *rp, uint64_t logOffset);
 
 /* TODO: Documentation */
 /**
@@ -25,14 +26,6 @@
 	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
             threads_.push_back(new ReplicationManager(NodeType, &Nexus_, i, headURI, successorURI, tailURI, true, rec));
         }
-        /* Wait for threads to be ready */
-        //for ( ReplicationManager *rp : threads_) {
-		    //while(!rp->chainReady_) { std::this_thread::sleep_for(1s); }
-            //if (NodeType_ == HEAD){ 
-                //LogEntryInFlight logEntryInFlight{0, { 0, ""}};
-                //append(&logEntryInFlight, sizeof(LogEntryInFlight));
-            //}
-        //}
     } else {
         /* Just create the Object */
         threads_.push_back(new ReplicationManager(NodeType, &Nexus_, 0, headURI, successorURI, tailURI, false, rec));
@@ -40,6 +33,15 @@
     }
 }
 
+void SharedLogNode::read(uint64_t logOffset) {
+    if (!threaded_)
+        readLog(threads_.front(), logOffset);
+}
+
+void SharedLogNode::append(void *data, size_t dataLength) {
+    if (!threaded_)
+        appendLog(threads_.front(), data, dataLength);
+}
 
 /* TODO: Documentation */
 void SharedLogNode::terminate(bool force) {
@@ -47,96 +49,13 @@ void SharedLogNode::terminate(bool force) {
         rp->terminate(force);
 }
 
-
-// FIXME: NODE_TYPE needed here
 /* TODO: Documentation */
-void SharedLogNode::read(uint64_t logOffset) {
-    /* Get the right thread/ReplicationManager */
-    ReplicationManager *rp = threads_.at(static_cast<uint>(roundRobinCounter_));
-    roundRobinCounter_ = (roundRobinCounter_ + 1) % numberOfThreads_;
-
-    /* Allocate message struct */
-    Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-	message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->logOffset = logOffset;
-    message->messageType = READ;
-
-    /* Fill request data */
-    uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
-    *reqPointer = message->logOffset;
-    message->reqBufferSize = sizeof(uint64_t);
-
-    /* WORKAROUND resizing problem */
-    #ifdef SHAREDLOG_HEAD
-        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-    	if (message->reqBufferSize < 969)
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-    /* Send the message */
-    if (NodeType_ == HEAD)
-        rp->read(message);
-    else 
-        rp->NetworkManager_->send_message(HEAD, message);
-}
-
-/* TODO: Documentation */
-void SharedLogNode::append(void *data, size_t dataLength) {
-    /* Get the right thread/ReplicationManager */
-    ReplicationManager *rp = threads_.at(static_cast<uint>(roundRobinCounter_));
-    roundRobinCounter_ = (roundRobinCounter_ + 1) % numberOfThreads_;
-
-    /* Allocate message struct */
-    Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-    message->reqBufferSize = MAX_MESSAGE_SIZE;
-	message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->messageType = APPEND;
-
-    /* Fill request data */
-    memcpy(message->reqBuffer->buf, data, dataLength);
-    message->reqBufferSize = dataLength;
-
-    /* WORKAROUND resizing problem */
-    #ifdef SHAREDLOG_HEAD
-        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-    	if (message->reqBufferSize < 969)
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-    DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-
-    /* Send the message */
-    if (NodeType_ == HEAD)
-        rp->append(message);
-    else 
-        rp->NetworkManager_->send_message(HEAD, message);
-} 
-
 void SharedLogNode::sync(int numberOfRuns) {
     if(!threaded_)
         threads_.front()->NetworkManager_->sync(numberOfRuns);
 }
 
+/* TODO: Documentation */
 uint64_t SharedLogNode::validate_log(string *randomString, bool logsSavedWithLogOffset) {
     if(!threaded_)
         return (threads_.front()->Log_.validate_log(randomString, logsSavedWithLogOffset));
