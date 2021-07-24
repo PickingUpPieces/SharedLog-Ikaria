@@ -40,17 +40,11 @@
     }
 }
 
-/* TODO: Documentation */
-/* TODO: Merge together */
-void SharedLogNode::terminate_threads() {
-    for ( ReplicationManager *rp : threads_)
-        rp->terminate();
-}
 
 /* TODO: Documentation */
-void SharedLogNode::join_threads() {
+void SharedLogNode::terminate(bool force) {
     for ( ReplicationManager *rp : threads_)
-        rp->join_thread();
+        rp->terminate(force);
 }
 
 

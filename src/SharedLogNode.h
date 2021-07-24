@@ -24,8 +24,7 @@ public:
     void append(void *data, size_t dataLength);
     void sync(int numberOfRuns);
     uint64_t validate_log(string *randomString, bool logsSavedWithLogOffset);
-    void terminate_threads();
-    void join_threads();
+    void terminate(bool force);
 };
 
 

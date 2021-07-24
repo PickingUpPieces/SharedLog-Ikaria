@@ -209,17 +209,17 @@ void ReplicationManager::read(Message *message) {
     }
 }
 
-/* TODO: Documentation */
-/* TODO: Merge those together */
-void ReplicationManager::terminate() {
-    nodeReady_ = false;
+/**
+ * Terminates the current ReplicationManager thread
+ * @param force If true, forces the thread to finish
+ */
+void ReplicationManager::terminate(bool force) {
+    if (force)
+        nodeReady_ = false;
+
     thread_.join();
 }
 
-/* TODO: Documentation */
-void ReplicationManager::join_thread() {
-    thread_.join();
-}
 
 /* DEBUG functions */
 /**

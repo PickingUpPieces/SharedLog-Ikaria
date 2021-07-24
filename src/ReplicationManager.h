@@ -28,8 +28,7 @@ class ReplicationManager {
         void append(Message *message);
         void read(Message *message);
         void init();
-        void terminate();
-        void join_thread();
+        void terminate(bool force);
 
         Log Log_;
         bool chainReady_;

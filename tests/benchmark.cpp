@@ -77,7 +77,7 @@ void start_benchmarking_threads() {
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
 
-    localNode->join_threads();
+    localNode->terminate(false);
 
     /* Take end time */
     auto end = std::chrono::high_resolution_clock::now();
