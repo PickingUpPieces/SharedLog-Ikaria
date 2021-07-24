@@ -1,7 +1,7 @@
 #include <iostream>
 #include "Inbound.h"
 
-std::once_flag req_handler_once;
+static once_flag req_handler_once;
 static void register_req_handlers(erpc::Nexus *nexus);
 
 /**
@@ -13,6 +13,7 @@ Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
         NetworkManager_{NetworkManager}
 {
     DEBUG_MSG("Inbound()");
+    //std::call_once(req_handler_once, register_req_handlers, nexus);
     std::call_once(req_handler_once, register_req_handlers, nexus);
 }
 

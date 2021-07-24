@@ -1,7 +1,7 @@
 #include <iostream>
 #include "Log.h"
 
-std::once_flag flag;
+static once_flag plp_once;
 static uint64_t logEntryTotalSize = sizeof(LogEntry);
 static PMEMlogpool *plp_;
 
@@ -16,7 +16,7 @@ Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog):
     logBlockSize_{logBlockSize},
     pathToLog_{pathToLog}
 {
-    std::call_once(flag, init, pathToLog, logTotalSize);
+    std::call_once(plp_once, init, pathToLog, logTotalSize);
 }
 
 /**
@@ -36,10 +36,9 @@ static void init(const char *pathToLog, uint64_t logTotalSize) {
 /**
  * Appends a new LogEntry to the log
  * @param logOffset The log entry number of the new LogEntry
- * @param log Pointer to the LogEntry which should be logged
+ * @param logEntry Pointer to the LogEntry which should be logged
 */
-void Log::append(uint64_t logOffset, void *log) {
-    LogEntry *logEntry = (LogEntry *) log;
+void Log::append(uint64_t logOffset, LogEntry *logEntry) {
     DEBUG_MSG("Log.append(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->dataLength) << " ; data: " << logEntry->data << ")");
     
 	/* Only copy the real entry size */
@@ -57,16 +56,15 @@ void Log::append(uint64_t logOffset, void *log) {
  * @param logOffset The log entry number 
  * @param logEntryLength Pointer for the logSize of the requested log, which is returned back to the ReplicationManager
 */
-void* Log::read(uint64_t logOffset, size_t *logEntryLength) {
-    void *returnRead = pmemlog_read(plp_, logOffset * logEntryTotalSize);
+LogEntry *Log::read(uint64_t logOffset, size_t *logEntryLength) {
+    LogEntry *logEntry = static_cast<LogEntry *>(pmemlog_read(plp_, logOffset * logEntryTotalSize));
     // TODO: Check if first byte (LogEntry.dataLength) is 0 -> read failed
 
-    LogEntry *logEntry = (LogEntry *) returnRead;
 	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->dataLength) << " ; data: " << logEntry->data << ")");
 
     *logEntryLength = totalLogEntrySize;
-    return returnRead;
+    return logEntry;
 }
 
 /**
@@ -84,8 +82,10 @@ void Log::terminate() {
     exit(EXIT_SUCCESS);
 }
 
-/* DEBUG functions */
 
+//
+/* DEBUG functions */
+//
 /* Struct for passing informations between the callback function calls */
 struct PmemlogWalkArg {
 	uint64_t currentLogOffset;

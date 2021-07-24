@@ -191,12 +191,13 @@ void ReplicationManager::read(Message *message) {
             LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
             LogEntryInFlight *respLogEntryInFlight = (LogEntryInFlight *) message->respBuffer.buf;
 
-            void *logEntry = Log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
+            LogEntry*logEntry = Log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read is legit e.g. not reading an offset which hasn't been written yet
             
             /* Prepare respBuffer */
             message->respBufferSize = logEntrySize + sizeof(reqLogEntryInFlight->logOffset);
             respLogEntryInFlight->logOffset = reqLogEntryInFlight->logOffset;
+            // TODO: Maybe there is a better copy function for PM
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntrySize);
 
             DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
