@@ -1,6 +1,7 @@
 #include "helperFunctions.h"
 #include "ReplicationManager.h"
 
+#define NODETYPE
 /* TODO: Documentation */
 /* readLog method */
 void readLog(ReplicationManager *rp, uint64_t logOffset) {

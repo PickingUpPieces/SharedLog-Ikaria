@@ -55,26 +55,32 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->NetworkManager_ = new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
-    LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(64);
+    LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
 
-    while(likely(rp->nodeReady_ && rp->benchmarkData_.remainderNumberOfRequests--)) {
-        if (( rand() % 100 ) < 50) {
+
+    while(likely(rp->nodeReady_ && rp->benchmarkData_.remainderNumberOfRequests)) {
+        if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
 
 	        uint64_t randuint = static_cast<uint64_t>(rand());
             uint64_t randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             readLog(rp, randReadOffset);
+	    rp->benchmarkData_.amountReadsSent++; 
         } else {
             appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+	    rp->benchmarkData_.amountAppendsSent++; 
         }
+	    rp->benchmarkData_.remainderNumberOfRequests--; 
 
 	    while (rp->NetworkManager_->messagesInFlight_ > 10000)
-		    rp->NetworkManager_->sync(10);
+		    rp->NetworkManager_->sync(100);
     }
 
-    while( (rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.messagesInFlight) > rp->benchmarkData_.progArgs.percentileNumberOfRequests)
+    /* Wait for missing response messages */
+    while((rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.messagesInFlight) < (rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.progArgs.percentileNumberOfRequests))
 		rp->NetworkManager_->sync(1);
+    rp->benchmarkData_.totalMessagesProcessed = rp->NetworkManager_->totalMessagesProcessed_;
 }
 
 /* TODO: Documentation */

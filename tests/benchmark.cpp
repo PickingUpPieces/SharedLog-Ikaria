@@ -6,7 +6,6 @@
 #include "SharedLogNode.h"
 
 /* FIXME: In case IPs change */
-#define NODETYPE TAIL
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850"
 
@@ -120,12 +119,11 @@ void parser(int amountArgs, char **argv) {
                 break;
             case 'm': // Request amount
                 benchmarkData.progArgs.totalNumberOfRequests = std::stoul(&(argv[i][3]), nullptr, 0);
-                benchmarkData.remainderNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests;
                 break;
             case 'a': // Active mode
                 benchmarkData.progArgs.activeMode = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
-            case '3': // Percentage reads
+            case 'r': // Percentage reads
                 benchmarkData.progArgs.probabilityOfRead = std::strtol(&(argv[i][3]), nullptr, 0);
                 break;
             case 's': // Size value
@@ -138,7 +136,8 @@ void parser(int amountArgs, char **argv) {
     }
 
     benchmarkData.progArgs.percentileNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests - ((benchmarkData.progArgs.percentile * benchmarkData.progArgs.totalNumberOfRequests) / 100);
-    std::cout << "Input Parameters: nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
+    benchmarkData.remainderNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests / benchmarkData.progArgs.amountThreads;
+    std::cout << "Input Parameters: nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " percentileMessages: " << benchmarkData.progArgs.percentileNumberOfRequests  << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
 }
 
 
