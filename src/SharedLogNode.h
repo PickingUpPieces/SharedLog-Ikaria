@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <string>
 #include "rpc.h"
-#include "common_info.h"
 #include "ReplicationManager.h"
+#include "common_info.h"
+#include "common_tests.h"
+#include "helperFunctions.h"
 using namespace std;
 
 class SharedLogNode
@@ -15,11 +17,9 @@ private:
     erpc::Nexus Nexus_;
     const NodeType NodeType_;
     bool threaded_;
-    int numberOfThreads_;
-    int roundRobinCounter_;
 
 public:
-    SharedLogNode(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, int numberOfThreads, receive_local rec);
+    SharedLogNode(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec);
     void read(uint64_t logOffset);
     void append(void *data, size_t dataLength);
     void sync(int numberOfRuns);

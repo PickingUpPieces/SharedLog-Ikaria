@@ -1,6 +1,4 @@
-#ifndef HELPERFUNCTIONS_H 
-#define HELPERFUNCTIONS_H 
-#include "rpc.h"
+#include "helperFunctions.h"
 #include "ReplicationManager.h"
 
 /* TODO: Documentation */
@@ -80,21 +78,22 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
 } 
 
 /* Generate a random logEntryInFlight for sending in append requests */
-void generate_random_logEntryInFlight(LogEntryInFlight *logEntryInFlight, uint64_t totalSize){
+LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
+    LogEntryInFlight logEntryInFlight;
     string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     mt19937 generator{random_device{}()};
     uniform_int_distribution<> dist(0, possibleCharacters.size()-1);
     string randomString;
     uint64_t stringLength = totalSize - 16;
 
-    for(int i = 0; i < stringLength; i++) {
+    for(uint64_t i = 0; i < stringLength; i++) {
         size_t random_index = static_cast<size_t>(dist(generator)); //get index between 0 and possible_characters.size()-1
         randomString += possibleCharacters[random_index];
     }
 
-    logEntryInFlight->logOffset = 0; 
-    logEntryInFlight->logEntry.dataLength = stringLength;
-    randomString.copy(logEntryInFlight->logEntry.data, randomString.length());
-}
+    logEntryInFlight.logOffset = 0; 
+    logEntryInFlight.logEntry.dataLength = stringLength;
+    randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
 
-#endif 
+    return logEntryInFlight;
+}

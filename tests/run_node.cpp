@@ -1,7 +1,7 @@
-#include "rpc.h"
-#include "SharedLogNode.h"
 #include <iostream>
 #include <random>
+#include "common_tests.h"
+#include "SharedLogNode.h"
 
 enum Modus {
     SLOW,
@@ -20,12 +20,10 @@ int messagesSent_{0};
 int messagesFinished_{0};
 int messagesValidated_{0};
 SharedLogNode *localNode;
-Message *message;
-erpc::MsgBuffer *reqRead; 
-erpc::MsgBuffer *reqAppend; 
 // Check which type this node should be
 NodeType node{HEAD};
 string randomString = "";
+BenchmarkData benchmarkData{{HEAD, ACTIVE_MODE, AMOUNT_THREADS}};
 
 
 void receive_locally(Message *message) {
@@ -134,15 +132,15 @@ int main(int argc, char** argv) {
         std::string cmd_arg(argv[1]);
 
         if ( cmd_arg.compare("head") == 0 )
-            node = HEAD;
+            benchmarkData.progArgs.nodeType = HEAD;
         else if ( cmd_arg.compare("tail") == 0 )
-            node = TAIL;
+            benchmarkData.progArgs.nodeType = TAIL;
     }
     DEBUG_MSG("This node is: " << node << "(HEAD=0, MIDDLE=1, TAIL=2)");
 
     switch(node) {
-        case HEAD: localNode = new SharedLogNode(node, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, AMOUNT_THREADS, &receive_locally); break;
-        case TAIL: localNode = new SharedLogNode(node, NARDOLE_URI, BILL_URI, std::string(), std::string(), AMOUNT_THREADS, &receive_locally ); break;
+        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
+        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
         case MIDDLE: break;
     }
 

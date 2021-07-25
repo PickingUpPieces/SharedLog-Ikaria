@@ -1,58 +1,92 @@
 #include <iostream>
 #include <unistd.h>
 #include "ReplicationManager.h"
-#include "helperFunctions.cpp"
 
 /* Init static softCounter */
 static std::atomic<uint64_t> softCounter_{0}; 
 
 
+/* TODO: Documentation */
 /**
- * Constructs the ReplicationManager 
+ * Constructs the ReplicationManager as single threaded
  * @param NodeType Specifys the type of this node (HEAD, MIDDLE or TAIL)
  * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
-*/ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, bool runAsThread, receive_local rec): 
+ */
+ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec):
         nodeReady_{false},
         setupMessage_{nullptr},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         chainReady_{false},
         NodeType_{NodeType},
-        rec{rec}
+        rec{rec}, 
+        NetworkManager_{new NetworkManager(Nexus, 0, headURI, successorURI, tailURI, this)} {}
+
+
+/* TODO: Documentation */
+/**
+ * Constructs the ReplicationManager as multi threaded Object
+ * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
+ * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
+ * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
+ * @param rec Callback function which is called when a message response is received which has been created by this node
+*/ 
+ReplicationManager::ReplicationManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
+        nodeReady_{false},
+        setupMessage_{nullptr},
+        benchmarkData_{benchmarkData},
+        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
+        chainReady_{false},
+        NodeType_{benchmarkData_.progArgs.nodeType},
+        rec{nullptr} 
     {
-        if (runAsThread)
-            thread_ = std::thread(run, this, Nexus, erpcID, headURI, successorURI, tailURI); 
+        if (benchmarkData_.progArgs.activeMode)
+            thread_ = std::thread(run_active, this, Nexus, erpcID, headURI, successorURI, tailURI); 
         else
-            NetworkManager_ = new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, this); 
+            thread_ = std::thread(run_passive, this, Nexus, erpcID, headURI, successorURI, tailURI); 
     }
 
 
 /* TODO: Documentation */
-/* Thread function */
-void ReplicationManager::run(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
+/* Active Thread function */
+void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
     rp->NetworkManager_ = new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
-    LogEntryInFlight logEntryInFlight;
-    generate_random_logEntryInFlight(&logEntryInFlight, 64);
+    LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(64);
 
-    while(likely(rp->nodeReady_)) {
+    while(likely(rp->nodeReady_ && rp->benchmarkData_.remainderNumberOfRequests--)) {
         if (( rand() % 100 ) < 50) {
-	        //if ( measureData.highestKnownLogOffset < 1)
-		    //    continue;
+	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
+		        continue;
 
 	        uint64_t randuint = static_cast<uint64_t>(rand());
-       //     uint64_t randReadOffset = randuint % measureData.highestKnownLogOffset; 
-            readLog(rp, 1);
+            uint64_t randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
+            readLog(rp, randReadOffset);
         } else {
             appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
         }
 
-	while (rp->NetworkManager_->messagesInFlight_ > 10000)
-		rp->NetworkManager_->sync(10);
+	    while (rp->NetworkManager_->messagesInFlight_ > 10000)
+		    rp->NetworkManager_->sync(10);
     }
+
+    while( (rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.messagesInFlight) > rp->benchmarkData_.progArgs.percentileNumberOfRequests)
+		rp->NetworkManager_->sync(1);
+}
+
+/* TODO: Documentation */
+/* Passive Thread function */
+void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
+    rp->NetworkManager_ = new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->init();
+    if (rp->NodeType_ == HEAD)
+        readLog(rp, 0);
+
+    while(likely(rp->nodeReady_))
+		rp->NetworkManager_->sync(1);
 }
 
 /**
@@ -211,6 +245,26 @@ void ReplicationManager::read(Message *message) {
         }; 
     }
 }
+
+
+/* TODO: Documentation */
+/* Callback function when a response is received */
+void ReplicationManager::receive_locally(Message *message) {
+    // If single threaded
+    if (rec) { 
+        rec(message);
+        return;
+    }
+
+	benchmarkData_.messagesInFlight--;
+    
+    if (message->messageType == APPEND) {
+        uint64_t *returnedLogOffset = (uint64_t *) message->respBuffer.buf;
+        if (benchmarkData_.highestKnownLogOffset < *returnedLogOffset)
+            benchmarkData_.highestKnownLogOffset = *returnedLogOffset;
+    }  
+}
+
 
 /**
  * Terminates the current ReplicationManager thread

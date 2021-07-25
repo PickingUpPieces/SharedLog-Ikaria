@@ -56,6 +56,7 @@ link_libraries(erpc)
 
 include_directories(${SRC})
 include_directories(${SRC}/NetworkLayer)
+include_directories(${TESTS})
 
 link_libraries(${LIBRARIES})
 

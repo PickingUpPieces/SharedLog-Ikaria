@@ -119,9 +119,10 @@ void NetworkManager::receive_response(Message *message) {
     DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
     if (message->sentByThisNode) {
-        ReplicationManager_->rec(message);
+        ReplicationManager_->receive_locally(message);
         rpc_.free_msg_buffer(*(message->reqBuffer));
         rpc_.free_msg_buffer(message->respBuffer);
+    //    free(message->reqBuffer);
         free(message);
         return;
     }
