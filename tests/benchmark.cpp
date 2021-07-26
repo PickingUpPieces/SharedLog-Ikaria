@@ -100,7 +100,7 @@ void printbenchmarkData() {
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
     std::cout << "Total Requests: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
-    //std::cout << "Total Requests Processed: " << benchmarkData.totalMessagesProcessed << endl;
+    std::cout << "Total Requests Processed: " << benchmarkData.totalMessagesProcessed << endl;
     std::cout << "Sent READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
     std::cout << "Total time: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
     std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;

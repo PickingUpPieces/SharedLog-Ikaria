@@ -8,7 +8,12 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
     /* Allocate message struct */
     Message *message = (Message *) malloc(sizeof(Message));
     erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+
+    while(!reqRead->buf) {
+        rp->NetworkManager_->sync(1);
+        *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    }
 
     /* Fill message struct */
     message->reqBuffer = reqRead;
@@ -45,7 +50,13 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     /* Allocate message struct */
     Message *message = (Message *) malloc(sizeof(Message));
     erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
+    // MsgBuffer.buf is null, if alloc fails
+    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+
+    while(!reqRead->buf) {
+        rp->NetworkManager_->sync(1);
+        *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    }
 
     /* Fill message struct */
     message->reqBuffer = reqRead;

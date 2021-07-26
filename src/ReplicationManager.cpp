@@ -77,7 +77,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 	        uint64_t randuint = static_cast<uint64_t>(rand());
             uint64_t randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             readLog(rp, randReadOffset);
-	    rp->benchmarkData_.amountReadsSent++; 
+	        rp->benchmarkData_.amountReadsSent++; 
         } else {
             appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
 	        rp->benchmarkData_.amountAppendsSent++; 
