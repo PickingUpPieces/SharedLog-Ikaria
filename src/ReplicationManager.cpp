@@ -23,7 +23,7 @@ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, st
         benchmarkReady_{true},
         NodeType_{NodeType},
         rec{rec}, 
-        NetworkManager_{new NetworkManager(Nexus, 0, headURI, successorURI, tailURI, this)} {}
+        NetworkManager_{new NetworkManager(NodeType, Nexus, 0, headURI, successorURI, tailURI, this)} {}
 
 
 /* TODO: Documentation */
@@ -54,7 +54,7 @@ ReplicationManager::ReplicationManager(erpc::Nexus *Nexus, uint8_t erpcID, strin
 /* TODO: Documentation */
 /* Active Thread function */
 void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->NetworkManager_ = new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
@@ -94,7 +94,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 /* TODO: Documentation */
 /* Passive Thread function */
 void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->NetworkManager_ = new NetworkManager(Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
     if (rp->NodeType_ == HEAD)
         readLog(rp, 0);

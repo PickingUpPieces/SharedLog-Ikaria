@@ -17,10 +17,11 @@ class Inbound {
     friend void req_handler_append(erpc::ReqHandle *req_handle, void *context);
 
     private:
+        NodeType nodeType_;
         NetworkManager *NetworkManager_;
 
     public:
-        Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager);
+        Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *NetworkManager);
         void send_response(Message *message);
 };
 

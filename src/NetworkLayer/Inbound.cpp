@@ -9,7 +9,8 @@ static void register_req_handlers(erpc::Nexus *nexus);
  * @param nexus Nexus needed for the eRPC connection
  * @param NetworkManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
+Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *NetworkManager):
+        nodeType_{nodeType},
         NetworkManager_{NetworkManager}
 {
     DEBUG_MSG("Inbound()");
@@ -27,14 +28,18 @@ void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
     Message *message = (Message *) malloc(sizeof(Message));
 
-    // Prepare request Buffer
-    size_t oldReqBufferSize = req_handle->get_req_msgbuf()->get_data_size();
-    message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
-    while(!message->reqBuffer.buf) {
-        networkManager->sync(1);
+    // Alloc new request Buffer
+    if (networkManager->nodeType_ != TAIL) {
+        size_t oldReqBufferSize = req_handle->get_req_msgbuf()->get_data_size();
         message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
-    }
-    memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
+        while(!message->reqBuffer.buf) {
+            networkManager->sync(1);
+            message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
+        }
+        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
+    } else
+        message->reqBuffer = *req_handle->get_req_msgbuf();
+
 
     /* Alloc space for the message meta information and fill it */
     message->messageType = SETUP;
@@ -60,14 +65,18 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
     Message *message = (Message *) malloc(sizeof(Message));
 
-    // Prepare request Buffer
-    size_t oldReqBufferSize = req_handle->get_req_msgbuf()->get_data_size();
-    message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
-    while(!message->reqBuffer.buf) {
-        networkManager->sync(1);
+    // Alloc new request Buffer
+    if (networkManager->nodeType_ != TAIL) {
+        size_t oldReqBufferSize = req_handle->get_req_msgbuf()->get_data_size();
         message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
-    }
-    memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
+        while(!message->reqBuffer.buf) {
+            networkManager->sync(1);
+            message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
+        }
+        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
+    } else
+        message->reqBuffer = *req_handle->get_req_msgbuf();
+
 
     /* Alloc space for the message meta information and fill it */
     message->messageType = READ;
@@ -93,15 +102,18 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
     Message *message = (Message *) malloc(sizeof(Message));
 
-    // Prepare request Buffer
-    size_t oldReqBufferSize = req_handle->get_req_msgbuf()->get_data_size();
-    message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
-    while(!message->reqBuffer.buf) {
-        networkManager->sync(1);
+    // Alloc new request Buffer
+    if (networkManager->nodeType_ != TAIL) {
+        size_t oldReqBufferSize = req_handle->get_req_msgbuf()->get_data_size();
         message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
-    }
-    memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
-     
+        while(!message->reqBuffer.buf) {
+            networkManager->sync(1);
+            message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
+        }
+        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
+    } else
+        message->reqBuffer = *req_handle->get_req_msgbuf();
+
     /* Alloc space for the message meta information and fill it */
     message->messageType = APPEND;
     message->sentByThisNode = false;
@@ -132,7 +144,9 @@ void Inbound::send_response(Message *message) {
     NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
     NetworkManager_->rpc_.run_event_loop_once();
 
-    NetworkManager_->rpc_.free_msg_buffer(message->reqBuffer);
+    if (nodeType_ != TAIL)
+        NetworkManager_->rpc_.free_msg_buffer(message->reqBuffer);
+
     free(message);
 }
 
