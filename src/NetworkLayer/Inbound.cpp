@@ -45,7 +45,7 @@ void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
     message->respBuffer = req_handle->pre_resp_msgbuf;
     message->respBufferSize = message->respBuffer.get_data_size();
 
-    DEBUG_MSG("Inbound.req_handler_init(LogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+    DEBUG_MSG("Inbound.req_handler_init(LogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
 
     networkManager->receive_message(message);
 }
@@ -78,7 +78,7 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     message->respBuffer = req_handle->pre_resp_msgbuf;
     message->respBufferSize = message->respBuffer.get_data_size();
 
-    DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << ")"); 
+    DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << ")"); 
 
     networkManager->receive_message(message);
 }
@@ -111,7 +111,7 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     message->respBuffer = req_handle->pre_resp_msgbuf;
     message->respBufferSize = message->respBuffer.get_data_size();
 
-    DEBUG_MSG("Inbound.req_handler_append(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+    DEBUG_MSG("Inbound.req_handler_append(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
 
     networkManager->receive_message(message);
 }
