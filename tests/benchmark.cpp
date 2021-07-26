@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <shared_mutex>
 #include "common_info.h"
 #include "common_tests.h"
 #include "SharedLogNode.h"
@@ -12,6 +13,7 @@
 
 SharedLogNode *localNode;
 BenchmarkData benchmarkData;
+std::mutex startBenchmark;
 
 
 /* Callback function when a response is received */
@@ -41,6 +43,8 @@ void send_append_message(void *data, size_t dataLength) {
 
 /* Benchmarking function for multiple threads */
 void start_benchmarking_threads() {
+    startBenchmark.unlock();
+    
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -49,6 +53,8 @@ void start_benchmarking_threads() {
     /* Take end time */
     auto end = std::chrono::high_resolution_clock::now();
     benchmarkData.totalExecutionTime = end - start;
+
+    localNode->get_results(&benchmarkData);
 }
 
 
@@ -137,6 +143,7 @@ void parser(int amountArgs, char **argv) {
 
     benchmarkData.progArgs.percentileNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests - ((benchmarkData.progArgs.percentile * benchmarkData.progArgs.totalNumberOfRequests) / 100);
     benchmarkData.remainderNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests / benchmarkData.progArgs.amountThreads;
+    benchmarkData.startBenchmark = &startBenchmark;
     std::cout << "Input Parameters: nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " percentileMessages: " << benchmarkData.progArgs.percentileNumberOfRequests  << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
 }
 
@@ -146,12 +153,15 @@ int main(int argc, char** argv) {
     std::cout << "Init everything..." << endl;
 
     parser(argc, argv);
+    startBenchmark.lock();
 
     switch(benchmarkData.progArgs.nodeType) {
         case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
         case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
         case MIDDLE: break;
     }
+
+    localNode->get_benchmark_ready();
 
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking..." << endl;

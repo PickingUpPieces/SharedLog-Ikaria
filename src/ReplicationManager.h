@@ -20,7 +20,6 @@ class ReplicationManager {
         bool nodeReady_;
         Message *setupMessage_;
         std::thread thread_;
-        BenchmarkData benchmarkData_;
         static void run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
@@ -38,8 +37,10 @@ class ReplicationManager {
         void init();
         void terminate(bool force);
 
+        BenchmarkData benchmarkData_;
         Log Log_;
         bool chainReady_;
+        bool benchmarkReady_;
         NodeType NodeType_;
         receive_local rec;
         NetworkManager *NetworkManager_;

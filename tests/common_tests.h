@@ -2,6 +2,7 @@
 #define COMMONTESTS_H 
 #include "rpc.h"
 #include "helperFunctions.h"
+#include <shared_mutex>
 
 /* Holds the program input arguments */
 struct ProgArgs {
@@ -9,7 +10,7 @@ struct ProgArgs {
     bool activeMode{true}; // -a
     int amountThreads{1}; // -t
     size_t totalNumberOfRequests{10000000}; // -m
-    size_t percentile{100}; // -p ; Only works for very high percentiles > 90. Depends on the totalNumberOfRequests.
+    size_t percentile{100}; // -p ; Only works for very high percentiles > 99. Depends on the totalNumberOfRequests.
     size_t percentileNumberOfRequests{10000000};
     int probabilityOfRead{50}; // -r ; Between 0 - 100
     size_t valueSize{64}; // -v ; Bytes
@@ -18,6 +19,7 @@ struct ProgArgs {
 /* Collects the measured data */
 struct BenchmarkData {
     ProgArgs progArgs;
+    std::mutex *startBenchmark{nullptr};
     size_t remainderNumberOfRequests{1000000};
     size_t messagesInFlight{0}; 
     size_t amountReadsSent{0};

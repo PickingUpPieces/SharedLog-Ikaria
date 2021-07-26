@@ -29,11 +29,13 @@ SharedLogNode::SharedLogNode(NodeType NodeType, string hostURI, string headURI, 
     }
 }
 
+/* TODO: Documentation */
 void SharedLogNode::read(uint64_t logOffset) {
     if (!threaded_)
         readLog(threads_.front(), logOffset);
 }
 
+/* TODO: Documentation */
 void SharedLogNode::append(void *data, size_t dataLength) {
     if (!threaded_)
         appendLog(threads_.front(), data, dataLength);
@@ -43,6 +45,20 @@ void SharedLogNode::append(void *data, size_t dataLength) {
 void SharedLogNode::terminate(bool force) {
     for ( ReplicationManager *rp : threads_)
         rp->terminate(force);
+}
+
+/* TODO: Documentation */
+void SharedLogNode::get_benchmark_ready() {
+    for ( ReplicationManager *rp : threads_)
+        while(!rp->benchmarkReady_);
+}
+
+void SharedLogNode::get_results(BenchmarkData *benchmarkData) {
+    for ( ReplicationManager *rp : threads_) {
+        benchmarkData->amountAppendsSent += rp ->benchmarkData_.amountAppendsSent;
+        benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
+        benchmarkData->totalMessagesProcessed += rp->benchmarkData_.totalMessagesProcessed;
+    }
 }
 
 /* TODO: Documentation */

@@ -20,6 +20,7 @@ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, st
         setupMessage_{nullptr},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         chainReady_{false},
+        benchmarkReady_{true},
         NodeType_{NodeType},
         rec{rec}, 
         NetworkManager_{new NetworkManager(Nexus, 0, headURI, successorURI, tailURI, this)} {}
@@ -39,6 +40,7 @@ ReplicationManager::ReplicationManager(erpc::Nexus *Nexus, uint8_t erpcID, strin
         benchmarkData_{benchmarkData},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
         chainReady_{false},
+        benchmarkReady_{false},
         NodeType_{benchmarkData_.progArgs.nodeType},
         rec{nullptr} 
     {
@@ -57,6 +59,15 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 
     LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
 
+    // Append few messages so something can be read
+    for(int i = 0; i < 1000; i++) 
+        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+
+    rp->benchmarkReady_ = true;
+
+    // Start threads (more or less) simultaniously 
+    rp->benchmarkData_.startBenchmark->lock();
+    rp->benchmarkData_.startBenchmark->unlock();
 
     while(likely(rp->nodeReady_ && rp->benchmarkData_.remainderNumberOfRequests)) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
@@ -69,7 +80,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 	    rp->benchmarkData_.amountReadsSent++; 
         } else {
             appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
-	    rp->benchmarkData_.amountAppendsSent++; 
+	        rp->benchmarkData_.amountAppendsSent++; 
         }
 	    rp->benchmarkData_.remainderNumberOfRequests--; 
 
@@ -93,6 +104,8 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 
     while(likely(rp->nodeReady_))
 		rp->NetworkManager_->sync(1);
+
+    rp->benchmarkData_.totalMessagesProcessed = rp->NetworkManager_->totalMessagesProcessed_;
 }
 
 /**
@@ -114,12 +127,12 @@ void ReplicationManager::init() {
 
         /* Wait for SETUP response */
         while(!chainReady_)
-            NetworkManager_->sync(10);
+            NetworkManager_->sync(1);
     } else {
     	DEBUG_MSG("ReplicationManager.init(Wait for Setup)");
         /* Wait for the SETUP message */
         while (!setupMessage_)
-            NetworkManager_->sync(10);
+            NetworkManager_->sync(1);
 
     	DEBUG_MSG("ReplicationManager.init(Setup arrived)");
         /* Answer/Forward SETUP message accordingly */
@@ -131,7 +144,7 @@ void ReplicationManager::init() {
     	DEBUG_MSG("ReplicationManager.init(Wait for first APPEND)");
         /* Wait for first APPEND/READ message from the HEAD node */
         while (!chainReady_) 
-            NetworkManager_->sync(10);
+            NetworkManager_->sync(1);
     }
 }
 
