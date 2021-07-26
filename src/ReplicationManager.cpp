@@ -83,9 +83,6 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 	        rp->benchmarkData_.amountAppendsSent++; 
         }
 	    rp->benchmarkData_.remainderNumberOfRequests--; 
-
-	    while (rp->NetworkManager_->messagesInFlight_ > 10000)
-		    rp->NetworkManager_->sync(100);
     }
 
     /* Wait for missing response messages */

@@ -18,7 +18,7 @@ SharedLogNode::SharedLogNode(NodeType NodeType, string hostURI, string headURI, 
     if (benchmarkData->progArgs.amountThreads > 1) {
         threaded_ = true;
         /* Create threads */
-        for (int i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
+        for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
 	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
             threads_.push_back(new ReplicationManager(&Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
         }

@@ -85,7 +85,7 @@ void start_benchmarking_single() {
         benchmarkData.remainderNumberOfRequests--;
     }
 
-    while((benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.messagesInFlight) > benchmarkData.progArgs.percentileNumberOfRequests)
+    while((benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.messagesInFlight) < (benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.progArgs.percentileNumberOfRequests))
 		localNode->sync(1);
 
     /* Take end time */
@@ -100,7 +100,7 @@ void printbenchmarkData() {
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
     std::cout << "Total Requests: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
-    std::cout << "Total Requests Processed: " << benchmarkData.totalMessagesProcessed << endl;
+    std::cout << "Total Requests Processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
     std::cout << "Sent READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
     std::cout << "Total time: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
     std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
@@ -167,9 +167,12 @@ int main(int argc, char** argv) {
     std::cout << "Start benchmarking..." << endl;
 
 
-    if (benchmarkData.progArgs.amountThreads < 2)
-        start_benchmarking_single();
-    else
+    if (benchmarkData.progArgs.amountThreads < 2) {
+        if (benchmarkData.progArgs.activeMode)
+            start_benchmarking_single();
+        else
+            while(true) localNode->sync(1);
+    } else
         start_benchmarking_threads();
 
 

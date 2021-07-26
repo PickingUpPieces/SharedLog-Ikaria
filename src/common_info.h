@@ -13,7 +13,6 @@
 
 /* Max message size */
 #define MAX_MESSAGE_SIZE 4112
-static constexpr size_t kAppMaxConcurrency = 32;  // Outstanding reqs per thread
 
 // Log variables
 /* size of the pmemlog pool -- 1 GB = 2^30 */

@@ -8,7 +8,7 @@
 struct ProgArgs {
     NodeType nodeType{HEAD}; // -n
     bool activeMode{true}; // -a
-    int amountThreads{1}; // -t
+    size_t amountThreads{1}; // -t
     size_t totalNumberOfRequests{10000000}; // -m
     size_t percentile{100}; // -p ; Only works for very high percentiles > 99. Depends on the totalNumberOfRequests.
     size_t percentileNumberOfRequests{10000000};
