@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(replication_node)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 add_definitions(-Wall -Wextra -Wpedantic -Wsign-conversion -Wunused)
 add_definitions(-Wno-unused-function -Wno-deprecated-declarations)
 add_definitions(-Wno-format -Wno-format-security)
@@ -56,6 +56,7 @@ link_libraries(erpc)
 
 include_directories(${SRC})
 include_directories(${SRC}/NetworkLayer)
+include_directories(${TESTS})
 
 link_libraries(${LIBRARIES})
 
@@ -71,7 +72,12 @@ set(NETWORK_SOURCE
 set(REPLICATION_SOURCE
   ${SRC}/ReplicationManager.h
   ${SRC}/ReplicationManager.cpp
-  ${SRC}/common_info.h
+  ${SRC}/helperFunctions.cpp
+)
+
+set(SHAREDLOGNODE_SOURCE
+  ${SRC}/SharedLogNode.h
+  ${SRC}/SharedLogNode.cpp
 )
 
 set(LOG_SOURCE
@@ -91,6 +97,7 @@ set(BENCHMARK
 add_library(replication_node STATIC
   ${NETWORK_SOURCE}
   ${REPLICATION_SOURCE}
+  ${SHAREDLOGNODE_SOURCE}
   ${LOG_SOURCE}
 )
 

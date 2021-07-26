@@ -13,7 +13,7 @@ in stdenv.mkDerivation {
 	gtest
 	gflags
     ];
-  cmakeFlags = [ "-DTRANSPORT=infiniband" "-DROCE=ON" "-DPERF=ON" ];
+  cmakeFlags = [ "-DTRANSPORT=infiniband" "-DROCE=ON" "-DPERF=ON" "-DLOG_LEVEL=none" ];
   NIX_CFLAGS_COMPILE = [
     # nobody got time to fix all these errors!
     "-Wno-error"

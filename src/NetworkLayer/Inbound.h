@@ -18,7 +18,6 @@ class Inbound {
 
     private:
         NetworkManager *NetworkManager_;
-        void init(erpc::Nexus *nexus);
 
     public:
         Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager);

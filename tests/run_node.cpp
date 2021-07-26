@@ -1,7 +1,7 @@
-#include "rpc.h"
-#include "ReplicationManager.h"
 #include <iostream>
 #include <random>
+#include "common_tests.h"
+#include "SharedLogNode.h"
 
 enum Modus {
     SLOW,
@@ -11,20 +11,19 @@ enum Modus {
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850" 
 #define ACTIVE_MODE false
-//#define MODUS SLOW
 #define MODUS FAST
+#define THREADED
+#define AMOUNT_THREADS 5
 
 int messagesInFlight_{0};
 int messagesSent_{0};
 int messagesFinished_{0};
 int messagesValidated_{0};
-ReplicationManager *localNode;
-Message *message;
-erpc::MsgBuffer *reqRead; 
-erpc::MsgBuffer *reqAppend; 
+SharedLogNode *localNode;
 // Check which type this node should be
 NodeType node{HEAD};
 string randomString = "";
+BenchmarkData benchmarkData{{HEAD, ACTIVE_MODE, AMOUNT_THREADS}};
 
 
 void receive_locally(Message *message) {
@@ -37,49 +36,24 @@ void receive_locally(Message *message) {
 
     /* Verify the entry */
     if (message->messageType == READ) {
-	#ifdef TESTING
-        string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
-	string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
-	#else
-        string uniqueString = randomString; 
-	string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
-	#endif
+    	#ifdef TESTING
+            string uniqueString = randomString + "-ID-" + std::to_string(message->logOffset);
+	    #else
+            string uniqueString = randomString; 
+	    #endif
+
+	    string tempString((char *) &(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data));
         DEBUG_MSG("rec generatedString vs returnedString: '" << uniqueString << "' vs '" << tempString << "'");
 
-	if (uniqueString.compare(tempString) == 0)
-            messagesValidated_++;
+	    if (uniqueString.compare(tempString) == 0)
+                messagesValidated_++;
     }
 
     DEBUG_MSG("run_node.receive_locally(messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << " ; messagesValidated_: " << std::to_string(messagesValidated_) << ")");
-    localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
-    localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
 }
 
 void send_read_message(uint64_t logOffset) {
-    message = (Message *) malloc(sizeof(Message));
-    reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->logOffset = logOffset;
-    message->messageType = READ;
-
-    /* Fill request data */
-    uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
-    *reqPointer = message->logOffset;
-    message->reqBufferSize = sizeof(message->logOffset);
-    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-
-    DEBUG_MSG("run_node.send_read_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-
-    if (node == HEAD)
-        localNode->read(message);
-    else
-        localNode->NetworkManager_->send_message(HEAD, message);
+    localNode->read(logOffset);
 
     messagesInFlight_++;
     messagesSent_++;
@@ -87,33 +61,7 @@ void send_read_message(uint64_t logOffset) {
 }
 
 void send_append_message(void *data, size_t dataLength) {
-    message = (Message *) malloc(sizeof(Message));
-    reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-    message->reqBufferSize = MAX_MESSAGE_SIZE;
-	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->messageType = APPEND;
-
-    /* Fill request data */
-    memcpy(message->reqBuffer->buf, data, dataLength);
-    message->reqBufferSize = dataLength;
-    #ifndef TESTING
-    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-
-
-    DEBUG_MSG("run_node.send_append_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-
-	if ( node == HEAD )
-        localNode->append(message);
-    else 
-        localNode->NetworkManager_->send_message(HEAD, message);
+    localNode->append(data, dataLength);
 
     messagesInFlight_++;
     messagesSent_++;
@@ -153,28 +101,28 @@ void testing(Modus modus) {
         else {
             if ((messagesSent_ % 10000) == 0) {
                 std::cout << "tests: messagesInFlight_: " << std::to_string(messagesInFlight_) << "; messagesSent_: " << std::to_string(messagesSent_) << " ; messagesFinished_: " << std::to_string(messagesFinished_) << " ; messagesValidated_: " << std::to_string(messagesValidated_) << endl;
-                std::cout << "localNode: messagesInFlight_: " << std::to_string(localNode->NetworkManager_->messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(localNode->NetworkManager_->totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(localNode->NetworkManager_->totalMessagesProcessed_) << endl;
-                std::cout << "HugePage allocated in MB: " << std::to_string(localNode->NetworkManager_->rpc_.get_stat_user_alloc_tot() / 1024 / 1024) << "; Average RX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()) << "; Average TX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()) << endl;
-                std::cout << "Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()) << endl;
+                //std::cout << "localNode: messagesInFlight_: " << std::to_string(localNode->NetworkManager_->messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(localNode->NetworkManager_->totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(localNode->NetworkManager_->totalMessagesProcessed_) << endl;
+                //std::cout << "HugePage allocated in MB: " << std::to_string(localNode->NetworkManager_->rpc_.get_stat_user_alloc_tot() / 1024 / 1024) << "; Average RX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_rx_batch()) << "; Average TX batch: " << std::to_string(localNode->NetworkManager_->rpc_.get_avg_tx_batch()) << endl;
+                //std::cout << "Active Sessions: " << std::to_string(localNode->NetworkManager_->rpc_.num_active_sessions()) << endl;
 
                 std::cout << "Validating Log..." << endl;
 		#ifdef TESTING
                 uint64_t untilThisEntryValid = localNode->Log_.validate_log(&randomString, true);
 		#else
-                uint64_t untilThisEntryValid = localNode->Log_.validate_log(&randomString, false);
+                uint64_t untilThisEntryValid = localNode->validate_log(&randomString, false);
 		#endif
                 std::cout << "Until this Entry is Log Valid: " << std::to_string(untilThisEntryValid) << endl;
 		        std::cout << "-------------------------" << endl;
-
             }
         }
 
         while (messagesInFlight_ > 10000)
-            localNode->NetworkManager_->sync(1000);
+            localNode->sync(1000);
 
         DEBUG_MSG("------------------------------------");
     }
 }
+
 
 int main(int argc, char** argv) {
     DEBUG_MSG("-------------------------------------");
@@ -184,26 +132,30 @@ int main(int argc, char** argv) {
         std::string cmd_arg(argv[1]);
 
         if ( cmd_arg.compare("head") == 0 )
-            node = HEAD;
+            benchmarkData.progArgs.nodeType = HEAD;
         else if ( cmd_arg.compare("tail") == 0 )
-            node = TAIL;
+            benchmarkData.progArgs.nodeType = TAIL;
     }
     DEBUG_MSG("This node is: " << node << "(HEAD=0, MIDDLE=1, TAIL=2)");
 
     switch(node) {
-        case HEAD: localNode = new ReplicationManager(node, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &receive_locally); break;
-        case TAIL: localNode = new ReplicationManager(node, NARDOLE_URI, BILL_URI, std::string(), std::string(), &receive_locally ); break;
+        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
+        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
         case MIDDLE: break;
     }
-    localNode->init();
 
+    #ifdef THREADED
+        int i = 0;
+        while(true) {i++;}
+    #else
     if (ACTIVE_MODE)
         testing(MODUS);
     else {
-	if (node == HEAD)
-	    send_read_message(0);
+	    if(node == HEAD)
+	        send_read_message(0);
 
         while (true)
-           localNode->NetworkManager_->sync(1000); 
+           localNode->sync(1000); 
     }
+    #endif 
 }

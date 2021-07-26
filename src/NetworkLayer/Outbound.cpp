@@ -7,12 +7,12 @@
  * @param NetworkManager Reference needed for the message flow e.g. handing of messages for further process 
  * @param rpc RPC Object for creating the session and sending messages / receiving responses
  */
-Outbound::Outbound(string connectURI, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc):
+Outbound::Outbound(string connectURI, uint8_t erpcID, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc):
         sessionNum_{-1}, 
         NetworkManager_{NetworkManager},
         rpc_{rpc}
 {
-    sessionNum_ = rpc_->create_session(connectURI, 0);
+    sessionNum_ = rpc_->create_session(connectURI, erpcID);
     DEBUG_MSG("Outbound(): sessionNum " << std::to_string(this->sessionNum_) << " ; connectURI: " << connectURI);
 }
 
@@ -36,12 +36,14 @@ void cont_func(void *context, void *tag) {
 void Outbound::send_message(Message *message) {
     DEBUG_MSG("Outbound.send_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     DEBUG_MSG("Outbound.send_message(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
-    DEBUG_MSG("reqSend: " << to_string(message->reqBuffer->get_data_size()));
-    DEBUG_MSG("respSend: " << to_string(message->respBuffer.get_data_size()));
+    DEBUG_MSG("Outbound.send_message(): reqSend: " << to_string(message->reqBuffer->get_data_size()));
+    DEBUG_MSG("Outbound.send_message(): respSend: " << to_string(message->respBuffer.get_data_size()));
     
     /* Enqueue the request and send it */
     rpc_->enqueue_request(sessionNum_, message->messageType, message->reqBuffer, &(message->respBuffer), cont_func, (void *) message);
     rpc_->run_event_loop_once();
+
+    DEBUG_MSG("Outbound.send_message(): Message sent");
 }
 
 
@@ -49,6 +51,7 @@ void Outbound::send_message(Message *message) {
  * Establishes the connection to the client
  */
 void Outbound::connect() {
+    DEBUG_MSG("Outbound.connect(): Establishing Connection...");
     /* Try until Client is connected */
     while (!rpc_->is_connected(sessionNum_)) 
     	rpc_->run_event_loop_once();

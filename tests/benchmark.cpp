@@ -1,199 +1,109 @@
-#include "rpc.h"
-#include "ReplicationManager.h"
-#include "common_info.h"
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <shared_mutex>
+#include "common_info.h"
+#include "common_tests.h"
+#include "SharedLogNode.h"
 
 /* FIXME: In case IPs change */
-#define NODE_TYPE HEAD
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850"
 
-/* Collects the measured data */
-struct MeasureData {
-    size_t totalNumberOfRequests{0};
-    size_t remainderNumberOfRequests{0};
-    size_t amountReadsSent{0};
-    size_t amountAppendsSent{0};
-    size_t amountReadsReceived{0};
-    size_t amountAppendsReceived{0};
-    size_t totalMessagesProcessed{0};
-    std::chrono::duration<double> totalExecutionTime{};
-    double operationsPerSecond{0.0}; // Op/s
-    double dataOut{0.0}; // MB/s
-    double dataIn{0.0}; // MB/s
-    uint64_t highestKnownLogOffset{0}; // So reads are performed on offset smaller than this
-};
 
-/* Holds the input arguments */
-struct ProgArgs {
-    NodeType nodeType; // -n
-    size_t amountThreads; // -t
-    size_t totalNumberOfRequests; // -r 
-    int percentageOfReads; // -p ; Between 0 - 100
-    size_t valueSize; // -s ; Bytes
-};
-
-ReplicationManager *localNode;
-ProgArgs progArgs{NODE_TYPE, 1, 500000, 50, 64};
-MeasureData measureData{500000, 500000};
-string randomString = "";
-int messagesInFlight;
+SharedLogNode *localNode;
+BenchmarkData benchmarkData;
+std::mutex startBenchmark;
 
 
 /* Callback function when a response is received */
 void receive_locally(Message *message) {
-    messagesInFlight--;
+	benchmarkData.messagesInFlight--;
     
-    if (message->messageType == READ) {
-        measureData.amountReadsReceived++;
-    } else if (message->messageType == APPEND) {
-        measureData.amountAppendsReceived++;
+    if (message->messageType == APPEND) {
         uint64_t *returnedLogOffset = (uint64_t *) message->respBuffer.buf;
-
-        if (measureData.highestKnownLogOffset < *returnedLogOffset)
-            measureData.highestKnownLogOffset = *returnedLogOffset;
+        if (benchmarkData.highestKnownLogOffset < *returnedLogOffset)
+            benchmarkData.highestKnownLogOffset = *returnedLogOffset;
     }  
-
-    localNode->NetworkManager_->rpc_.free_msg_buffer(*(message->reqBuffer));
-    localNode->NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
-    free(message);
 }
 
 
 /* Send a READ message */
 void send_read_message(uint64_t logOffset) {
-    Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->logOffset = logOffset;
-    message->messageType = READ;
-
-    /* Fill request data */
-    uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
-    *reqPointer = message->logOffset;
-    message->reqBufferSize = sizeof(uint64_t);
-
-    /* WORKAROUND resizing problem */
-    #if NODE_TYPE != HEAD
-    	if (message->reqBufferSize < 969)
-    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-
-    /* Send message */
-    if (progArgs.nodeType == HEAD)
-        localNode->read(message);
-    else
-        localNode->NetworkManager_->send_message(HEAD, message);
-
-    measureData.amountReadsSent++;
+    localNode->read(logOffset);
+    benchmarkData.amountReadsSent++;
 }
-
 
 /* Create an APPEND message, which is always sent */
 void send_append_message(void *data, size_t dataLength) {
-    Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-
-    /* Fill message struct */
-    message->reqBuffer = reqRead;
-    message->reqBufferSize = MAX_MESSAGE_SIZE;
-	message->respBuffer = localNode->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
-    message->messageType = APPEND;
-
-    /* Fill request data */
-    memcpy(message->reqBuffer->buf, data, dataLength);
-    message->reqBufferSize = dataLength;
-
-    /* WORKAROUND resizing problem */
-    #if NODE_TYPE != HEAD
-    	if (message->reqBufferSize < 969)
-    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #else
-        localNode->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
-    /* Send message */
-    if (progArgs.nodeType == HEAD )
-        localNode->append(message);
-    else 
-        localNode->NetworkManager_->send_message(HEAD, message);
-
-    measureData.amountAppendsSent++;
+    localNode->append(data, dataLength);
+    benchmarkData.amountAppendsSent++;
 }
 
 
-/* Benchmarking function */
-void start_benchmarking() {
+/* Benchmarking function for multiple threads */
+void start_benchmarking_threads() {
+    startBenchmark.unlock();
+    
+    /* Take start time */
+    auto start = std::chrono::high_resolution_clock::now();
+
+    localNode->terminate(false);
+
+    /* Take end time */
+    auto end = std::chrono::high_resolution_clock::now();
+    benchmarkData.totalExecutionTime = end - start;
+
+    localNode->get_results(&benchmarkData);
+}
+
+
+/* Benchmarking function for single thread */
+void start_benchmarking_single() {
     /* Create data struct for APPEND */
-    LogEntryInFlight logEntryInFlight{1, { 0, ""}};
-    randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
-    logEntryInFlight.logEntry.dataLength = randomString.length();
-    measureData.highestKnownLogOffset = 1;
+    LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(benchmarkData.progArgs.valueSize);
 
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
 
-    while(measureData.remainderNumberOfRequests) {
-        if (( rand() % 100 ) < progArgs.percentageOfReads) {
-	        if ( measureData.highestKnownLogOffset < 1)
+    while(benchmarkData.remainderNumberOfRequests) {
+        if (( rand() % 100 ) < benchmarkData.progArgs.probabilityOfRead) {
+	        if ( benchmarkData.highestKnownLogOffset < 1)
 		        continue;
 
-	    uint64_t randuint = static_cast<uint64_t>(rand());
-            uint64_t randReadOffset = randuint % measureData.highestKnownLogOffset; 
+	        uint64_t randuint = static_cast<uint64_t>(rand());
+            uint64_t randReadOffset = randuint % benchmarkData.highestKnownLogOffset; 
             send_read_message(randReadOffset); 
         } else {
     	    send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
         }
 
-	    while(messagesInFlight > 20000)
-	        localNode->NetworkManager_->sync(10); 
+	    while(benchmarkData.messagesInFlight > 20000)
+	        localNode->sync(10); 
 
-	    messagesInFlight++;
-        measureData.remainderNumberOfRequests--;
+	    benchmarkData.messagesInFlight++;
+        benchmarkData.remainderNumberOfRequests--;
     }
+
+    while((benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.messagesInFlight) < (benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.progArgs.percentileNumberOfRequests))
+		localNode->sync(1);
 
     /* Take end time */
     auto end = std::chrono::high_resolution_clock::now();
-    measureData.totalExecutionTime = end - start;
+    benchmarkData.totalExecutionTime = end - start;
 }
 
 
-/* Print out the MeasureData struct and calculate additional information */
-void printMeasureData() {
-    measureData.totalMessagesProcessed = localNode->NetworkManager_->totalMessagesProcessed_ + measureData.totalNumberOfRequests;
-    size_t totalMBSent = ((measureData.amountAppendsSent * ( 8 + 8 + progArgs.valueSize)) + measureData.amountReadsSent * 8 ) / 1024 / 1024;
-    size_t totalMBReceived = ((measureData.amountAppendsReceived * 8) + (measureData.amountReadsReceived * ((8 + 8) + progArgs.valueSize))) / 1024 / 1024; 
-
+/* Print out the benchmarkData struct and calculate additional information */
+void printbenchmarkData() {
     std::cout << "-------------------------------------" << endl;
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
-    std::cout << "Total Requests: " << measureData.totalNumberOfRequests << endl;
-    std::cout << "Total Requests Processed: " << measureData.totalMessagesProcessed << endl;
-    std::cout << "Total Requests Received: " << (measureData.amountReadsReceived + measureData.amountAppendsReceived) << endl;
-    std::cout << "Read Sent/Received: " << measureData.amountReadsSent << "/" << measureData.amountReadsReceived << endl;
-    std::cout << "Append Sent/Received: " << measureData.amountAppendsSent << "/" << measureData.amountAppendsReceived << endl;
-    std::cout << "Total time: " << measureData.totalExecutionTime.count() << "s" << endl;
-    std::cout << "Operations per Second: " << (static_cast<double>(measureData.totalMessagesProcessed) / measureData.totalExecutionTime.count()) << " Op/s" << endl;
-    std::cout << "Total MB Sent/Received: " << totalMBSent << " MB / " << totalMBReceived << " MB" << endl;
-    std::cout << "Total MB/s Sent/Received: " << (static_cast<double>(totalMBSent) / measureData.totalExecutionTime.count() ) << " MB/s / " << (static_cast<double>(totalMBReceived) / measureData.totalExecutionTime.count()) << " MB/s" << endl;
+    std::cout << "Total Requests: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
+    std::cout << "Total Requests Processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
+    std::cout << "Sent READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
+    std::cout << "Total time: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
+    std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
     std::cout << "-------------------------------------" << endl;
 }
 
@@ -203,40 +113,39 @@ void parser(int amountArgs, char **argv) {
     for (int i = 1; i < amountArgs; i++) {
         switch (argv[i][1]) {
             case 'n': // NodeType
-                //progArgs.nodeType = std::strtol(&(argv[i][3]), nullptr, 0);
+                if(!std::strtol(&(argv[i][3]), nullptr, 0))
+                    benchmarkData.progArgs.nodeType = HEAD;
+                else if (std::strtol(&(argv[i][3]), nullptr, 0) == 1)
+                    benchmarkData.progArgs.nodeType = MIDDLE;
+                else
+                    benchmarkData.progArgs.nodeType = TAIL;
                 break;
             case 't': // Threads amount
-                progArgs.amountThreads = std::stoul(&(argv[i][3]), nullptr, 0);
+                benchmarkData.progArgs.amountThreads = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
-            case 'r': // Request amount
-                progArgs.totalNumberOfRequests = std::stoul(&(argv[i][3]), nullptr, 0) * 1000000;
-                measureData.totalNumberOfRequests = progArgs.totalNumberOfRequests;
-                measureData.remainderNumberOfRequests = progArgs.totalNumberOfRequests;
+            case 'm': // Request amount
+                benchmarkData.progArgs.totalNumberOfRequests = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
-            case 'p': // Percentage reads
-                progArgs.percentageOfReads = std::strtol(&(argv[i][3]), nullptr, 0);
+            case 'a': // Active mode
+                benchmarkData.progArgs.activeMode = std::stoul(&(argv[i][3]), nullptr, 0);
+                break;
+            case 'r': // Percentage reads
+                benchmarkData.progArgs.probabilityOfRead = std::strtol(&(argv[i][3]), nullptr, 0);
                 break;
             case 's': // Size value
-                progArgs.valueSize = std::stoul(&(argv[i][3]), nullptr, 0);
+                benchmarkData.progArgs.valueSize = std::stoul(&(argv[i][3]), nullptr, 0);
+                break;
+            case 'p': // Percentile of messages to wait for 
+                benchmarkData.progArgs.percentile = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
         }
     }
-    std::cout << "Input Parameters: nodeType: " << progArgs.nodeType << " amountThreads: " << progArgs.amountThreads << " totalNumOfRequests: " << progArgs.totalNumberOfRequests << " Percentage of Reads: " << progArgs.percentageOfReads << " valueSize: " << progArgs.valueSize << endl;
+
+    benchmarkData.progArgs.percentileNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests - ((benchmarkData.progArgs.percentile * benchmarkData.progArgs.totalNumberOfRequests) / 100);
+    benchmarkData.remainderNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests / benchmarkData.progArgs.amountThreads;
+    benchmarkData.startBenchmark = &startBenchmark;
+    std::cout << "Input Parameters: nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " percentileMessages: " << benchmarkData.progArgs.percentileNumberOfRequests  << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
 }
-
-
-/* Generate a random string for sending in append requests */
-void generateValueSize(int valueSize){
-    string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    mt19937 generator{random_device{}()};
-    uniform_int_distribution<> dist(0, possibleCharacters.size()-1);
-
-    for(int i = 0; i < valueSize; i++) {
-        size_t random_index = static_cast<size_t>(dist(generator)); //get index between 0 and possible_characters.size()-1
-        randomString += possibleCharacters[random_index];
-    }
-}
-
 
 
 int main(int argc, char** argv) {
@@ -244,22 +153,31 @@ int main(int argc, char** argv) {
     std::cout << "Init everything..." << endl;
 
     parser(argc, argv);
-    generateValueSize(progArgs.valueSize);
+    startBenchmark.lock();
 
-    switch(progArgs.nodeType) {
-        case HEAD: localNode = new ReplicationManager(progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &receive_locally); break;
-        case TAIL: localNode = new ReplicationManager(progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &receive_locally ); break;
+    switch(benchmarkData.progArgs.nodeType) {
+        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
+        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
         case MIDDLE: break;
     }
-    localNode->init();
+
+    localNode->get_benchmark_ready();
 
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking..." << endl;
 
-    start_benchmarking();
+
+    if (benchmarkData.progArgs.amountThreads < 2) {
+        if (benchmarkData.progArgs.activeMode)
+            start_benchmarking_single();
+        else
+            while(true) localNode->sync(1);
+    } else
+        start_benchmarking_threads();
+
 
     std::cout << "...Finished benchmarking" << endl;
     std::cout << "-------------------------------------" << endl;
 
-    printMeasureData();
+    printbenchmarkData();
 }

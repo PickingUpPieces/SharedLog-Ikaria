@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <string>
 #include "common_info.h"
+#include "common_tests.h"
 #include "NetworkManager.h"
 #include "Log.h"
+#include "helperFunctions.h"
 using namespace std;
 
 class NetworkManager;
@@ -16,20 +18,29 @@ class ReplicationManager {
 
     private:
         bool nodeReady_;
-        bool chainReady_;
         Message *setupMessage_;
+        std::thread thread_;
+        static void run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
+        static void run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
         void setup_response(); 
         void add_logOffset_to_data(Message *message);
+        void receive_locally(Message *message);
 
     public:
-        ReplicationManager(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, receive_local rec);
+        // Multi Threaded
+        ReplicationManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
+        // Single Threaded
+        ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec);
         void append(Message *message);
         void read(Message *message);
         void init();
+        void terminate(bool force);
 
+        BenchmarkData benchmarkData_;
         Log Log_;
-        static uint64_t softCounter_; /* TODO: Not thread safe */
+        bool chainReady_;
+        bool benchmarkReady_;
         NodeType NodeType_;
         receive_local rec;
         NetworkManager *NetworkManager_;

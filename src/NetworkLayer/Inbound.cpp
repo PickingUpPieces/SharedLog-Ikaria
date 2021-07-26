@@ -1,6 +1,9 @@
 #include <iostream>
 #include "Inbound.h"
 
+static once_flag req_handler_once;
+static void register_req_handlers(erpc::Nexus *nexus);
+
 /**
  * Constructs an Inbound Object and registers the request handlers
  * @param nexus Nexus needed for the eRPC connection
@@ -10,8 +13,10 @@ Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
         NetworkManager_{NetworkManager}
 {
     DEBUG_MSG("Inbound()");
-    Inbound::init(nexus);
+    //std::call_once(req_handler_once, register_req_handlers, nexus);
+    std::call_once(req_handler_once, register_req_handlers, nexus);
 }
+
 
 /**
  * The request handler for SETUP requests
@@ -21,16 +26,14 @@ Inbound::Inbound(erpc::Nexus *nexus, NetworkManager *NetworkManager):
 void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
 
-    const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
-
     /* Alloc space for the message meta information and fill it */
     Message *message = (Message *) malloc(sizeof(Message));
     message->messageType = SETUP;
     message->sentByThisNode = false;
     message->logOffset = 0;
     message->reqHandle = req_handle;
-    message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
-    message->reqBufferSize = req->get_data_size();
+    message->reqBuffer = const_cast<erpc::MsgBuffer *>(req_handle->get_req_msgbuf());
+    message->reqBufferSize = message->reqBuffer->get_data_size();
     message->respBuffer = req_handle->pre_resp_msgbuf;
     message->respBufferSize = message->respBuffer.get_data_size();
 
@@ -47,8 +50,6 @@ void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
  */
 void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
-    const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
-    erpc::MsgBuffer resp = networkManager->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 
     /* Alloc space for the message meta information and fill it */
     Message *message = (Message *) malloc(sizeof(Message));
@@ -56,10 +57,9 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
     message->sentByThisNode = false;
     message->logOffset = 0;
     message->reqHandle = req_handle;
-    message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
-    message->reqBufferSize = req->get_data_size();
-    //message->respBuffer = req_handle->pre_resp_msgbuf;
-    message->respBuffer = resp;
+    message->reqBuffer = const_cast<erpc::MsgBuffer *>(req_handle->get_req_msgbuf());
+    message->reqBufferSize = message->reqBuffer->get_data_size();
+    message->respBuffer = req_handle->pre_resp_msgbuf;
     message->respBufferSize = message->respBuffer.get_data_size();
 
     DEBUG_MSG("Inbound.req_handler_read(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << ")"); 
@@ -75,7 +75,6 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
  */
 void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
-    const erpc::MsgBuffer *req = req_handle->get_req_msgbuf();
      
     /* Alloc space for the message meta information and fill it */
     Message *message = (Message *) malloc(sizeof(Message));
@@ -83,39 +82,14 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
     message->sentByThisNode = false;
     message->logOffset = 0;
     message->reqHandle = req_handle;
-    message->reqBuffer = const_cast<erpc::MsgBuffer *>(req);
-    message->reqBufferSize = req->get_data_size();
+    message->reqBuffer = const_cast<erpc::MsgBuffer *>(req_handle->get_req_msgbuf());
+    message->reqBufferSize = message->reqBuffer->get_data_size();
     message->respBuffer = req_handle->pre_resp_msgbuf;
     message->respBufferSize = message->respBuffer.get_data_size();
 
     DEBUG_MSG("Inbound.req_handler_append(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
 
     networkManager->receive_message(message);
-}
-
-
-/**
- * Registers the request handlers at the Nexus Object
- * @param nexus Nexus needed for registering the request handlers
- */
-void Inbound::init(erpc::Nexus *nexus) {
-    // Register request handler for Request Type INIT
-    if (nexus->register_req_func(SETUP, req_handler_setup)) {
-        cerr << "Failed to initialize req INIT" << endl;
-        std::terminate();
-    } 
-
-    // Register request handler for Request Type READ
-    if (nexus->register_req_func(READ, req_handler_read)) {
-        cerr << "Failed to initialize req READ" << endl;
-        std::terminate();
-    } 
-
-    // Register request handler for Request Type APPEND
-    if (nexus->register_req_func(APPEND, req_handler_append)) {
-        cerr << "Failed to initialize req APPEND" << endl;
-        std::terminate();
-    }
 }
 
 
@@ -134,8 +108,30 @@ void Inbound::send_response(Message *message) {
     NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
     NetworkManager_->rpc_.run_event_loop_once();
 
-    if (message->messageType == READ)
-        NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
-
     free(message);
+}
+
+/**
+ * Registers the request handlers at the Nexus Object
+ * @param nexus Nexus needed for registering the request handlers
+ */
+static void register_req_handlers(erpc::Nexus *nexus) {
+    DEBUG_MSG("Inbound.register_req_handlers()");
+    // Register request handler for Request Type INIT
+    if (nexus->register_req_func(SETUP, req_handler_setup)) {
+        cerr << "Failed to initialize req INIT" << endl;
+        std::terminate();
+    } 
+
+    // Register request handler for Request Type READ
+    if (nexus->register_req_func(READ, req_handler_read)) {
+        cerr << "Failed to initialize req READ" << endl;
+        std::terminate();
+    } 
+
+    // Register request handler for Request Type APPEND
+    if (nexus->register_req_func(APPEND, req_handler_append)) {
+        cerr << "Failed to initialize req APPEND" << endl;
+        std::terminate();
+    }
 }
