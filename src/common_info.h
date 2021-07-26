@@ -52,7 +52,7 @@ struct Message {
     bool sentByThisNode{false};
     uint64_t logOffset{0};
     erpc::ReqHandle *reqHandle{nullptr};
-    erpc::MsgBuffer *reqBuffer{nullptr};
+    erpc::MsgBuffer reqBuffer;
     size_t reqBufferSize{0};
     erpc::MsgBuffer respBuffer;
     size_t respBufferSize{0};

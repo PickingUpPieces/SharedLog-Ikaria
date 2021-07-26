@@ -115,10 +115,9 @@ void ReplicationManager::init() {
     if (NodeType_ == HEAD) {
         /*  Send SETUP message down the chain */
         setupMessage_ = (Message *) malloc(sizeof(Message));
-        erpc::MsgBuffer reqBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
         setupMessage_->messageType = SETUP;
         setupMessage_->sentByThisNode = false;
-        setupMessage_->reqBuffer = &reqBuffer;
+        setupMessage_->reqBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
         setupMessage_->respBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
         NetworkManager_->send_message(SUCCESSOR, setupMessage_);
 
@@ -176,7 +175,7 @@ void ReplicationManager::append(Message *message) {
     switch(NodeType_) {
         case HEAD: 
         {
-            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
             /* Count Sequencer up and set the log entry number */
             reqLogEntryInFlight->logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
 
@@ -192,7 +191,7 @@ void ReplicationManager::append(Message *message) {
         }; break;
         case MIDDLE: 
         {
-            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
             /* Append the log entry to the local log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
 
@@ -201,7 +200,7 @@ void ReplicationManager::append(Message *message) {
         }; break;
         case TAIL: 
         {
-            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
             message->logOffset = reqLogEntryInFlight->logOffset;
             /* Append the log entry to the local log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
@@ -230,17 +229,17 @@ void ReplicationManager::read(Message *message) {
         case HEAD: 
         {
             #ifdef DEBUG
-            message->logOffset = ((LogEntryInFlight *) message->reqBuffer->buf)->logOffset;
+            message->logOffset = ((LogEntryInFlight *) message->reqBuffer.buf)->logOffset;
             #endif
             DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-            DEBUG_MSG("ReplicationManager.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+            DEBUG_MSG("ReplicationManager.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
             /* Send READ request drectly to TAIL */
             NetworkManager_->send_message(TAIL, message);
         }; break;
         case TAIL:
         {
             size_t logEntrySize = 0;
-            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
             LogEntryInFlight *respLogEntryInFlight = (LogEntryInFlight *) message->respBuffer.buf;
 
             LogEntry*logEntry = Log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
@@ -253,7 +252,7 @@ void ReplicationManager::read(Message *message) {
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntrySize);
 
             DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-            DEBUG_MSG("ReplicationManager.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer->buf)->logEntry.data << ")");
+            DEBUG_MSG("ReplicationManager.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
     	    DEBUG_MSG("ReplicationManager.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
             /* Send READ response */
@@ -300,12 +299,12 @@ void ReplicationManager::terminate(bool force) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void ReplicationManager::add_logOffset_to_data(Message *message) {
-    LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer->buf;
+    LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
     string temp = (string) reqLogEntryInFlight->logEntry.data;
     temp += "-ID-" + std::to_string(reqLogEntryInFlight->logOffset);
     temp.copy(reqLogEntryInFlight->logEntry.data, temp.length());
     reqLogEntryInFlight->logEntry.dataLength = temp.length() + 1;
     message->logOffset = reqLogEntryInFlight->logOffset;
     message->reqBufferSize = sizeof(reqLogEntryInFlight->logOffset) + sizeof(reqLogEntryInFlight->logEntry.dataLength) + reqLogEntryInFlight->logEntry.dataLength;
-    NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    NetworkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
 }

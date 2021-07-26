@@ -120,9 +120,8 @@ void NetworkManager::receive_response(Message *message) {
 
     if (message->sentByThisNode) {
         ReplicationManager_->receive_locally(message);
-        rpc_.free_msg_buffer(*(message->reqBuffer));
+        rpc_.free_msg_buffer(message->reqBuffer);
         rpc_.free_msg_buffer(message->respBuffer);
-        free(message->reqBuffer);
         free(message);
         return;
     }
