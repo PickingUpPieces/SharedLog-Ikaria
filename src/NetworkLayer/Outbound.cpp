@@ -36,7 +36,7 @@ void cont_func(void *context, void *tag) {
 void Outbound::send_message(Message *message) {
     DEBUG_MSG("Outbound.send_message(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     DEBUG_MSG("Outbound.send_message(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
-    DEBUG_MSG("Outbound.send_message(): reqSend: " << to_string(message->reqBuffer->get_data_size()));
+    DEBUG_MSG("Outbound.send_message(): reqSend: " << to_string(message->reqBuffer.get_data_size()));
     DEBUG_MSG("Outbound.send_message(): respSend: " << to_string(message->respBuffer.get_data_size()));
     
     /* Enqueue the request and send it */

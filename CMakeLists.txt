@@ -111,12 +111,12 @@ target_link_libraries(benchmark
 )
 
 
-# Compile run_node test
-add_executable(run_node
-  ${TEST_UTILS}
-)
-
-
-target_link_libraries(run_node
-  replication_node
-)
+## Compile run_node test
+#add_executable(run_node
+#  ${TEST_UTILS}
+#)
+#
+#
+#target_link_libraries(run_node
+#  replication_node
+#)
