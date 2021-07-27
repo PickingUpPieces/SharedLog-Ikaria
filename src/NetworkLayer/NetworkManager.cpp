@@ -13,34 +13,32 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
+NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
         erpcID_{erpcID},
         ReplicationManager_{ReplicationManager},
         Nexus_{Nexus},
-        Inbound_{new Inbound(Nexus_, this)},
+        Inbound_{new Inbound(nodeType, Nexus_, this)},
         Head_{nullptr},
         Successor_{nullptr},
         Tail_{nullptr},
+        nodeType_{nodeType},
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
 {
     rpc_.retry_connect_on_invalid_rpc_id = true;
     rpc_.set_pre_resp_msgbuf_size(MAX_MESSAGE_SIZE);
 
-    DEBUG_MSG("NetworkManager(erpcID: " << std::to_string(erpcID_) << ")");
-
-    if (!headURI.empty())
+    if (nodeType_ != HEAD)
         Head_ = new Outbound(headURI, erpcID, this, &rpc_);
 
-    if (!tailURI.empty())
+    if (nodeType_ != TAIL) {
         Tail_ = new Outbound(tailURI, erpcID, this, &rpc_);
     
-    if (successorURI.empty())
-        /* This node is the tail node */
-        Successor_ = nullptr;
-    else if (successorURI.compare(tailURI) == 0)
-        Successor_ = Tail_;
-    else
-        Successor_ = new Outbound(successorURI, erpcID, this, &rpc_);
+        /* SUCCESSOR is the TAIL node */
+        if (successorURI.compare(tailURI) == 0)
+            Successor_ = Tail_;
+        else
+            Successor_ = new Outbound(successorURI, erpcID, this, &rpc_);
+    }
 }
 
 /**
@@ -120,9 +118,8 @@ void NetworkManager::receive_response(Message *message) {
 
     if (message->sentByThisNode) {
         ReplicationManager_->receive_locally(message);
-        rpc_.free_msg_buffer(*(message->reqBuffer));
+        rpc_.free_msg_buffer(message->reqBuffer);
         rpc_.free_msg_buffer(message->respBuffer);
-        free(message->reqBuffer);
         free(message);
         return;
     }

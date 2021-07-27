@@ -28,7 +28,7 @@ class NetworkManager {
         Outbound *Tail_;
 
     public:
-        NetworkManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
+        NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
         void init();
         void send_message(NodeType targetNode, Message *message); 
         void send_response(Message *message); 
@@ -36,6 +36,7 @@ class NetworkManager {
         void receive_response(Message *message);
         void sync(int numberOfRuns);
 
+        NodeType nodeType_;
         erpc::Rpc<erpc::CTransport> rpc_;
         size_t messagesInFlight_;
         size_t totalMessagesCompleted_;

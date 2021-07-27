@@ -29,15 +29,16 @@ struct LogEntry {
     char data[LOG_BLOCK_DATA_SIZE];
 };
 
-struct LogEntryInFlight {
-    uint64_t logOffset;
-    LogEntry logEntry;
-};
-
 enum MessageType {
     READ = 2,
     APPEND = 3,
     SETUP = 4
+};
+
+struct LogEntryInFlight {
+    uint64_t logOffset;
+    MessageType messageType;
+    LogEntry logEntry;
 };
 
 enum NodeType {
@@ -52,7 +53,7 @@ struct Message {
     bool sentByThisNode{false};
     uint64_t logOffset{0};
     erpc::ReqHandle *reqHandle{nullptr};
-    erpc::MsgBuffer *reqBuffer{nullptr};
+    erpc::MsgBuffer reqBuffer;
     size_t reqBufferSize{0};
     erpc::MsgBuffer respBuffer;
     size_t respBufferSize{0};

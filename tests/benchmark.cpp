@@ -66,16 +66,18 @@ void start_benchmarking_single() {
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
 
-    while(benchmarkData.remainderNumberOfRequests) {
+    while(likely(benchmarkData.remainderNumberOfRequests)) {
         if (( rand() % 100 ) < benchmarkData.progArgs.probabilityOfRead) {
 	        if ( benchmarkData.highestKnownLogOffset < 1)
 		        continue;
 
 	        uint64_t randuint = static_cast<uint64_t>(rand());
             uint64_t randReadOffset = randuint % benchmarkData.highestKnownLogOffset; 
+            logEntryInFlight.messageType = READ;
             send_read_message(randReadOffset); 
         } else {
-    	    send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+            logEntryInFlight.messageType = APPEND;
+    	    send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
         }
 
 	    while(benchmarkData.messagesInFlight > 20000)
@@ -170,8 +172,11 @@ int main(int argc, char** argv) {
     if (benchmarkData.progArgs.amountThreads < 2) {
         if (benchmarkData.progArgs.activeMode)
             start_benchmarking_single();
-        else
-            while(true) localNode->sync(1);
+        else {
+            send_read_message(0);
+            while(true) 
+                localNode->sync(1);
+        }
     } else
         start_benchmarking_threads();
 

@@ -7,30 +7,34 @@
 void readLog(ReplicationManager *rp, uint64_t logOffset) {
     /* Allocate message struct */
     Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
 
-    while(!reqRead->buf) {
+    message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    while(!message->reqBuffer.buf) {
         rp->NetworkManager_->sync(1);
-        *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    }
+
+    message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    while(!message->respBuffer.buf) {
+        rp->NetworkManager_->sync(1);
+        message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
     /* Fill message struct */
-    message->reqBuffer = reqRead;
-	message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
     message->logOffset = logOffset;
     message->messageType = READ;
 
     /* Fill request data */
-    uint64_t *reqPointer = (uint64_t *) message->reqBuffer->buf;
-    *reqPointer = message->logOffset;
-    message->reqBufferSize = sizeof(uint64_t);
+    auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+    logEntryInFlight->logOffset = message->logOffset;
+    logEntryInFlight->messageType = message->messageType;
+    message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
 
     /* WORKAROUND resizing problem */
     #ifdef NODETYPE
-        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+        rp->NetworkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
     #else
     	if (message->reqBufferSize < 969)
     	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
@@ -49,30 +53,34 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
 void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     /* Allocate message struct */
     Message *message = (Message *) malloc(sizeof(Message));
-    erpc::MsgBuffer *reqRead = (erpc::MsgBuffer *) malloc(sizeof(erpc::MsgBuffer));
-    // MsgBuffer.buf is null, if alloc fails
-    *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    auto *logEntryInFlight = static_cast<LogEntryInFlight *>(data);
+    logEntryInFlight->messageType = APPEND;
 
-    while(!reqRead->buf) {
+    message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    while(!message->reqBuffer.buf) {
         rp->NetworkManager_->sync(1);
-        *reqRead = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    }
+
+    message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    while(!message->respBuffer.buf) {
+        rp->NetworkManager_->sync(1);
+        message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
     /* Fill message struct */
-    message->reqBuffer = reqRead;
     message->reqBufferSize = MAX_MESSAGE_SIZE;
-	message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer_or_die(MAX_MESSAGE_SIZE);
 	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
     message->messageType = APPEND;
 
     /* Fill request data */
-    memcpy(message->reqBuffer->buf, data, dataLength);
+    memcpy(message->reqBuffer.buf, data, dataLength);
     message->reqBufferSize = dataLength;
 
     /* WORKAROUND resizing problem */
     #ifdef NODETYPE
-        rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+        rp->NetworkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
     #else
     	if (message->reqBufferSize < 969)
     	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
