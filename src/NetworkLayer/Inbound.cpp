@@ -84,7 +84,6 @@ void req_handler(erpc::ReqHandle *req_handle, void *context) {
  */
 void Inbound::send_response(Message *message) {
     DEBUG_MSG("Inbound.send_response(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    DEBUG_MSG("Inbound.send_response(LogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
     
     /* Copy data in pre_resp MsgBuffer */
     if (nodeType_ != TAIL)
@@ -94,7 +93,7 @@ void Inbound::send_response(Message *message) {
 	if (message->respBufferSize < message->reqHandle->pre_resp_msgbuf.get_data_size())
         NetworkManager_->rpc_.resize_msg_buffer(&message->reqHandle->pre_resp_msgbuf, message->respBufferSize);
 
-    NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->respBuffer);
+    NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->reqHandle->pre_resp_msgbuf);
     NetworkManager_->rpc_.run_event_loop_once();
 
     if (nodeType_ != TAIL) {
