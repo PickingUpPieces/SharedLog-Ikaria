@@ -66,7 +66,7 @@ void req_handler(erpc::ReqHandle *req_handle, void *context) {
             message->respBuffer = networkManager->rpc_.alloc_msg_buffer(message->respBufferSize);
         }
     } else 
-        message->reqBuffer = req_handle->pre_resp_msgbuf;
+        message->respBuffer = req_handle->pre_resp_msgbuf;
     
     /* Fill the rest of the message meta information */
     message->logOffset = logEntryInFlight->logOffset;
