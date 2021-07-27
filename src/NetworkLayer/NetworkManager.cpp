@@ -27,21 +27,18 @@ NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t er
     rpc_.retry_connect_on_invalid_rpc_id = true;
     rpc_.set_pre_resp_msgbuf_size(MAX_MESSAGE_SIZE);
 
-    DEBUG_MSG("NetworkManager(erpcID: " << std::to_string(erpcID_) << ")");
-
-    if (!headURI.empty())
+    if (nodeType_ != HEAD)
         Head_ = new Outbound(headURI, erpcID, this, &rpc_);
 
-    if (!tailURI.empty())
+    if (nodeType_ != TAIL) {
         Tail_ = new Outbound(tailURI, erpcID, this, &rpc_);
     
-    if (successorURI.empty())
-        /* This node is the tail node */
-        Successor_ = nullptr;
-    else if (successorURI.compare(tailURI) == 0)
-        Successor_ = Tail_;
-    else
-        Successor_ = new Outbound(successorURI, erpcID, this, &rpc_);
+        /* SUCCESSOR is the TAIL node */
+        if (successorURI.compare(tailURI) == 0)
+            Successor_ = Tail_;
+        else
+            Successor_ = new Outbound(successorURI, erpcID, this, &rpc_);
+    }
 }
 
 /**

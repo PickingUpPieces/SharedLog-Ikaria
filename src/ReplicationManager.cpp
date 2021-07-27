@@ -60,6 +60,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
 
     // Append few messages so something can be read
+    logEntryInFlight.messageType = APPEND;
     for(int i = 0; i < 1000; i++) 
         appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
 
@@ -76,10 +77,12 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 
 	        uint64_t randuint = static_cast<uint64_t>(rand());
             uint64_t randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
+            logEntryInFlight.messageType = READ;
             readLog(rp, randReadOffset);
 	        rp->benchmarkData_.amountReadsSent++; 
         } else {
-            appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+            logEntryInFlight.messageType = APPEND;
+            appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 	        rp->benchmarkData_.amountAppendsSent++; 
         }
 	    rp->benchmarkData_.remainderNumberOfRequests--; 

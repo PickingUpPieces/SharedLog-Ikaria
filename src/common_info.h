@@ -29,15 +29,16 @@ struct LogEntry {
     char data[LOG_BLOCK_DATA_SIZE];
 };
 
-struct LogEntryInFlight {
-    uint64_t logOffset;
-    LogEntry logEntry;
-};
-
 enum MessageType {
     READ = 2,
     APPEND = 3,
     SETUP = 4
+};
+
+struct LogEntryInFlight {
+    uint64_t logOffset;
+    MessageType messageType;
+    LogEntry logEntry;
 };
 
 enum NodeType {
