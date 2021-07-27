@@ -36,7 +36,7 @@ void req_handler_setup(erpc::ReqHandle *req_handle, void *context) {
             networkManager->sync(1);
             message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
         }
-        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
+        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf()->buf, oldReqBufferSize);
     } else
         message->reqBuffer = *req_handle->get_req_msgbuf();
 
@@ -73,7 +73,7 @@ void req_handler_read(erpc::ReqHandle *req_handle, void *context) {
             networkManager->sync(1);
             message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
         }
-        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
+        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf()->buf, oldReqBufferSize);
     } else
         message->reqBuffer = *req_handle->get_req_msgbuf();
 
@@ -110,7 +110,7 @@ void req_handler_append(erpc::ReqHandle *req_handle, void *context) {
             networkManager->sync(1);
             message->reqBuffer = networkManager->rpc_.alloc_msg_buffer(oldReqBufferSize);
         }
-        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf(), oldReqBufferSize);
+        memcpy(message->reqBuffer.buf, req_handle->get_req_msgbuf()->buf, oldReqBufferSize);
     } else
         message->reqBuffer = *req_handle->get_req_msgbuf();
 
