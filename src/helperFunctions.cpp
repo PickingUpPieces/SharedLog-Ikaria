@@ -27,9 +27,10 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
     message->messageType = READ;
 
     /* Fill request data */
-    uint64_t *reqPointer = (uint64_t *) message->reqBuffer.buf;
-    *reqPointer = message->logOffset;
-    message->reqBufferSize = sizeof(uint64_t);
+    auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+    logEntryInFlight->logOffset = message->logOffset;
+    logEntryInFlight->messageType = message->messageType;
+    message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
 
     /* WORKAROUND resizing problem */
     #ifdef NODETYPE
@@ -52,6 +53,8 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
 void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     /* Allocate message struct */
     Message *message = (Message *) malloc(sizeof(Message));
+    auto *logEntryInFlight = static_cast<LogEntryInFlight *>(data);
+    logEntryInFlight->messageType = APPEND;
 
     message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->reqBuffer.buf) {
