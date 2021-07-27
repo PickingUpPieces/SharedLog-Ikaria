@@ -72,7 +72,7 @@ void req_handler(erpc::ReqHandle *req_handle, void *context) {
     message->logOffset = logEntryInFlight->logOffset;
     message->sentByThisNode = false;
     message->reqHandle = req_handle;
-    DEBUG_MSG("Inbound.req_handler(LogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << ")"); 
+    DEBUG_MSG("Inbound.req_handler(LogEntryInFlight: logOffset: " << std::to_string(logEntryInFlight->logOffset) << " ; MessageType: " << std::to_string(logEntryInFlight->messageType) << ")"); 
 
     networkManager->receive_message(message);
 }
