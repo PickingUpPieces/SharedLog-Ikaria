@@ -134,7 +134,6 @@ void ReplicationManager::init() {
 
         NetworkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
         NetworkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
-        free(setupMessage_);
     } else {
     	DEBUG_MSG("ReplicationManager.init(Wait for Setup)");
         /* Wait for the SETUP message */
