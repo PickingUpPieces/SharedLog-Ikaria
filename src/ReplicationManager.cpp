@@ -117,16 +117,24 @@ void ReplicationManager::init() {
 
     if (NodeType_ == HEAD) {
         /*  Send SETUP message down the chain */
-        setupMessage_ = (Message *) malloc(sizeof(Message));
+        LogEntryInFlight logEntryInFlight = {0, SETUP, {0, ""}};
+        setupMessage_ = new Message();
         setupMessage_->messageType = SETUP;
         setupMessage_->sentByThisNode = false;
-        setupMessage_->reqBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
+        setupMessage_->reqBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(8 + sizeof(MessageType));
+        setupMessage_->reqBufferSize = 8 + sizeof(MessageType);
         setupMessage_->respBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
+        /* Fill request data */
+        memcpy(setupMessage_->reqBuffer.buf, &logEntryInFlight, setupMessage_->reqBufferSize);
         NetworkManager_->send_message(SUCCESSOR, setupMessage_);
 
         /* Wait for SETUP response */
         while(!chainReady_)
             NetworkManager_->sync(1);
+
+        NetworkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
+        NetworkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
+        free(setupMessage_);
     } else {
     	DEBUG_MSG("ReplicationManager.init(Wait for Setup)");
         /* Wait for the SETUP message */
