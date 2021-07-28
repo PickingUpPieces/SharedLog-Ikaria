@@ -4,3 +4,6 @@
 [submodule "eRPC"]
 	path = eRPC
 	url = git@github.com:PickingUpPieces/eRPC.git
+[submodule "dpdk"]
+	path = dpdk
+	url = https://github.com/DPDK/dpdk
