@@ -1,6 +1,12 @@
 [submodule "eRPC"]
 	path = eRPC
-	url = git@github.com:PickingUpPieces/eRPC.git
+	url = git@erpc.github.com:PickingUpPieces/eRPC.git
 [submodule "eRPC-dpdk"]
 	path = eRPC-dpdk
 	url = https://github.com/saendigPhilip/eRPC.git
+[submodule "dpdk"]
+	path = dpdk
+	url = git@github.com:PickingUpPieces/dpdk.git
+[submodule "pmdk"]
+	path = pmdk
+	url = ssh://git@bitbucket.ase.in.tum.de:7999/bavp/pmdk.git
