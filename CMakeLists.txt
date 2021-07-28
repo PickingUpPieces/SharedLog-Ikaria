@@ -25,7 +25,7 @@ message(STATUS "PMDK-path: ${PMDK}")
 
 # DPDK
 set(DPDK-PATH ${CMAKE_CURRENT_SOURCE_DIR}/dpdk)
-message(STATUS "DPDK-path: ${DPDK_PATH}")
+message(STATUS "DPDK-path: ${DPDK-PATH}")
 
 
 # This project source/test directory:
