@@ -15,9 +15,18 @@ set(LIBRARIES pthread numa dl ibverbs)
 set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC")
 message(STATUS "eRPC-path: ${ERPC}")
 
+# eRPC-dpdk
+set(ERPC-DPDK "${CMAKE_CURRENT_SOURCE_DIR}/eRPC-dpdk")
+message(STATUS "eRPC-dpdk path: ${ERPC-DPDK}")
+
 # PMDK
 set(PMDK "${CMAKE_CURRENT_SOURCE_DIR}/pmdk")
 message(STATUS "PMDK-path: ${PMDK}")
+
+# DPDK
+set(DPDK-PATH ${CMAKE_CURRENT_SOURCE_DIR}/dpdk)
+message(STATUS "DPDK-path: ${DPDK_PATH}")
+
 
 # This project source/test directory:
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -40,8 +49,27 @@ endif()
 # Adds IDs to log entries
 #add_compile_definitions(TESTING)
 
-message(STATUS "Compiling with infiniband")
-add_definitions(-DERPC_INFINIBAND=true)
+if(TRANSPORT STREQUAL "infiniband")
+  set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC")
+  message(STATUS "Compiling with infiniband")
+  add_definitions(-DERPC_INFINIBAND=true)
+
+elseif(TRANSPORT STREQUAL "dpdk") 
+  set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC-dpdk")
+  message(STATUS "Compiling with DPDK")
+  add_definitions(-DERPC_DPDK=true)
+
+  set(DPDK_INCLUDE_DIR ${DPDK-PATH}/include/dpdk)
+  message(STATUS "DPDK include directory = ${DPDK_INCLUDE_DIR}")
+  include_directories(SYSTEM ${DPDK_INCLUDE_DIR})
+  set(DPDK_LIBS 
+            -L${DPDK-PATH}/lib -Wl,--whole-archive dpdk -Wl,--no-whole-archive dl)
+
+else()
+    message(FATAL_ERROR "Invalid transport: ${TRANSPORT}")
+endif()
+
+
 
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
@@ -101,22 +129,17 @@ add_library(replication_node STATIC
   ${LOG_SOURCE}
 )
 
+target_link_libraries(replication_node
+    ${DPDK_LIBS}
+)
+
+
 # Compile benchmark
 add_executable(benchmark
   ${BENCHMARK}
 )
 
+
 target_link_libraries(benchmark
   replication_node
 )
-
-
-## Compile run_node test
-#add_executable(run_node
-#  ${TEST_UTILS}
-#)
-#
-#
-#target_link_libraries(run_node
-#  replication_node
-#)

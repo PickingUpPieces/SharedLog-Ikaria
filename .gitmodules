@@ -7,3 +7,6 @@
 [submodule "dpdk"]
 	path = dpdk
 	url = https://github.com/DPDK/dpdk
+[submodule "eRPC-dpdk"]
+	path = eRPC-dpdk
+	url = https://github.com/saendigPhilip/eRPC.git

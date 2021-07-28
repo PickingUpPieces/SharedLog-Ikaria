@@ -7,6 +7,7 @@ stdenv.mkDerivation {
 	numactl
 	pmdk
 	fio
+    boost
     ];
   nativeBuildInputs = [
     cmake
