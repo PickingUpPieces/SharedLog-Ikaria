@@ -22,6 +22,7 @@ cd dpdk
 4. Execute make. The output directory is specified in the dpdk.nix as $makeFlags
 ```bash
 make install $makeFlags
+```
 
 ### Building eRPC-dpdk
 1. Switch to the erpc-dpdk.nix shell.
