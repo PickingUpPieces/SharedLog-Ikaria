@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
     parser(argc, argv);
     startBenchmark.lock();
 
-    #ifndef DPDK-Cluster
+    #ifndef DPDK_CLUSTER
     switch(benchmarkData.progArgs.nodeType) {
         case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
         case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
@@ -172,9 +172,9 @@ int main(int argc, char** argv) {
 
     #else
     switch(benchmarkData.progArgs.nodeType) {
-        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, AMY_URI, std::string(), CLARA_URI, DONNA_URI, &benchmarkData, &receive_locally); break;
-        case MIDDLE: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, CLARA_URI, AMY_URI, DONNA_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
-        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, DONNA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
+        case MIDDLE: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
+        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
     }
     #endif
 

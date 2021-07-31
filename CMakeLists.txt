@@ -34,6 +34,7 @@ set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 # User options:
 set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)") 
+set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -44,6 +45,11 @@ if (${DEBUG} STREQUAL "ON")
 else()
   message(STATUS "Debugging disabled")
   add_definitions(-O2)
+endif()
+
+string(TOUPPER ${DPDK_CLUSTER} DPDK_CLUSTER)
+if (${DPDK_CLUSTER} STREQUAL "TRUE")
+  add_compile_definitions(DPDK_CLUSTER)
 endif()
 
 # Adds IDs to log entries
@@ -74,7 +80,7 @@ endif()
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
 include_directories(SYSTEM ${PMDK}/src)
-link_directories(${PMDK}/lib/lib64)
+link_directories(${PMDK}/lib/lib)
 link_libraries(pmem pmemlog)
 
 # eRPC
