@@ -35,6 +35,7 @@ set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 # User options:
 set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)") 
 set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
+set(TRANSPORT "dpdk" CACHE STRING "Which transport type to use(infiniband/dpdk)") 
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -50,6 +51,7 @@ endif()
 string(TOUPPER ${DPDK_CLUSTER} DPDK_CLUSTER)
 if (${DPDK_CLUSTER} STREQUAL "TRUE")
   add_compile_definitions(DPDK_CLUSTER)
+  message(STATUS "Using DPDK Cluster")
 endif()
 
 # Adds IDs to log entries
@@ -57,12 +59,12 @@ endif()
 
 if(TRANSPORT STREQUAL "infiniband")
   set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC")
-  message(STATUS "Compiling with infiniband")
+  message(STATUS "Compiling with Transport=infiniband")
   add_definitions(-DERPC_INFINIBAND=true)
 
 elseif(TRANSPORT STREQUAL "dpdk") 
   set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC-dpdk")
-  message(STATUS "Compiling with DPDK")
+  message(STATUS "Compiling with Transport=DPDK")
   add_definitions(-DERPC_DPDK=true)
 
   set(DPDK_INCLUDE_DIR ${DPDK-PATH}/include/dpdk)
@@ -80,7 +82,7 @@ endif()
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
 include_directories(SYSTEM ${PMDK}/src)
-link_directories(${PMDK}/lib/lib)
+link_directories(${PMDK}/lib/lib64)
 link_libraries(pmem pmemlog)
 
 # eRPC

@@ -167,8 +167,8 @@ int main(int argc, char** argv) {
     startBenchmark.lock();
 
     // Set Log file name to nodeID
-    char *poolPath = static_cast<char *>(malloc(strlen(POOL_PATH))); 
-    strncpy(poolPath, POOL_PATH, strlen(POOL_PATH));
+    char *poolPath = static_cast<char *>(malloc(strlen(POOL_PATH) + 1)); 
+    strncpy(poolPath, POOL_PATH, strlen(POOL_PATH) + 1);
     poolPath[strlen(POOL_PATH) - 5] = '0' + static_cast<char>(benchmarkData.progArgs.nodeID);
 
     #ifndef DPDK_CLUSTER
