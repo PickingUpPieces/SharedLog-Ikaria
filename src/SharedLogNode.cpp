@@ -10,21 +10,23 @@
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node */ 
-SharedLogNode::SharedLogNode(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec):
+SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec):
         Nexus_{hostURI, 0, 0},
-        NodeType_{NodeType},
+        nodeID_{nodeID},
+        NodeType_{nodeType},
         threaded_{false}
 {
+    
     if (benchmarkData->progArgs.amountThreads > 1) {
         threaded_ = true;
         /* Create threads */
         for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
 	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
-            threads_.push_back(new ReplicationManager(&Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
+            threads_.push_back(new ReplicationManager(NodeType_, nodeID_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
         }
     } else {
         /* Just create the Object */
-        threads_.push_back(new ReplicationManager(NodeType, &Nexus_, headURI, successorURI, tailURI, rec));
+        threads_.push_back(new ReplicationManager(NodeType_, nodeID_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
         threads_.front()->init();
     }
 }

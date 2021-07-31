@@ -128,6 +128,9 @@ void parser(int amountArgs, char **argv) {
                 else
                     benchmarkData.progArgs.nodeType = TAIL;
                 break;
+            case 'i': // NodeID
+                benchmarkData.progArgs.nodeID = std::stoul(&(argv[i][3]), nullptr, 0);
+                break;
             case 't': // Threads amount
                 benchmarkData.progArgs.amountThreads = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
@@ -163,18 +166,21 @@ int main(int argc, char** argv) {
     parser(argc, argv);
     startBenchmark.lock();
 
+    // Set Log file name to nodeID
+    (const_cast<char *>(POOL_PATH))[strlen(POOL_PATH) - 5] = static_cast<char>(benchmarkData.progArgs.nodeID);
+
     #ifndef DPDK_CLUSTER
     switch(benchmarkData.progArgs.nodeType) {
-        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
-        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, POOL_PATH, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
+        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, POOL_PATH, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
         case MIDDLE: break;
     }
 
     #else
     switch(benchmarkData.progArgs.nodeType) {
-        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
-        case MIDDLE: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
-        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, POOL_PATH, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
+        case MIDDLE: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, POOL_PATH, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
+        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, POOL_PATH, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
     }
     #endif
 

@@ -15,15 +15,16 @@ static std::atomic<uint64_t> softCounter_{0};
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
  */
-ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec):
+ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec):
         nodeReady_{false},
+        nodeID_{nodeID},
         setupMessage_{nullptr},
-        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
+        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         chainReady_{false},
         benchmarkReady_{true},
-        NodeType_{NodeType},
+        NodeType_{nodeType},
         rec{rec}, 
-        NetworkManager_{new NetworkManager(NodeType, Nexus, 0, headURI, successorURI, tailURI, this)} {}
+        NetworkManager_{new NetworkManager(nodeType, Nexus, 0, headURI, successorURI, tailURI, this)} {}
 
 
 /* TODO: Documentation */
@@ -34,14 +35,15 @@ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, st
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */ 
-ReplicationManager::ReplicationManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
+ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
         nodeReady_{false},
+        nodeID_{nodeID},
         setupMessage_{nullptr},
         benchmarkData_{benchmarkData},
-        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
+        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         chainReady_{false},
         benchmarkReady_{false},
-        NodeType_{benchmarkData_.progArgs.nodeType},
+        NodeType_{nodeType},
         rec{nullptr} 
     {
         if (benchmarkData_.progArgs.activeMode)
