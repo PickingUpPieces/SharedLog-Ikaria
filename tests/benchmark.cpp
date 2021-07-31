@@ -10,6 +10,12 @@
 #define BILL_URI "131.159.102.1:31850"
 #define NARDOLE_URI "131.159.102.2:31850"
 
+#define CLARA_URI "129.215.165.58:31850"
+#define AMY_URI "129.215.165.57:31850"
+#define DONNA_URI "129.215.165.54:31850"
+#define ROSA_URI "129.215.165.52:31850"
+#define MARTHA_URI "129.215.165.53:31850"
+
 
 SharedLogNode *localNode;
 BenchmarkData benchmarkData;
@@ -157,11 +163,21 @@ int main(int argc, char** argv) {
     parser(argc, argv);
     startBenchmark.lock();
 
+    #ifndef DPDK_CLUSTER
     switch(benchmarkData.progArgs.nodeType) {
         case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
         case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
         case MIDDLE: break;
     }
+
+    #else
+    switch(benchmarkData.progArgs.nodeType) {
+        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
+        case MIDDLE: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
+        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+    }
+    #endif
+
 
     localNode->get_benchmark_ready();
 
