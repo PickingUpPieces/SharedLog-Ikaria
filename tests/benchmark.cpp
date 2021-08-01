@@ -198,10 +198,6 @@ int main(int argc, char** argv) {
     #endif
 
 
-    localNode->get_benchmark_ready();
-
-
-
     if (benchmarkData.progArgs.amountThreads < 2) {
         if (benchmarkData.progArgs.activeMode)
             start_benchmarking_single();
