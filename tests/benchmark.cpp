@@ -49,7 +49,11 @@ void send_append_message(void *data, size_t dataLength) {
 
 /* Benchmarking function for multiple threads */
 void start_benchmarking_threads() {
+    localNode->get_benchmark_ready();
     startBenchmark.unlock();
+
+    std::cout << "-------------------------------------" << endl;
+    std::cout << "Start benchmarking..." << endl;
     
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
@@ -68,6 +72,9 @@ void start_benchmarking_threads() {
 void start_benchmarking_single() {
     /* Create data struct for APPEND */
     LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(benchmarkData.progArgs.valueSize);
+
+    std::cout << "-------------------------------------" << endl;
+    std::cout << "Start benchmarking..." << endl;
 
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
@@ -190,8 +197,6 @@ int main(int argc, char** argv) {
 
     localNode->get_benchmark_ready();
 
-    std::cout << "-------------------------------------" << endl;
-    std::cout << "Start benchmarking..." << endl;
 
 
     if (benchmarkData.progArgs.amountThreads < 2) {

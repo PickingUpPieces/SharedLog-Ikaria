@@ -62,8 +62,11 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
 
     // Append few messages so something can be read
-    for(int i = 0; i < 1000; i++) 
-        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+    for(int i = 0; i < 100; i++) 
+        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
+
+    while(rp->NetworkManager_->messagesInFlight_)
+		rp->NetworkManager_->sync(1);
 
     rp->benchmarkReady_ = true;
 
@@ -99,6 +102,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
     rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
+
     if (rp->NodeType_ == HEAD)
         readLog(rp, 0);
 
