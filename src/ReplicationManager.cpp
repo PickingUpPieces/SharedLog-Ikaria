@@ -61,7 +61,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
-    LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
+    auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
 
     // Append few messages so something can be read
     for(int i = 0; i < 100; i++) 
@@ -87,8 +87,8 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
 
-	        uint64_t randuint = static_cast<uint64_t>(rand());
-            uint64_t randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
+	        auto randuint = static_cast<uint64_t>(rand());
+            auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             logEntryInFlight.messageType = READ;
             readLog(rp, randReadOffset);
 	        rp->benchmarkData_.amountReadsSent++; 
@@ -172,7 +172,6 @@ void ReplicationManager::init() {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void ReplicationManager::setup(Message *message) {
-    DEBUG_MSG("ReplicationManager.setup()");
     setupMessage_ = message;
 }
 
@@ -210,7 +209,7 @@ void ReplicationManager::append(Message *message) {
         }; break;
         case MIDDLE: 
         {
-            LogEntryInFlight *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Append the log entry to the local log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
 
@@ -219,7 +218,7 @@ void ReplicationManager::append(Message *message) {
         }; break;
         case TAIL: 
         {
-            LogEntryInFlight *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             message->logOffset = reqLogEntryInFlight->logOffset;
             /* Append the log entry to the local log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
@@ -261,7 +260,7 @@ void ReplicationManager::read(Message *message) {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
-            LogEntry *logEntry = Log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
+            auto *logEntry = Log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read is legit e.g. not reading an offset which hasn't been written yet
             
             /* Prepare respBuffer */
