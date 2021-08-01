@@ -25,7 +25,6 @@ class ReplicationManager {
         static void run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
         void setup_response(); 
-        void add_logOffset_to_data(Message *message);
         void receive_locally(Message *message);
 
     public:

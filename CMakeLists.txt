@@ -54,8 +54,6 @@ if (${DPDK_CLUSTER} STREQUAL "TRUE")
   message(STATUS "Using DPDK Cluster")
 endif()
 
-# Adds IDs to log entries
-#add_compile_definitions(TESTING)
 
 if(TRANSPORT STREQUAL "infiniband")
   set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC")

@@ -71,11 +71,3 @@ void SharedLogNode::sync(int numberOfRuns) {
     if(!threaded_)
         threads_.front().NetworkManager_->sync(numberOfRuns);
 }
-
-/* TODO: Documentation */
-uint64_t SharedLogNode::validate_log(string *randomString, bool logsSavedWithLogOffset) {
-    if(!threaded_)
-        return (threads_.front().Log_.validate_log(randomString, logsSavedWithLogOffset));
-
-    return 0;
-}

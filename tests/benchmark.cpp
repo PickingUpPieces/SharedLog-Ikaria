@@ -20,6 +20,7 @@
 SharedLogNode *localNode;
 BenchmarkData benchmarkData;
 std::mutex startBenchmark;
+std::atomic<uint8_t> threadsReady{0};
 
 
 /* Callback function when a response is received */
@@ -49,11 +50,8 @@ void send_append_message(void *data, size_t dataLength) {
 
 /* Benchmarking function for multiple threads */
 void start_benchmarking_threads() {
-    cout << "start bench" << endl;
     localNode->get_benchmark_ready();
-    cout << "threads ready" << endl;
     startBenchmark.unlock();
-    cout << "unlock" << endl;
 
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking..." << endl;
@@ -197,6 +195,7 @@ int main(int argc, char** argv) {
     }
     #endif
 
+    localNode->get_benchmark_ready();
 
     if (benchmarkData.progArgs.amountThreads < 2) {
         if (benchmarkData.progArgs.activeMode)
