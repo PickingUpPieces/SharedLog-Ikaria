@@ -22,52 +22,49 @@ SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* path
         /* Create threads */
         for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
 	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
-            threads_.emplace_back(NodeType_, nodeID_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData);
+            threads_.push_back(new ReplicationManager(NodeType_, nodeID_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
         }
     } else {
         /* Just create the Object */
-        threads_.emplace_back(NodeType_, nodeID_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec);
-        threads_.front().init();
+        threads_.push_back(new ReplicationManager(NodeType_, nodeID_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
+        threads_.front()->init();
     }
 }
 
 /* TODO: Documentation */
 void SharedLogNode::read(uint64_t logOffset) {
     if (!threaded_)
-        readLog(&threads_.front(), logOffset);
+        readLog(threads_.front(), logOffset);
 }
 
 /* TODO: Documentation */
 void SharedLogNode::append(void *data, size_t dataLength) {
     if (!threaded_)
-        appendLog(&threads_.front(), data, dataLength);
+        appendLog(threads_.front(), data, dataLength);
 }
 
 /* TODO: Documentation */
 void SharedLogNode::terminate(bool force) {
-   for ( auto& rp : threads_)
-        rp.terminate(force);
+    for ( ReplicationManager *rp : threads_)
+        rp->terminate(force);
 }
 
 /* TODO: Documentation */
 void SharedLogNode::get_benchmark_ready() {
-   for ( auto& rp : threads_) {
-        cout << std::boolalpha << rp.benchmarkReady_ << endl;
-        while(rp.benchmarkReady_ == false);
-        cout << std::boolalpha << rp.benchmarkReady_ << endl;
-    }
+    for ( ReplicationManager *rp : threads_)
+        while(!rp->benchmarkReady_);
 }
 
 void SharedLogNode::get_results(BenchmarkData *benchmarkData) {
-    for ( auto& rp : threads_) {
-        benchmarkData->amountAppendsSent += rp.benchmarkData_.amountAppendsSent;
-        benchmarkData->amountReadsSent += rp.benchmarkData_.amountReadsSent;
-        benchmarkData->totalMessagesProcessed += rp.benchmarkData_.totalMessagesProcessed;
+    for ( ReplicationManager *rp : threads_) {
+        benchmarkData->amountAppendsSent += rp ->benchmarkData_.amountAppendsSent;
+        benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
+        benchmarkData->totalMessagesProcessed += rp->benchmarkData_.totalMessagesProcessed;
     }
 }
 
 /* TODO: Documentation */
 void SharedLogNode::sync(int numberOfRuns) {
     if(!threaded_)
-        threads_.front().NetworkManager_->sync(numberOfRuns);
+        threads_.front()->NetworkManager_->sync(numberOfRuns);
 }
