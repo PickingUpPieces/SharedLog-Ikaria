@@ -49,8 +49,11 @@ void send_append_message(void *data, size_t dataLength) {
 
 /* Benchmarking function for multiple threads */
 void start_benchmarking_threads() {
+    cout << "start bench" << endl;
     localNode->get_benchmark_ready();
+    cout << "threads ready" << endl;
     startBenchmark.unlock();
+    cout << "unlock" << endl;
 
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking..." << endl;
