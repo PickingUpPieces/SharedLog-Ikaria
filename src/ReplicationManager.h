@@ -13,6 +13,12 @@ using namespace std;
 class NetworkManager;
 typedef void (*receive_local)(Message *message);
 
+struct ThreadSync {
+    bool threadReady_{false};
+    condition_variable cv;
+    mutex m;
+};
+
 class ReplicationManager {
     friend NetworkManager;
 
@@ -37,6 +43,7 @@ class ReplicationManager {
         void init();
         void terminate(bool force);
 
+        ThreadSync threadSync_;
         BenchmarkData benchmarkData_;
         Log Log_;
         bool chainReady_;

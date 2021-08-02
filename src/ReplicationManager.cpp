@@ -19,9 +19,9 @@ ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const 
         nodeReady_{false},
         nodeID_{nodeID},
         setupMessage_{nullptr},
+        threadSync_{},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         chainReady_{false},
-        benchmarkReady_{true},
         NodeType_{nodeType},
         rec{rec}, 
         NetworkManager_{new NetworkManager(nodeType, Nexus, 0, headURI, successorURI, tailURI, this)} {}
@@ -39,10 +39,10 @@ ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const 
         nodeReady_{false},
         nodeID_{nodeID},
         setupMessage_{nullptr},
+        threadSync_{},
         benchmarkData_{benchmarkData},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         chainReady_{false},
-        benchmarkReady_{false},
         NodeType_{nodeType},
         rec{nullptr} 
     {
@@ -74,7 +74,11 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 
     cout << "Thread ready" << endl;
 
-    rp->benchmarkReady_ = true;
+    // Set threadReady to true
+    unique_lock<std::mutex> lk(rp->threadSync_.m);
+    rp->threadSync_.threadReady_ = true;
+    lk.unlock();
+    rp->threadSync_.cv.notify_all();
 
     // Start threads (more or less) simultaniously 
     rp->benchmarkData_.startBenchmark->lock();
