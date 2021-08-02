@@ -46,12 +46,10 @@ ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const 
         NodeType_{nodeType},
         rec{nullptr} 
     {
-        cout << "Repl Man start " << endl;
         if (benchmarkData_.progArgs.activeMode)
             thread_ = std::thread(run_active, this, Nexus, erpcID, headURI, successorURI, tailURI); 
         else
             thread_ = std::thread(run_passive, this, Nexus, erpcID, headURI, successorURI, tailURI); 
-        cout << "Repl Man end" << endl;
     }
 
 
@@ -70,8 +68,6 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     while(rp->NetworkManager_->messagesInFlight_)
 		rp->NetworkManager_->sync(1);
 
-    cout << "Thread ready" << endl;
-
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
     rp->threadSync_.threadReady = true;
@@ -81,8 +77,6 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     // Start threads (more or less) simultaniously 
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
-
-    cout << "Thread starts" << endl;
 
     while(likely(rp->nodeReady_ && rp->benchmarkData_.remainderNumberOfRequests)) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {

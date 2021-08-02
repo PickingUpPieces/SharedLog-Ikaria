@@ -13,8 +13,6 @@ Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *NetworkM
         nodeType_{nodeType},
         NetworkManager_{NetworkManager}
 {
-    DEBUG_MSG("Inbound()");
-    //std::call_once(req_handler_once, register_req_handlers, nexus);
     std::call_once(req_handler_once, register_req_handler, nexus);
 }
 

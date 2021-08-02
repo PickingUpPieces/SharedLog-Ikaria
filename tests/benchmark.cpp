@@ -13,7 +13,7 @@
 #define CLARA_URI "129.215.165.58:31850"
 #define AMY_URI "129.215.165.57:31850"
 #define DONNA_URI "129.215.165.54:31850"
-#define ROSA_URI "129.215.165.52:31850"
+#define ROSE_URI "129.215.165.52:31850"
 #define MARTHA_URI "129.215.165.53:31850"
 
 
@@ -180,19 +180,37 @@ int main(int argc, char** argv) {
     poolPath[strlen(POOL_PATH) - 5] = '0' + static_cast<char>(benchmarkData.progArgs.nodeID);
 
     #ifndef DPDK_CLUSTER
-    switch(benchmarkData.progArgs.nodeType) {
-        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
-        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+        switch(benchmarkData.progArgs.nodeType) {
+            case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
+            case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
 
-        case MIDDLE: break;
-    }
-
+            case MIDDLE: break;
+        }
     #else
-    switch(benchmarkData.progArgs.nodeType) {
-        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
-        case MIDDLE: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
-        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
-    }
+        #ifdef THREE_NODES
+            switch(benchmarkData.progArgs.nodeID) {
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
+                case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+            }
+        #endif
+        #ifdef FOUR_NODES
+            switch(benchmarkData.progArgs.nodeID) {
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, ROSE_URI, &benchmarkData, &receive_locally); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, ROSE_URI, &benchmarkData, &receive_locally ); break;
+                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, ROSE_URI, &benchmarkData, &receive_locally ); break;
+                case 3: localNode = new SharedLogNode(TAIL, 3, poolPath, ROSE_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+            }
+        #endif
+        #ifdef FIVE_NODES
+            switch(benchmarkData.progArgs.nodeID) {
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, DONNA_URI, &benchmarkData, &receive_locally); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
+                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
+                case 3: localNode = new SharedLogNode(MIDDLE, 3, poolPath, ROSE_URI, AMY_URI, DONNA_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
+                case 4: localNode = new SharedLogNode(TAIL, 4, poolPath, DONNA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+            }
+        #endif
     #endif
 
 

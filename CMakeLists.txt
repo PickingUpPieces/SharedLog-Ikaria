@@ -34,8 +34,9 @@ set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 # User options:
 set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)") 
-set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
 set(TRANSPORT "dpdk" CACHE STRING "Which transport type to use(infiniband/dpdk)") 
+set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
+set(CHAIN_NODES "3" CACHE STRING "How many nodes are in the chain (3/4/5)") 
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -52,6 +53,17 @@ string(TOUPPER ${DPDK_CLUSTER} DPDK_CLUSTER)
 if (${DPDK_CLUSTER} STREQUAL "TRUE")
   add_compile_definitions(DPDK_CLUSTER)
   message(STATUS "Using DPDK Cluster")
+endif()
+
+if (${CHAIN_NODES} STREQUAL "3")
+  add_compile_definitions(THREE_NODES)
+  message(STATUS "Using a 3-Node Chain")
+elseif (${CHAIN_NODES} STREQUAL "4")
+  add_compile_definitions(FOUR_NODES)
+  message(STATUS "Using a 4-Node Chain")
+elseif (${CHAIN_NODES} STREQUAL "5")
+  add_compile_definitions(FIVE_NODES)
+  message(STATUS "Using a 5-Node Chain")
 endif()
 
 
