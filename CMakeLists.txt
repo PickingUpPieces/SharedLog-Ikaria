@@ -118,12 +118,16 @@ set(NETWORK_SOURCE
 set(REPLICATION_SOURCE
   ${SRC}/ReplicationManager.h
   ${SRC}/ReplicationManager.cpp
-  ${SRC}/helperFunctions.cpp
 )
 
 set(SHAREDLOGNODE_SOURCE
   ${SRC}/SharedLogNode.h
   ${SRC}/SharedLogNode.cpp
+)
+
+set(THREADMANAGER_SOURCE
+  ${SRC}/ThreadManager.h
+  ${SRC}/ThreadManager.cpp
 )
 
 set(LOG_SOURCE
@@ -144,6 +148,7 @@ add_library(replication_node STATIC
   ${NETWORK_SOURCE}
   ${REPLICATION_SOURCE}
   ${SHAREDLOGNODE_SOURCE}
+  ${THREADMANAGER_SOURCE}
   ${LOG_SOURCE}
 )
 

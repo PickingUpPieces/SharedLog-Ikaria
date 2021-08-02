@@ -6,15 +6,15 @@
 #include <condition_variable>
 #include "rpc.h"
 #include "ReplicationManager.h"
+#include "ThreadManager.h"
 #include "common_info.h"
 #include "common_tests.h"
-#include "helperFunctions.h"
 using namespace std;
 
 class SharedLogNode
 {
 private:
-    std::vector<ReplicationManager *> threads_;
+    std::vector<ThreadManager *> threads_;
     erpc::Nexus Nexus_;
     uint8_t nodeID_;
     const NodeType NodeType_;

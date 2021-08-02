@@ -22,51 +22,51 @@ SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* path
         /* Create threads */
         for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
 	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
-            threads_.push_back(new ReplicationManager(NodeType_, nodeID_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
+            threads_.push_back(new ThreadManager(NodeType_, nodeID_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
         }
     } else {
         /* Just create the Object */
-        threads_.push_back(new ReplicationManager(NodeType_, nodeID_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
-        threads_.front()->init();
+        threads_.push_back(new ThreadManager(NodeType_, nodeID_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
+        //threads_.front()->init();
     }
 }
 
 /* TODO: Documentation */
 void SharedLogNode::read(uint64_t logOffset) {
     if (!threaded_)
-        readLog(threads_.front(), logOffset);
+        ThreadManager::read(threads_.front(), logOffset);
 }
 
 /* TODO: Documentation */
 void SharedLogNode::append(void *data, size_t dataLength) {
     if (!threaded_)
-        appendLog(threads_.front(), data, dataLength);
+        ThreadManager::append(threads_.front(), data, dataLength);
 }
 
 /* TODO: Documentation */
 void SharedLogNode::terminate(bool force) {
-    for ( ReplicationManager *rp : threads_)
-        rp->terminate(force);
+    for ( ThreadManager *tm : threads_)
+        tm->terminate(force);
 }
 
 /* TODO: Documentation */
 void SharedLogNode::get_thread_ready() {
-    for ( ReplicationManager *rp : threads_) { 
-        unique_lock<mutex> lk(rp->threadSync_.m);
-        rp->threadSync_.cv.wait(lk, [rp]{return rp->threadSync_.threadReady;});
+    for ( ThreadManager *tm : threads_) { 
+        unique_lock<mutex> lk(tm->threadSync_.m);
+        tm->threadSync_.cv.wait(lk, [tm]{return tm->threadSync_.threadReady;});
     }
 }
 
 void SharedLogNode::get_results(BenchmarkData *benchmarkData) {
-    for ( ReplicationManager *rp : threads_) {
-        benchmarkData->amountAppendsSent += rp ->benchmarkData_.amountAppendsSent;
-        benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
-        benchmarkData->totalMessagesProcessed += rp->benchmarkData_.totalMessagesProcessed;
+    for ( ThreadManager *tm : threads_) {
+        benchmarkData->amountAppendsSent += tm->benchmarkData_.amountAppendsSent;
+        benchmarkData->amountReadsSent += tm->benchmarkData_.amountReadsSent;
+        benchmarkData->totalMessagesProcessed += tm->benchmarkData_.totalMessagesProcessed;
     }
 }
 
 /* TODO: Documentation */
 void SharedLogNode::sync(int numberOfRuns) {
     if(!threaded_)
-        threads_.front()->NetworkManager_->sync(numberOfRuns);
+        threads_.front()->replicationManager_->networkManager_->sync(numberOfRuns);
 }
