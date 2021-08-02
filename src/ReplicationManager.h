@@ -14,7 +14,7 @@ class NetworkManager;
 typedef void (*receive_local)(Message *message);
 
 struct ThreadSync {
-    bool threadReady_{false};
+    bool threadReady{false};
     condition_variable cv;
     mutex m;
 };

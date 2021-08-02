@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string>
+#include <condition_variable>
 #include "rpc.h"
 #include "ReplicationManager.h"
 #include "common_info.h"
@@ -24,7 +25,7 @@ public:
     void read(uint64_t logOffset);
     void append(void *data, size_t dataLength);
     void sync(int numberOfRuns);
-    void get_benchmark_ready();
+    void get_thread_ready();
     void get_results(BenchmarkData *benchmarkData);
     uint64_t validate_log(string *randomString, bool logsSavedWithLogOffset);
     void terminate(bool force);

@@ -50,7 +50,7 @@ void send_append_message(void *data, size_t dataLength) {
 
 /* Benchmarking function for multiple threads */
 void start_benchmarking_threads() {
-    localNode->get_benchmark_ready();
+    localNode->get_thread_ready();
     startBenchmark.unlock();
 
     std::cout << "-------------------------------------" << endl;
@@ -194,11 +194,6 @@ int main(int argc, char** argv) {
         case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
     }
     #endif
-
-    localNode->get_benchmark_ready();
-
-    localNode->get_benchmark_ready();
-
 
 
     if (benchmarkData.progArgs.amountThreads < 2) {

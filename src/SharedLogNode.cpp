@@ -50,9 +50,11 @@ void SharedLogNode::terminate(bool force) {
 }
 
 /* TODO: Documentation */
-void SharedLogNode::get_benchmark_ready() {
-    for ( ReplicationManager *rp : threads_)
-        while(!rp->benchmarkReady_);
+void SharedLogNode::get_thread_ready() {
+    for ( ReplicationManager *rp : threads_) { 
+        unique_lock<mutex> lk(rp->threadSync_.m);
+        rp->threadSync_.cv.wait(lk, [rp]{return rp->threadSync_.threadReady;});
+    }
 }
 
 void SharedLogNode::get_results(BenchmarkData *benchmarkData) {

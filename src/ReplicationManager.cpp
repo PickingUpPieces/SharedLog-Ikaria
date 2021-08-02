@@ -24,7 +24,7 @@ ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const 
         chainReady_{false},
         NodeType_{nodeType},
         rec{rec}, 
-        NetworkManager_{new NetworkManager(nodeType, Nexus, 0, headURI, successorURI, tailURI, this)} {}
+        NetworkManager_{new NetworkManager(nodeType, Nexus, 0, headURI, successorURI, tailURI, this)} { threadSync_.threadReady = true; }
 
 
 /* TODO: Documentation */
@@ -73,8 +73,8 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     cout << "Thread ready" << endl;
 
     // Set threadReady to true
-    unique_lock<std::mutex> lk(rp->threadSync_.m);
-    rp->threadSync_.threadReady_ = true;
+    unique_lock<mutex> lk(rp->threadSync_.m);
+    rp->threadSync_.threadReady = true;
     lk.unlock();
     rp->threadSync_.cv.notify_all();
 
@@ -112,6 +112,12 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
     rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
+
+    // Set threadReady to true
+    unique_lock<mutex> lk(rp->threadSync_.m);
+    rp->threadSync_.threadReady = true;
+    lk.unlock();
+    rp->threadSync_.cv.notify_all();
 
     if (rp->NodeType_ == HEAD)
         readLog(rp, 0);
