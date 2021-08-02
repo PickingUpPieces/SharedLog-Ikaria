@@ -127,9 +127,11 @@ void NetworkManager::receive_response(Message *message) {
     switch (message->messageType)
     {
     case SETUP:
-        // TODO: A response message needs to be sent on the SETUP message when MIDDLE node
         ReplicationManager_->setup_response();
-	    break;
+        if (nodeType_ == MIDDLE){
+            send_response(message);
+        }
+        break;
     default:
         Inbound_->send_response(message);
         break;

@@ -13,30 +13,37 @@ using namespace std;
 class NetworkManager;
 typedef void (*receive_local)(Message *message);
 
+struct ThreadSync {
+    bool threadReady{false};
+    condition_variable cv;
+    mutex m;
+};
+
 class ReplicationManager {
     friend NetworkManager;
 
     private:
         bool nodeReady_;
+        uint8_t nodeID_;
         Message *setupMessage_;
         std::thread thread_;
         static void run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
         void setup_response(); 
-        void add_logOffset_to_data(Message *message);
         void receive_locally(Message *message);
 
     public:
         // Multi Threaded
-        ReplicationManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
+        ReplicationManager(NodeType NodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
         // Single Threaded
-        ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec);
+        ReplicationManager(NodeType NodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec);
         void append(Message *message);
         void read(Message *message);
         void init();
         void terminate(bool force);
 
+        ThreadSync threadSync_;
         BenchmarkData benchmarkData_;
         Log Log_;
         bool chainReady_;

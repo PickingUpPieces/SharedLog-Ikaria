@@ -10,21 +10,23 @@
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node */ 
-SharedLogNode::SharedLogNode(NodeType NodeType, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec):
+SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec):
         Nexus_{hostURI, 0, 0},
-        NodeType_{NodeType},
+        nodeID_{nodeID},
+        NodeType_{nodeType},
         threaded_{false}
 {
+    
     if (benchmarkData->progArgs.amountThreads > 1) {
         threaded_ = true;
         /* Create threads */
         for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
 	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
-            threads_.push_back(new ReplicationManager(&Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
+            threads_.push_back(new ReplicationManager(NodeType_, nodeID_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
         }
     } else {
         /* Just create the Object */
-        threads_.push_back(new ReplicationManager(NodeType, &Nexus_, headURI, successorURI, tailURI, rec));
+        threads_.push_back(new ReplicationManager(NodeType_, nodeID_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
         threads_.front()->init();
     }
 }
@@ -48,9 +50,11 @@ void SharedLogNode::terminate(bool force) {
 }
 
 /* TODO: Documentation */
-void SharedLogNode::get_benchmark_ready() {
-    for ( ReplicationManager *rp : threads_)
-        while(!rp->benchmarkReady_);
+void SharedLogNode::get_thread_ready() {
+    for ( ReplicationManager *rp : threads_) { 
+        unique_lock<mutex> lk(rp->threadSync_.m);
+        rp->threadSync_.cv.wait(lk, [rp]{return rp->threadSync_.threadReady;});
+    }
 }
 
 void SharedLogNode::get_results(BenchmarkData *benchmarkData) {
@@ -65,12 +69,4 @@ void SharedLogNode::get_results(BenchmarkData *benchmarkData) {
 void SharedLogNode::sync(int numberOfRuns) {
     if(!threaded_)
         threads_.front()->NetworkManager_->sync(numberOfRuns);
-}
-
-/* TODO: Documentation */
-uint64_t SharedLogNode::validate_log(string *randomString, bool logsSavedWithLogOffset) {
-    if(!threaded_)
-        return (threads_.front()->Log_.validate_log(randomString, logsSavedWithLogOffset));
-
-    return 0;
 }

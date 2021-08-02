@@ -7,6 +7,7 @@
 /* Holds the program input arguments */
 struct ProgArgs {
     NodeType nodeType{HEAD}; // -n
+    uint8_t nodeID{0}; // -i
     bool activeMode{true}; // -a
     size_t amountThreads{1}; // -t
     size_t totalNumberOfRequests{10000000}; // -m

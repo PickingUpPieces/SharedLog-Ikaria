@@ -13,13 +13,14 @@
 #define CLARA_URI "129.215.165.58:31850"
 #define AMY_URI "129.215.165.57:31850"
 #define DONNA_URI "129.215.165.54:31850"
-#define ROSA_URI "129.215.165.52:31850"
+#define ROSE_URI "129.215.165.52:31850"
 #define MARTHA_URI "129.215.165.53:31850"
 
 
 SharedLogNode *localNode;
 BenchmarkData benchmarkData;
 std::mutex startBenchmark;
+std::atomic<uint8_t> threadsReady{0};
 
 
 /* Callback function when a response is received */
@@ -49,7 +50,11 @@ void send_append_message(void *data, size_t dataLength) {
 
 /* Benchmarking function for multiple threads */
 void start_benchmarking_threads() {
+    localNode->get_thread_ready();
     startBenchmark.unlock();
+
+    std::cout << "-------------------------------------" << endl;
+    std::cout << "Start benchmarking..." << endl;
     
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
@@ -68,6 +73,9 @@ void start_benchmarking_threads() {
 void start_benchmarking_single() {
     /* Create data struct for APPEND */
     LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(benchmarkData.progArgs.valueSize);
+
+    std::cout << "-------------------------------------" << endl;
+    std::cout << "Start benchmarking..." << endl;
 
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
@@ -128,6 +136,9 @@ void parser(int amountArgs, char **argv) {
                 else
                     benchmarkData.progArgs.nodeType = TAIL;
                 break;
+            case 'i': // NodeID
+                benchmarkData.progArgs.nodeID = std::stoul(&(argv[i][3]), nullptr, 0);
+                break;
             case 't': // Threads amount
                 benchmarkData.progArgs.amountThreads = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
@@ -163,26 +174,44 @@ int main(int argc, char** argv) {
     parser(argc, argv);
     startBenchmark.lock();
 
+    // Set Log file name to nodeID
+    char *poolPath = static_cast<char *>(malloc(strlen(POOL_PATH) + 1)); 
+    strncpy(poolPath, POOL_PATH, strlen(POOL_PATH) + 1);
+    poolPath[strlen(POOL_PATH) - 5] = '0' + static_cast<char>(benchmarkData.progArgs.nodeID);
+
     #ifndef DPDK_CLUSTER
-    switch(benchmarkData.progArgs.nodeType) {
-        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
-        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
-        case MIDDLE: break;
-    }
+        switch(benchmarkData.progArgs.nodeType) {
+            case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
+            case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
 
+            case MIDDLE: break;
+        }
     #else
-    switch(benchmarkData.progArgs.nodeType) {
-        case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
-        case MIDDLE: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
-        case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
-    }
+        #ifdef THREE_NODES
+            switch(benchmarkData.progArgs.nodeID) {
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
+                case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+            }
+        #endif
+        #ifdef FOUR_NODES
+            switch(benchmarkData.progArgs.nodeID) {
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, ROSE_URI, &benchmarkData, &receive_locally); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, ROSE_URI, &benchmarkData, &receive_locally ); break;
+                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, ROSE_URI, &benchmarkData, &receive_locally ); break;
+                case 3: localNode = new SharedLogNode(TAIL, 3, poolPath, ROSE_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+            }
+        #endif
+        #ifdef FIVE_NODES
+            switch(benchmarkData.progArgs.nodeID) {
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, DONNA_URI, &benchmarkData, &receive_locally); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
+                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
+                case 3: localNode = new SharedLogNode(MIDDLE, 3, poolPath, ROSE_URI, AMY_URI, DONNA_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
+                case 4: localNode = new SharedLogNode(TAIL, 4, poolPath, DONNA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+            }
+        #endif
     #endif
-
-
-    localNode->get_benchmark_ready();
-
-    std::cout << "-------------------------------------" << endl;
-    std::cout << "Start benchmarking..." << endl;
 
 
     if (benchmarkData.progArgs.amountThreads < 2) {

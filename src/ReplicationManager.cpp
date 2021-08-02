@@ -15,15 +15,16 @@ static std::atomic<uint64_t> softCounter_{0};
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
  */
-ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec):
+ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec):
         nodeReady_{false},
+        nodeID_{nodeID},
         setupMessage_{nullptr},
-        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
+        threadSync_{},
+        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         chainReady_{false},
-        benchmarkReady_{true},
-        NodeType_{NodeType},
+        NodeType_{nodeType},
         rec{rec}, 
-        NetworkManager_{new NetworkManager(NodeType, Nexus, 0, headURI, successorURI, tailURI, this)} {}
+        NetworkManager_{new NetworkManager(nodeType, Nexus, 0, headURI, successorURI, tailURI, this)} { threadSync_.threadReady = true; }
 
 
 /* TODO: Documentation */
@@ -34,14 +35,15 @@ ReplicationManager::ReplicationManager(NodeType NodeType, erpc::Nexus *Nexus, st
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */ 
-ReplicationManager::ReplicationManager(erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
+ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
         nodeReady_{false},
+        nodeID_{nodeID},
         setupMessage_{nullptr},
+        threadSync_{},
         benchmarkData_{benchmarkData},
-        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, POOL_PATH}, 
+        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         chainReady_{false},
-        benchmarkReady_{false},
-        NodeType_{benchmarkData_.progArgs.nodeType},
+        NodeType_{nodeType},
         rec{nullptr} 
     {
         if (benchmarkData_.progArgs.activeMode)
@@ -57,13 +59,20 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
-    LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
+    auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
 
     // Append few messages so something can be read
-    for(int i = 0; i < 1000; i++) 
-        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8));
+    for(int i = 0; i < 100; i++) 
+        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 
-    rp->benchmarkReady_ = true;
+    while(rp->NetworkManager_->messagesInFlight_)
+		rp->NetworkManager_->sync(1);
+
+    // Set threadReady to true
+    unique_lock<mutex> lk(rp->threadSync_.m);
+    rp->threadSync_.threadReady = true;
+    lk.unlock();
+    rp->threadSync_.cv.notify_all();
 
     // Start threads (more or less) simultaniously 
     rp->benchmarkData_.startBenchmark->lock();
@@ -74,8 +83,8 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
 
-	        uint64_t randuint = static_cast<uint64_t>(rand());
-            uint64_t randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
+	        auto randuint = static_cast<uint64_t>(rand());
+            auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             logEntryInFlight.messageType = READ;
             readLog(rp, randReadOffset);
 	        rp->benchmarkData_.amountReadsSent++; 
@@ -97,6 +106,13 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
     rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
+
+    // Set threadReady to true
+    unique_lock<mutex> lk(rp->threadSync_.m);
+    rp->threadSync_.threadReady = true;
+    lk.unlock();
+    rp->threadSync_.cv.notify_all();
+
     if (rp->NodeType_ == HEAD)
         readLog(rp, 0);
 
@@ -105,6 +121,7 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 
     rp->benchmarkData_.totalMessagesProcessed = rp->NetworkManager_->totalMessagesProcessed_;
 }
+
 
 /**
  * Handles the SETUP process for this node
@@ -115,7 +132,7 @@ void ReplicationManager::init() {
 
     if (NodeType_ == HEAD) {
         /*  Send SETUP message down the chain */
-        LogEntryInFlight logEntryInFlight = {0, SETUP, {0, ""}};
+        LogEntryInFlight logEntryInFlight{0, SETUP, {0, ""}};
         setupMessage_ = new Message();
         setupMessage_->messageType = SETUP;
         setupMessage_->sentByThisNode = false;
@@ -157,7 +174,6 @@ void ReplicationManager::init() {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void ReplicationManager::setup(Message *message) {
-    DEBUG_MSG("ReplicationManager.setup()");
     setupMessage_ = message;
 }
 
@@ -183,13 +199,9 @@ void ReplicationManager::append(Message *message) {
     switch(NodeType_) {
         case HEAD: 
         {
-            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
+            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Count Sequencer up and set the log entry number */
             reqLogEntryInFlight->logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
-
-            #ifdef TESTING
-            add_logOffset_to_data(message);
-            #endif 
 
             /* Append the log entry to the local Log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
@@ -199,7 +211,7 @@ void ReplicationManager::append(Message *message) {
         }; break;
         case MIDDLE: 
         {
-            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
+            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Append the log entry to the local log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
 
@@ -208,12 +220,12 @@ void ReplicationManager::append(Message *message) {
         }; break;
         case TAIL: 
         {
-            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
+            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             message->logOffset = reqLogEntryInFlight->logOffset;
             /* Append the log entry to the local log */
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
             /* Add logOffset from reqBuffer to respBuffer */
-            uint64_t *respPointer = (uint64_t *) message->respBuffer.buf;
+            auto *respPointer = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
             *respPointer = reqLogEntryInFlight->logOffset;
             message->respBufferSize = sizeof(message->logOffset);
 
@@ -246,17 +258,16 @@ void ReplicationManager::read(Message *message) {
         }; break;
         case TAIL:
         {
-            size_t logEntrySize = 0;
-            LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
-            LogEntryInFlight *respLogEntryInFlight = (LogEntryInFlight *) message->respBuffer.buf;
+            size_t logEntrySize{0};
+            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+            auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
-            LogEntry*logEntry = Log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
+            auto *logEntry = Log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read is legit e.g. not reading an offset which hasn't been written yet
             
             /* Prepare respBuffer */
             message->respBufferSize = logEntrySize + sizeof(reqLogEntryInFlight->logOffset);
             respLogEntryInFlight->logOffset = reqLogEntryInFlight->logOffset;
-            // TODO: Maybe there is a better copy function for PM
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntrySize);
 
             DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
@@ -298,21 +309,4 @@ void ReplicationManager::terminate(bool force) {
         nodeReady_ = false;
 
     thread_.join();
-}
-
-
-/* DEBUG functions */
-/**
- * Adds the logOffset number to the data, so it can be validated later if the right entries are written in the write logOffsets.
- * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
- */
-void ReplicationManager::add_logOffset_to_data(Message *message) {
-    LogEntryInFlight *reqLogEntryInFlight = (LogEntryInFlight *) message->reqBuffer.buf;
-    string temp = (string) reqLogEntryInFlight->logEntry.data;
-    temp += "-ID-" + std::to_string(reqLogEntryInFlight->logOffset);
-    temp.copy(reqLogEntryInFlight->logEntry.data, temp.length());
-    reqLogEntryInFlight->logEntry.dataLength = temp.length() + 1;
-    message->logOffset = reqLogEntryInFlight->logOffset;
-    message->reqBufferSize = sizeof(reqLogEntryInFlight->logOffset) + sizeof(reqLogEntryInFlight->logEntry.dataLength) + reqLogEntryInFlight->logEntry.dataLength;
-    NetworkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
 }

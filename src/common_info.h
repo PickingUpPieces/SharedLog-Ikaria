@@ -22,7 +22,7 @@
 /* log block size in B */
 #define LOG_BLOCK_TOTAL_SIZE sizeof(LogEntry)
 /* Path to the Pool file */
-#define POOL_PATH "/home/vincent/pmem/log-test-0.log"
+#define POOL_PATH "/home/vincent/pmem/replNode-0.log"
 
 struct LogEntry {
     uint64_t dataLength;
