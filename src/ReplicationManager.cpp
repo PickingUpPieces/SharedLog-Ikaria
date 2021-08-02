@@ -67,8 +67,6 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     for(int i = 0; i < 100; i++) 
         appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 
-    //cout << "msg inflight " << std::to_string(rp->NetworkManager_->messagesInFlight_) << endl;
-
     while(rp->NetworkManager_->messagesInFlight_)
 		rp->NetworkManager_->sync(1);
 
