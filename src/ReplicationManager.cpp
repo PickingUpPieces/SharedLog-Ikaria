@@ -75,7 +75,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
 
-    while(likely(rp->threadSync_.threadReady && rp->benchmarkData_.remainderNumberOfRequests)) {
+    while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed >= rp->benchmarkData_.progArgs.totalNumberOfRequests))) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -84,17 +84,15 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             logEntryInFlight.messageType = READ;
             readLog(rp, randReadOffset);
-	        rp->benchmarkData_.amountReadsSent++; 
         } else {
             appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
-	        rp->benchmarkData_.amountAppendsSent++; 
         }
-	    rp->benchmarkData_.remainderNumberOfRequests--; 
+	    //rp->benchmarkData_.remainderNumberOfRequests--; 
     }
 
     /* Wait for missing response messages */
-    while((rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.messagesInFlight) < (rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.progArgs.percentileNumberOfRequests))
-		rp->networkManager_->sync(1);
+    //while((rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.messagesInFlight) < (rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.progArgs.percentileNumberOfRequests))
+	//	rp->networkManager_->sync(1);
     rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
 }
 
@@ -287,10 +285,12 @@ void ReplicationManager::receive_locally(Message *message) {
 	benchmarkData_.messagesInFlight--;
     
     if (message->messageType == APPEND) {
+	    benchmarkData_.amountAppendsSent++; 
         auto *returnedLogOffset = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
         if (benchmarkData_.highestKnownLogOffset < *returnedLogOffset)
             benchmarkData_.highestKnownLogOffset = *returnedLogOffset;
-    }  
+    } else if (message->messageType == READ) 
+	    benchmarkData_.amountReadsSent++; 
 }
 
 
