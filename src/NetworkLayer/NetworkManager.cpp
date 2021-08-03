@@ -31,10 +31,7 @@ NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t er
         Tail_ = make_shared<Outbound>(tailURI, erpcID, this, &rpc_);
     
         /* SUCCESSOR is the TAIL node */
-        if (successorURI.compare(tailURI) == 0)
-            Successor_ = Tail_;
-        else
-            Successor_ = make_shared<Outbound>(successorURI, erpcID, this, &rpc_);
+        (successorURI.compare(tailURI) == 0) ? Successor_ = Tail_ : Successor_ = make_shared<Outbound>(successorURI, erpcID, this, &rpc_);
     }
 }
 
@@ -117,7 +114,7 @@ void NetworkManager::receive_response(Message *message) {
         ReplicationManager_->receive_locally(message);
         rpc_.free_msg_buffer(message->reqBuffer);
         rpc_.free_msg_buffer(message->respBuffer);
-        free(message);
+        delete message;
         return;
     }
 
@@ -125,9 +122,8 @@ void NetworkManager::receive_response(Message *message) {
     {
     case SETUP:
         ReplicationManager_->setup_response();
-        if (nodeType_ == MIDDLE){
+        if (nodeType_ == MIDDLE)
             send_response(message);
-        }
         break;
     default:
         Inbound_->send_response(message);

@@ -1,12 +1,11 @@
 #include "helperFunctions.h"
 #include "ReplicationManager.h"
 
-#define NODETYPE
 /* TODO: Documentation */
 /* readLog method */
 void readLog(ReplicationManager *rp, uint64_t logOffset) {
     /* Allocate message struct */
-    Message *message = (Message *) malloc(sizeof(Message));
+    Message *message = new Message();
 
     message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->reqBuffer.buf) {
@@ -32,16 +31,6 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
     logEntryInFlight->messageType = message->messageType;
     message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
 
-    /* WORKAROUND resizing problem */
-    #ifdef NODETYPE
-        rp->networkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
-    #else
-    	if (message->reqBufferSize < 969)
-    	    rp->networkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    rp->networkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
     /* Send the message */
     if (rp->NodeType_ == HEAD)
         rp->read(message);
@@ -52,7 +41,7 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
 /* TODO: Documentation */
 void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     /* Allocate message struct */
-    Message *message = (Message *) malloc(sizeof(Message));
+    Message *message = new Message();
     auto *logEntryInFlight = static_cast<LogEntryInFlight *>(data);
     logEntryInFlight->messageType = APPEND;
 
@@ -78,16 +67,6 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     memcpy(message->reqBuffer.buf, data, dataLength);
     message->reqBufferSize = dataLength;
 
-    /* WORKAROUND resizing problem */
-    #ifdef NODETYPE
-        rp->networkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
-    #else
-    	if (message->reqBufferSize < 969)
-    	    rp->networkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
-    	else
-    	    rp->networkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
-    #endif
-
     DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
     /* Send the message */
@@ -104,7 +83,7 @@ LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
     mt19937 generator{random_device{}()};
     uniform_int_distribution<> dist(0, possibleCharacters.size()-1);
     string randomString;
-    uint64_t stringLength = totalSize - 16;
+    uint64_t stringLength = totalSize - 8 - 8 - sizeof(MessageType);
 
     for(uint64_t i = 0; i < stringLength; i++) {
         size_t random_index = static_cast<size_t>(dist(generator)); //get index between 0 and possible_characters.size()-1
