@@ -75,7 +75,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
 
-    while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed >= rp->benchmarkData_.progArgs.totalNumberOfRequests))) {
+    while(likely(rp->threadSync_.threadReady && ( rp->networkManager_->totalMessagesCompleted_ <= rp->benchmarkData_.remainderNumberOfRequests))) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
