@@ -18,7 +18,8 @@ static std::atomic<uint64_t> softCounter_{0};
 ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ThreadManager *threadManager):
         nodeReady_{false},
         setupMessage_{nullptr},
-        networkManager_{new NetworkManager(nodeType, nexus, 0, headURI, successorURI, tailURI, this)},
+        networkManager_{new NetworkManager(nodeType, nexus, erpcID, headURI, successorURI, tailURI, this)},
+        threadManager_{threadManager},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         NodeType_{nodeType}, 
         chainReady_{false} {}
