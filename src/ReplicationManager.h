@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include "common_info.h"
+#include "ThreadManager.h"
 #include "NetworkManager.h"
 #include "Log.h"
 using namespace std;
@@ -18,24 +19,25 @@ class ReplicationManager {
     private:
         bool nodeReady_;
         Message *setupMessage_;
-        receive_local rec_;
         void setup(Message *message);
         void setup_response(); 
 
     public:
         //ReplicationManager(NodeType nodeType, const char* pathToLog, NetworkManager *networkManager);
-        ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec);
+        ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ThreadManager *threadManager);
         void init();
         void append(Message *message);
         void read(Message *message);
         void send_message(NodeType targetNode, Message *message);
         void receive_locally(Message *message);
+        void sync(int numberOfRuns);
         void terminate();
 
         NetworkManager *networkManager_;
-        bool chainReady_;
+        ThreadManager *threadManager_;
         Log Log_;
         NodeType NodeType_;
+        bool chainReady_;
 };
 
 #endif // REPLICATIONNODE_REPLICATIONMANAGER_H

@@ -19,21 +19,21 @@ struct ThreadSync {
     mutex m;
 };
 
+void append(ReplicationManager *rm, void *data, size_t dataLength);
+void read(ReplicationManager *rm, uint64_t logOffset);
+static LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize);
+
 class ThreadManager {
     private:
-        uint8_t nodeID_;
         std::thread thread_;
         static void run_active(ThreadManager *tm, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(ThreadManager *tm, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
-        static LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize);
 
     public:
         // Multi Threaded
-        ThreadManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
+        ThreadManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
         // Single Threaded
-        ThreadManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec);
-        static void append(ThreadManager *threadManager, void *data, size_t dataLength);
-        static void read(ThreadManager *threadManager, uint64_t logOffset);
+        ThreadManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec);
         void terminate(bool force);
         void default_receive_local(Message *message);
 

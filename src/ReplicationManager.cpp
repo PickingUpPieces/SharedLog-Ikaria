@@ -15,14 +15,13 @@ static std::atomic<uint64_t> softCounter_{0};
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
  */
-ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec):
+ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ThreadManager *threadManager):
         nodeReady_{false},
         setupMessage_{nullptr},
-        rec_{rec}, 
-        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
-        chainReady_{false},
         networkManager_{new NetworkManager(nodeType, nexus, 0, headURI, successorURI, tailURI, this)},
-        NodeType_{nodeType} {}
+        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
+        NodeType_{nodeType}, 
+        chainReady_{false} {}
 
 
 /**
@@ -183,11 +182,11 @@ void ReplicationManager::read(Message *message) {
 }
 
 void ReplicationManager::receive_locally(Message *message) {
-    rec_(message);
+    threadManager_->default_receive_local(message);
 }
 
-void ReplicationManager::send_message(NodeType targetNode, Message *message) {
-    networkManager_->send_message(targetNode, message);
+void ReplicationManager::sync(int numberOfRuns) {
+    networkManager_->sync(numberOfRuns);
 }
 
 void ReplicationManager::terminate() {}

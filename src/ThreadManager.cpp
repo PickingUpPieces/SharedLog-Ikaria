@@ -9,11 +9,11 @@
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
  */
-ThreadManager::ThreadManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec):
-        nodeID_{nodeID},
-        replicationManager_{new ReplicationManager(nodeType, pathToLog, nexus, headURI, successorURI, tailURI, rec)},
+ThreadManager::ThreadManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec):
+        replicationManager_{new ReplicationManager(nodeType, pathToLog, nexus, 0, headURI, successorURI, tailURI, this)},
         threadSync_{},
-        nodeType_{nodeType}
+        nodeType_{nodeType},
+        rec_{rec}
     {
         threadSync_.threadReady = true; 
     } 
@@ -27,8 +27,7 @@ ThreadManager::ThreadManager(NodeType nodeType, uint8_t nodeID, const char* path
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */ 
-ThreadManager::ThreadManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
-        nodeID_{nodeID},
+ThreadManager::ThreadManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
         replicationManager_{nullptr},
         benchmarkData_{benchmarkData},
         nodeType_{nodeType},
@@ -44,17 +43,17 @@ ThreadManager::ThreadManager(NodeType nodeType, uint8_t nodeID, const char* path
 /* TODO: Documentation */
 /* Active Thread function */
 void ThreadManager::run_active(ThreadManager *tm, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    tm->replicationManager_ = new ReplicationManager(tm->nodeType_, pathToLog, nexus, headURI, successorURI, tailURI, nullptr);
+    tm->replicationManager_ = new ReplicationManager(tm->nodeType_, pathToLog, nexus, erpcID, headURI, successorURI, tailURI, tm);
     tm->replicationManager_->init();
 
     auto logEntryInFlight = generate_random_logEntryInFlight(tm->benchmarkData_.progArgs.valueSize);
 
     // Append few messages so something can be read
     for(int i = 0; i < 100; i++) 
-        append(tm, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
+        append(tm->replicationManager_, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 
     while(tm->replicationManager_->networkManager_->messagesInFlight_)
-		tm->replicationManager_->networkManager_->sync(1);
+		tm->replicationManager_->sync(1);
 
     // Set threadReady to true
     unique_lock<mutex> lk(tm->threadSync_.m);
@@ -74,10 +73,10 @@ void ThreadManager::run_active(ThreadManager *tm, const char* pathToLog, erpc::N
 	        auto randuint = static_cast<uint64_t>(rand());
             auto randReadOffset = randuint % tm->benchmarkData_.highestKnownLogOffset; 
             logEntryInFlight.messageType = READ;
-            read(tm, randReadOffset);
+            read(tm->replicationManager_, randReadOffset);
 	        tm->benchmarkData_.amountReadsSent++; 
         } else {
-            append(tm, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
+            append(tm->replicationManager_, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 	        tm->benchmarkData_.amountAppendsSent++; 
         }
 	    tm->benchmarkData_.remainderNumberOfRequests--; 
@@ -85,13 +84,14 @@ void ThreadManager::run_active(ThreadManager *tm, const char* pathToLog, erpc::N
 
     /* Wait for missing response messages */
     while((tm->benchmarkData_.progArgs.totalNumberOfRequests - tm->benchmarkData_.messagesInFlight) < (tm->benchmarkData_.progArgs.totalNumberOfRequests - tm->benchmarkData_.progArgs.percentileNumberOfRequests))
-		tm->replicationManager_->networkManager_->sync(1);
-    tm->benchmarkData_.totalMessagesProcessed = tm->replicationManager_->networkManager_->totalMessagesProcessed_;
+		tm->replicationManager_->sync(1);
+    //tm->benchmarkData_.totalMessagesProcessed = tm->replicationManager_->networkManager_->totalMessagesProcessed_;
 }
 
 /* TODO: Documentation */
 /* Passive Thread function */
 void ThreadManager::run_passive(ThreadManager *tm, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
+    tm->replicationManager_ = new ReplicationManager(tm->nodeType_, pathToLog, nexus, erpcID, headURI, successorURI, tailURI, tm);
     tm->replicationManager_->init();
 
     // Set threadReady to true
@@ -101,30 +101,30 @@ void ThreadManager::run_passive(ThreadManager *tm, const char* pathToLog, erpc::
     tm->threadSync_.cv.notify_all();
 
     if (tm->nodeType_ == HEAD)
-        read(tm, 0);
+        read(tm->replicationManager_, 0);
 
     while(likely(tm->threadSync_.threadReady))
-		tm->replicationManager_->networkManager_->sync(1);
+		tm->replicationManager_->sync(1);
 
-    tm->benchmarkData_.totalMessagesProcessed = tm->replicationManager_->networkManager_->totalMessagesProcessed_;
+    //tm->benchmarkData_.totalMessagesProcessed = tm->replicationManager_->networkManager_->totalMessagesProcessed_;
 }
 
 /* TODO: Documentation */
 /* readLog method */
-void ThreadManager::read(ThreadManager *tm, uint64_t logOffset) {
+void read(ReplicationManager *rm, uint64_t logOffset) {
     /* Allocate message struct */
     Message *message = (Message *) malloc(sizeof(Message));
 
-    message->reqBuffer = tm->replicationManager_->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->reqBuffer = rm->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->reqBuffer.buf) {
-        tm->replicationManager_->networkManager_->sync(1);
-        message->reqBuffer = tm->replicationManager_->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        rm->networkManager_->sync(1);
+        message->reqBuffer = rm->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
-    message->respBuffer = tm->replicationManager_->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->respBuffer = rm->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->respBuffer.buf) {
-        tm->replicationManager_->networkManager_->sync(1);
-        message->respBuffer = tm->replicationManager_->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        rm->networkManager_->sync(1);
+        message->respBuffer = rm->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
     /* Fill message struct */
@@ -140,29 +140,29 @@ void ThreadManager::read(ThreadManager *tm, uint64_t logOffset) {
     message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
 
     /* Send the message */
-    if (tm->nodeType_ == HEAD)
-        tm->replicationManager_->read(message);
+    if (rm->NodeType_ == HEAD)
+        rm->read(message);
     else 
-        tm->replicationManager_->networkManager_->send_message(HEAD, message);
+        rm->networkManager_->send_message(HEAD, message);
 }
 
 /* TODO: Documentation */
-void ThreadManager::append(ThreadManager *tm, void *data, size_t dataLength) {
+void append(ReplicationManager *rm, void *data, size_t dataLength) {
     /* Allocate message struct */
     Message *message = (Message *) malloc(sizeof(Message));
     auto *logEntryInFlight = static_cast<LogEntryInFlight *>(data);
     logEntryInFlight->messageType = APPEND;
 
-    message->reqBuffer = tm->replicationManager_->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->reqBuffer = rm->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->reqBuffer.buf) {
-        tm->replicationManager_->networkManager_->sync(1);
-        message->reqBuffer = tm->replicationManager_->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        rm->networkManager_->sync(1);
+        message->reqBuffer = rm->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
-    message->respBuffer = tm->replicationManager_->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->respBuffer = rm->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->respBuffer.buf) {
-        tm->replicationManager_->networkManager_->sync(1);
-        message->respBuffer = tm->replicationManager_->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        rm->networkManager_->sync(1);
+        message->respBuffer = rm->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
     /* Fill message struct */
@@ -178,14 +178,14 @@ void ThreadManager::append(ThreadManager *tm, void *data, size_t dataLength) {
     DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
     /* Send the message */
-    if (tm->nodeType_ == HEAD)
-        tm->replicationManager_->append(message);
+    if (rm->NodeType_ == HEAD)
+        rm->append(message);
     else 
-        tm->replicationManager_->networkManager_->send_message(HEAD, message);
+        rm->networkManager_->send_message(HEAD, message);
 } 
 
 /* Generate a random logEntryInFlight for sending in append requests */
-LogEntryInFlight ThreadManager::generate_random_logEntryInFlight(uint64_t totalSize){
+LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
     LogEntryInFlight logEntryInFlight;
     string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     mt19937 generator{random_device{}()};

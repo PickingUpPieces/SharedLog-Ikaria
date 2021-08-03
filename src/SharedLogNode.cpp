@@ -22,11 +22,11 @@ SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* path
         /* Create threads */
         for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
 	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
-            threads_.push_back(new ThreadManager(NodeType_, nodeID_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
+            threads_.push_back(new ThreadManager(NodeType_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData));
         }
     } else {
         /* Just create the Object */
-        threads_.push_back(new ThreadManager(NodeType_, nodeID_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
+        threads_.push_back(new ThreadManager(NodeType_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
         //threads_.front()->init();
     }
 }
@@ -34,13 +34,13 @@ SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* path
 /* TODO: Documentation */
 void SharedLogNode::read(uint64_t logOffset) {
     if (!threaded_)
-        ThreadManager::read(threads_.front(), logOffset);
+        ::read(threads_.front()->replicationManager_, logOffset);
 }
 
 /* TODO: Documentation */
 void SharedLogNode::append(void *data, size_t dataLength) {
     if (!threaded_)
-        ThreadManager::append(threads_.front(), data, dataLength);
+        ::append(threads_.front()->replicationManager_, data, dataLength);
 }
 
 /* TODO: Documentation */
