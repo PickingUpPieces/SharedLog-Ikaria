@@ -58,8 +58,3 @@ void Outbound::connect() {
     DEBUG_MSG("Outbound.connect(): Connection is ready");
     DEBUG_MSG("Outbound.connect(): Connection Bandwith is " << std::to_string( rpc_->get_bandwidth() / (1024 * 1024)) << "MiB/s");
 }
-
-/**
- * Disconnects the client and terminates this session
- */
-void Outbound::terminate() {}

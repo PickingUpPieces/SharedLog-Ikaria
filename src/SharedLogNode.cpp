@@ -14,7 +14,6 @@
 SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec):
         Nexus_{hostURI, 0, 0},
         nodeID_{nodeID},
-        NodeType_{nodeType},
         threaded_{false}
 {
     
@@ -23,11 +22,11 @@ SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* path
         /* Create threads */
         for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
 	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
-            threads_.emplace_back(make_unique<ReplicationManager>(NodeType_, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData)); 
+            threads_.emplace_back(make_unique<ReplicationManager>(nodeType, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData)); 
         }
     } else {
         /* Just create the Object */
-        threads_.emplace_back(make_unique<ReplicationManager>(NodeType_, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
+        threads_.emplace_back(make_unique<ReplicationManager>(nodeType, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
         threads_.front()->init();
     }
 }

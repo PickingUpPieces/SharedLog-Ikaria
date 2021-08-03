@@ -18,7 +18,12 @@ class Outbound;
 
 // Creates and holds connections to the other nodes
 class NetworkManager {
+    friend ReplicationManager;
+    friend void req_handler(erpc::ReqHandle *req_handle, void *context);
+    friend void cont_func(void *context, void *tag);
+
     private:
+        NodeType nodeType_;
         uint8_t erpcID_;
         ReplicationManager *ReplicationManager_;
         erpc::Nexus *Nexus_;
@@ -26,17 +31,16 @@ class NetworkManager {
         unique_ptr<Outbound> Head_;
         shared_ptr<Outbound> Successor_;
         shared_ptr<Outbound> Tail_;
+        void receive_response(Message *message);
+        void receive_message(Message *message); 
+        void init();
+        void send_response(Message *message); 
 
     public:
-        NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);
-        void init();
+        NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *replicationManager);
         void send_message(NodeType targetNode, Message *message); 
-        void send_response(Message *message); 
-        void receive_message(Message *message); 
-        void receive_response(Message *message);
         void sync(int numberOfRuns);
 
-        NodeType nodeType_;
         erpc::Rpc<erpc::CTransport> rpc_;
         size_t messagesInFlight_;
         size_t totalMessagesCompleted_;

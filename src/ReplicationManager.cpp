@@ -15,15 +15,15 @@ static std::atomic<uint64_t> softCounter_{0};
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
  */
-ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec):
-        nodeReady_{false},
-        setupMessage_{nullptr},
-        threadSync_{},
-        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
+ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec):
         chainReady_{false},
-        NodeType_{nodeType},
-        rec{rec}, 
-        networkManager_{new NetworkManager(nodeType, Nexus, 0, headURI, successorURI, tailURI, this)} { threadSync_.threadReady = true; }
+        setupMessage_{nullptr},
+        nodeType_{nodeType},
+        networkManager_{new NetworkManager(nodeType, nexus, 0, headURI, successorURI, tailURI, this)}, 
+        log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
+        threadSync_{},
+        rec{rec} 
+{ threadSync_.threadReady = true; }
 
 
 /* TODO: Documentation */
@@ -34,27 +34,26 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */ 
-ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
-        nodeReady_{false},
+ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
+        chainReady_{false},
         setupMessage_{nullptr},
+        nodeType_{nodeType},
+        log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         threadSync_{},
         benchmarkData_{benchmarkData},
-        Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
-        chainReady_{false},
-        NodeType_{nodeType},
         rec{nullptr} 
     {
         if (benchmarkData_.progArgs.activeMode)
-            thread_ = std::thread(run_active, this, Nexus, erpcID, headURI, successorURI, tailURI); 
+            thread_ = std::thread(run_active, this, nexus, erpcID, headURI, successorURI, tailURI); 
         else
-            thread_ = std::thread(run_passive, this, Nexus, erpcID, headURI, successorURI, tailURI); 
+            thread_ = std::thread(run_passive, this, nexus, erpcID, headURI, successorURI, tailURI); 
     }
 
 
 /* TODO: Documentation */
 /* Active Thread function */
 void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->networkManager_ = make_unique<NetworkManager>(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
@@ -76,7 +75,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
 
-    while(likely(rp->nodeReady_ && rp->benchmarkData_.remainderNumberOfRequests)) {
+    while(likely(rp->threadSync_.threadReady && rp->benchmarkData_.remainderNumberOfRequests)) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -102,7 +101,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 /* TODO: Documentation */
 /* Passive Thread function */
 void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->networkManager_ = make_unique<NetworkManager>(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     // Set threadReady to true
@@ -111,10 +110,10 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
     lk.unlock();
     rp->threadSync_.cv.notify_all();
 
-    if (rp->NodeType_ == HEAD)
+    if (rp->nodeType_ == HEAD)
         readLog(rp, 0);
 
-    while(likely(rp->nodeReady_))
+    while(likely(rp->threadSync_.threadReady))
 		rp->networkManager_->sync(1);
 
     rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
@@ -126,9 +125,8 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 */
 void ReplicationManager::init() {
     networkManager_->init();
-    nodeReady_ = true;
 
-    if (NodeType_ == HEAD) {
+    if (nodeType_ == HEAD) {
         /*  Send SETUP message down the chain */
         LogEntryInFlight logEntryInFlight{0, SETUP, {0, ""}};
         setupMessage_ = new Message();
@@ -154,7 +152,7 @@ void ReplicationManager::init() {
             networkManager_->sync(1);
 
         /* Answer/Forward SETUP message accordingly */
-        if (NodeType_ == TAIL)
+        if (nodeType_ == TAIL)
             networkManager_->send_response(setupMessage_);
         else
             networkManager_->send_message(SUCCESSOR, setupMessage_);
@@ -178,7 +176,7 @@ void ReplicationManager::setup(Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void ReplicationManager::setup_response() {
-    if (NodeType_ == HEAD)
+    if (nodeType_ == HEAD)
         chainReady_ = true;
 }
 
@@ -192,7 +190,7 @@ void ReplicationManager::append(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
 
-    switch(NodeType_) {
+    switch(nodeType_) {
         case HEAD: 
         {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
@@ -200,7 +198,7 @@ void ReplicationManager::append(Message *message) {
             reqLogEntryInFlight->logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
 
             /* Append the log entry to the local Log */
-            Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
+            log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
             
             /* Send APPEND to next node in chain */
             networkManager_->send_message(SUCCESSOR, message);
@@ -209,7 +207,7 @@ void ReplicationManager::append(Message *message) {
         {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Append the log entry to the local log */
-            Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
+            log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
 
             /* Send APPEND to next node in chain */
             networkManager_->send_message(SUCCESSOR, message);
@@ -219,7 +217,7 @@ void ReplicationManager::append(Message *message) {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             message->logOffset = reqLogEntryInFlight->logOffset;
             /* Append the log entry to the local log */
-            Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
+            log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
             /* Add logOffset from reqBuffer to respBuffer */
             auto *respPointer = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
             *respPointer = reqLogEntryInFlight->logOffset;
@@ -240,7 +238,7 @@ void ReplicationManager::read(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
 
-    switch(NodeType_) {
+    switch(nodeType_) {
         case MIDDLE: ;
         case HEAD: 
         {
@@ -258,7 +256,7 @@ void ReplicationManager::read(Message *message) {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
-            auto *logEntry = Log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
+            auto *logEntry = log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
             // TODO: Check respBufferSize == 0, if read is legit e.g. not reading an offset which hasn't been written yet
             
             /* Prepare respBuffer */
@@ -302,7 +300,7 @@ void ReplicationManager::receive_locally(Message *message) {
  */
 void ReplicationManager::terminate(bool force) {
     if (force)
-        nodeReady_ = false;
+        threadSync_.threadReady = false;
 
     thread_.join();
 }

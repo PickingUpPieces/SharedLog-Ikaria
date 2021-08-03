@@ -13,12 +13,12 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
-        erpcID_{erpcID},
-        ReplicationManager_{ReplicationManager},
-        Nexus_{Nexus},
-        Inbound_(new Inbound(nodeType, Nexus_, this)),
+NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *replicationManager):
         nodeType_{nodeType},
+        erpcID_{erpcID},
+        ReplicationManager_{replicationManager},
+        Nexus_{nexus},
+        Inbound_(new Inbound(nodeType, Nexus_, this)),
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
 {
     rpc_.retry_connect_on_invalid_rpc_id = true;

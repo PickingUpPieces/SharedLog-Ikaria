@@ -20,10 +20,10 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
     }
 
     /* Fill message struct */
+    message->messageType = READ;
 	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
     message->logOffset = logOffset;
-    message->messageType = READ;
 
     /* Fill request data */
     auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
@@ -32,7 +32,7 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
     message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
 
     /* Send the message */
-    if (rp->NodeType_ == HEAD)
+    if (rp->nodeType_ == HEAD)
         rp->read(message);
     else 
         rp->networkManager_->send_message(HEAD, message);
@@ -58,10 +58,9 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     }
 
     /* Fill message struct */
-    message->reqBufferSize = MAX_MESSAGE_SIZE;
+    message->messageType = APPEND;
 	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
-    message->messageType = APPEND;
 
     /* Fill request data */
     memcpy(message->reqBuffer.buf, data, dataLength);
@@ -70,7 +69,7 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
     /* Send the message */
-    if (rp->NodeType_ == HEAD)
+    if (rp->nodeType_ == HEAD)
         rp->append(message);
     else 
         rp->networkManager_->send_message(HEAD, message);
