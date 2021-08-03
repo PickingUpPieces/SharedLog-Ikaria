@@ -48,7 +48,7 @@ class ReplicationManager {
         bool chainReady_;
         NodeType NodeType_;
         receive_local rec;
-        NetworkManager *NetworkManager_;
+        unique_ptr<NetworkManager> networkManager_;
 };
 
 #endif // REPLICATIONNODE_REPLICATIONMANAGER_H

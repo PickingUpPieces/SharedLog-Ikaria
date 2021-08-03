@@ -8,16 +8,16 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
     /* Allocate message struct */
     Message *message = (Message *) malloc(sizeof(Message));
 
-    message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->reqBuffer.buf) {
-        rp->NetworkManager_->sync(1);
-        message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        rp->networkManager_->sync(1);
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
-    message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->respBuffer.buf) {
-        rp->NetworkManager_->sync(1);
-        message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        rp->networkManager_->sync(1);
+        message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
     /* Fill message struct */
@@ -34,19 +34,19 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
 
     /* WORKAROUND resizing problem */
     #ifdef NODETYPE
-        rp->NetworkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
+        rp->networkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
     #else
     	if (message->reqBufferSize < 969)
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
+    	    rp->networkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
     	else
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    	    rp->networkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
     #endif
 
     /* Send the message */
     if (rp->NodeType_ == HEAD)
         rp->read(message);
     else 
-        rp->NetworkManager_->send_message(HEAD, message);
+        rp->networkManager_->send_message(HEAD, message);
 }
 
 /* TODO: Documentation */
@@ -56,16 +56,16 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     auto *logEntryInFlight = static_cast<LogEntryInFlight *>(data);
     logEntryInFlight->messageType = APPEND;
 
-    message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->reqBuffer.buf) {
-        rp->NetworkManager_->sync(1);
-        message->reqBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        rp->networkManager_->sync(1);
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
-    message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->respBuffer.buf) {
-        rp->NetworkManager_->sync(1);
-        message->respBuffer = rp->NetworkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        rp->networkManager_->sync(1);
+        message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
     /* Fill message struct */
@@ -80,12 +80,12 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
 
     /* WORKAROUND resizing problem */
     #ifdef NODETYPE
-        rp->NetworkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
+        rp->networkManager_->rpc_.resize_msg_buffer(&message->reqBuffer, message->reqBufferSize);
     #else
     	if (message->reqBufferSize < 969)
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
+    	    rp->networkManager_->rpc_.resize_msg_buffer(message->reqBuffer, 969);
     	else
-    	    rp->NetworkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
+    	    rp->networkManager_->rpc_.resize_msg_buffer(message->reqBuffer, message->reqBufferSize);
     #endif
 
     DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
@@ -94,7 +94,7 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     if (rp->NodeType_ == HEAD)
         rp->append(message);
     else 
-        rp->NetworkManager_->send_message(HEAD, message);
+        rp->networkManager_->send_message(HEAD, message);
 } 
 
 /* Generate a random logEntryInFlight for sending in append requests */

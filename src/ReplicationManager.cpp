@@ -23,7 +23,7 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
         chainReady_{false},
         NodeType_{nodeType},
         rec{rec}, 
-        NetworkManager_{new NetworkManager(nodeType, Nexus, 0, headURI, successorURI, tailURI, this)} { threadSync_.threadReady = true; }
+        networkManager_{new NetworkManager(nodeType, Nexus, 0, headURI, successorURI, tailURI, this)} { threadSync_.threadReady = true; }
 
 
 /* TODO: Documentation */
@@ -54,7 +54,7 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
 /* TODO: Documentation */
 /* Active Thread function */
 void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->networkManager_ = make_unique<NetworkManager>(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
@@ -63,8 +63,8 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     for(int i = 0; i < 100; i++) 
         appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 
-    while(rp->NetworkManager_->messagesInFlight_)
-		rp->NetworkManager_->sync(1);
+    while(rp->networkManager_->messagesInFlight_)
+		rp->networkManager_->sync(1);
 
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
@@ -95,14 +95,14 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 
     /* Wait for missing response messages */
     while((rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.messagesInFlight) < (rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.progArgs.percentileNumberOfRequests))
-		rp->NetworkManager_->sync(1);
-    rp->benchmarkData_.totalMessagesProcessed = rp->NetworkManager_->totalMessagesProcessed_;
+		rp->networkManager_->sync(1);
+    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
 }
 
 /* TODO: Documentation */
 /* Passive Thread function */
 void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->NetworkManager_ = new NetworkManager(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->networkManager_ = make_unique<NetworkManager>(rp->NodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     // Set threadReady to true
@@ -115,9 +115,9 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
         readLog(rp, 0);
 
     while(likely(rp->nodeReady_))
-		rp->NetworkManager_->sync(1);
+		rp->networkManager_->sync(1);
 
-    rp->benchmarkData_.totalMessagesProcessed = rp->NetworkManager_->totalMessagesProcessed_;
+    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
 }
 
 
@@ -125,7 +125,7 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
  * Handles the SETUP process for this node
 */
 void ReplicationManager::init() {
-    NetworkManager_->init();
+    networkManager_->init();
     nodeReady_ = true;
 
     if (NodeType_ == HEAD) {
@@ -134,36 +134,34 @@ void ReplicationManager::init() {
         setupMessage_ = new Message();
         setupMessage_->messageType = SETUP;
         setupMessage_->sentByThisNode = false;
-        setupMessage_->reqBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(8 + sizeof(MessageType));
+        setupMessage_->reqBuffer = networkManager_->rpc_.alloc_msg_buffer_or_die(8 + sizeof(MessageType));
         setupMessage_->reqBufferSize = 8 + sizeof(MessageType);
-        setupMessage_->respBuffer = NetworkManager_->rpc_.alloc_msg_buffer_or_die(1);
+        setupMessage_->respBuffer = networkManager_->rpc_.alloc_msg_buffer_or_die(1);
         /* Fill request data */
         memcpy(setupMessage_->reqBuffer.buf, &logEntryInFlight, setupMessage_->reqBufferSize);
-        NetworkManager_->send_message(SUCCESSOR, setupMessage_);
+        networkManager_->send_message(SUCCESSOR, setupMessage_);
 
         /* Wait for SETUP response */
         while(!chainReady_)
-            NetworkManager_->sync(1);
+            networkManager_->sync(1);
 
-        NetworkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
-        NetworkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
+        networkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
+        networkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
+        delete setupMessage_;
     } else {
-    	DEBUG_MSG("ReplicationManager.init(Wait for Setup)");
         /* Wait for the SETUP message */
         while (!setupMessage_)
-            NetworkManager_->sync(1);
+            networkManager_->sync(1);
 
-    	DEBUG_MSG("ReplicationManager.init(Setup arrived)");
         /* Answer/Forward SETUP message accordingly */
         if (NodeType_ == TAIL)
-            NetworkManager_->send_response(setupMessage_);
+            networkManager_->send_response(setupMessage_);
         else
-            NetworkManager_->send_message(SUCCESSOR, setupMessage_);
+            networkManager_->send_message(SUCCESSOR, setupMessage_);
 
-    	DEBUG_MSG("ReplicationManager.init(Wait for first APPEND)");
         /* Wait for first APPEND/READ message from the HEAD node */
         while (!chainReady_) 
-            NetworkManager_->sync(1);
+            networkManager_->sync(1);
     }
 }
 
@@ -205,7 +203,7 @@ void ReplicationManager::append(Message *message) {
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
             
             /* Send APPEND to next node in chain */
-            NetworkManager_->send_message(SUCCESSOR, message);
+            networkManager_->send_message(SUCCESSOR, message);
         }; break;
         case MIDDLE: 
         {
@@ -214,7 +212,7 @@ void ReplicationManager::append(Message *message) {
             Log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
 
             /* Send APPEND to next node in chain */
-            NetworkManager_->send_message(SUCCESSOR, message);
+            networkManager_->send_message(SUCCESSOR, message);
         }; break;
         case TAIL: 
         {
@@ -228,7 +226,7 @@ void ReplicationManager::append(Message *message) {
             message->respBufferSize = sizeof(message->logOffset);
 
             /* Send APPEND response */
-            NetworkManager_->send_response(message);
+            networkManager_->send_response(message);
         }; 
     }
 }
@@ -252,7 +250,7 @@ void ReplicationManager::read(Message *message) {
             DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
             DEBUG_MSG("ReplicationManager.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
             /* Send READ request drectly to TAIL */
-            NetworkManager_->send_message(TAIL, message);
+            networkManager_->send_message(TAIL, message);
         }; break;
         case TAIL:
         {
@@ -273,7 +271,7 @@ void ReplicationManager::read(Message *message) {
     	    DEBUG_MSG("ReplicationManager.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
             /* Send READ response */
-            NetworkManager_->send_response(message);
+            networkManager_->send_response(message);
         }; 
     }
 }
@@ -291,7 +289,7 @@ void ReplicationManager::receive_locally(Message *message) {
 	benchmarkData_.messagesInFlight--;
     
     if (message->messageType == APPEND) {
-        uint64_t *returnedLogOffset = (uint64_t *) message->respBuffer.buf;
+        auto *returnedLogOffset = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
         if (benchmarkData_.highestKnownLogOffset < *returnedLogOffset)
             benchmarkData_.highestKnownLogOffset = *returnedLogOffset;
     }  

@@ -19,6 +19,13 @@ Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog):
     std::call_once(plp_once, init, pathToLog, logTotalSize);
 }
 
+
+Log::~Log() {
+	if (plp_ != NULL)
+	    pmemlog_close(plp_);
+}
+
+
 /**
  * Creates a new / Opens an existing log and creates the Log Handler plp_
 */
@@ -71,13 +78,4 @@ LogEntry *Log::read(uint64_t logOffset, size_t *logEntryLength) {
  * Terminates the Log
 */
 void Log::terminate() {
-    DEBUG_MSG("Log.terminate()");
-
-	if (plp_ == NULL) {
-		perror("No log is open!");
-		exit(EXIT_FAILURE);
-	} else 
-	    pmemlog_close(plp_);
-
-    exit(EXIT_SUCCESS);
 }

@@ -69,5 +69,5 @@ void SharedLogNode::get_results(BenchmarkData *benchmarkData) {
 /* TODO: Documentation */
 void SharedLogNode::sync(int numberOfRuns) {
     if(!threaded_)
-        threads_.front().get()->NetworkManager_->sync(numberOfRuns);
+        threads_.front().get()->networkManager_->sync(numberOfRuns);
 }
