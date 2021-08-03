@@ -5,16 +5,16 @@
 #include <string>
 #include "rpc.h"
 #include "common_info.h"
-#include "ReplicationManager.h"
 #include "Inbound.h"
 #include "Outbound.h"
+#include "ReplicationManager.h"
 using namespace std;
 
 #define DEFAULT_RUN_EVENT_LOOP 10
 
+class ReplicationManager;
 class Inbound;
 class Outbound;
-class ReplicationManager;
 
 // Creates and holds connections to the other nodes
 class NetworkManager {
@@ -22,10 +22,10 @@ class NetworkManager {
         uint8_t erpcID_;
         ReplicationManager *ReplicationManager_;
         erpc::Nexus *Nexus_;
-        Inbound *Inbound_;
-        Outbound *Head_;
-        Outbound *Successor_;
-        Outbound *Tail_;
+        unique_ptr<Inbound> Inbound_;
+        unique_ptr<Outbound> Head_;
+        shared_ptr<Outbound> Successor_;
+        shared_ptr<Outbound> Tail_;
 
     public:
         NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager);

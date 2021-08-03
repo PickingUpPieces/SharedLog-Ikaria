@@ -25,7 +25,7 @@ Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *NetworkM
 void req_handler(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(req_handle->get_req_msgbuf()->buf);
-    Message *message = (Message *) malloc(sizeof(Message));
+    Message *message = new Message(); 
 
     switch (logEntryInFlight->messageType) {
         case SETUP: 
@@ -98,7 +98,7 @@ void Inbound::send_response(Message *message) {
         NetworkManager_->rpc_.free_msg_buffer(message->reqBuffer);
         NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
     }
-    free(message);
+    delete message;
 }
 
 /**

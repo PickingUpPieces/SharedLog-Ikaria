@@ -17,10 +17,7 @@ NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t er
         erpcID_{erpcID},
         ReplicationManager_{ReplicationManager},
         Nexus_{Nexus},
-        Inbound_{new Inbound(nodeType, Nexus_, this)},
-        Head_{nullptr},
-        Successor_{nullptr},
-        Tail_{nullptr},
+        Inbound_(new Inbound(nodeType, Nexus_, this)),
         nodeType_{nodeType},
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
 {
@@ -28,16 +25,16 @@ NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t er
     rpc_.set_pre_resp_msgbuf_size(MAX_MESSAGE_SIZE);
 
     if (nodeType_ != HEAD)
-        Head_ = new Outbound(headURI, erpcID, this, &rpc_);
+        Head_ = make_unique<Outbound>(headURI, erpcID, this, &rpc_);
 
     if (nodeType_ != TAIL) {
-        Tail_ = new Outbound(tailURI, erpcID, this, &rpc_);
+        Tail_ = make_shared<Outbound>(tailURI, erpcID, this, &rpc_);
     
         /* SUCCESSOR is the TAIL node */
         if (successorURI.compare(tailURI) == 0)
             Successor_ = Tail_;
         else
-            Successor_ = new Outbound(successorURI, erpcID, this, &rpc_);
+            Successor_ = make_shared<Outbound>(successorURI, erpcID, this, &rpc_);
     }
 }
 
