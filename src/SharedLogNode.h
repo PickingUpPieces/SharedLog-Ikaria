@@ -23,7 +23,7 @@ class SharedLogNode {
     public:
         SharedLogNode(NodeType NodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec);
         void read(uint64_t logOffset);
-        void append(void *data, size_t dataLength);
+        void append(LogEntryInFlight *logEntryInFlight, size_t dataLength);
         void sync(int numberOfRuns);
         void get_thread_ready();
         void get_results(BenchmarkData *benchmarkData);

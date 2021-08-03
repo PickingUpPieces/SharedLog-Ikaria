@@ -7,10 +7,10 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
     /* Allocate message struct */
     Message *message = new Message();
 
-    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
     while(!message->reqBuffer.buf) {
         rp->networkManager_->sync(1);
-        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
     }
 
     message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
@@ -39,16 +39,15 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
 }
 
 /* TODO: Documentation */
-void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
+void appendLog(ReplicationManager *rp, LogEntryInFlight *logEntryInFlight, size_t dataLength) {
     /* Allocate message struct */
     Message *message = new Message();
-    auto *logEntryInFlight = static_cast<LogEntryInFlight *>(data);
     logEntryInFlight->messageType = APPEND;
 
-    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 8 + 8 + sizeof(MessageType));
     while(!message->reqBuffer.buf) {
         rp->networkManager_->sync(1);
-        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 8 + 8 + sizeof(MessageType));
     }
 
     message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
@@ -63,7 +62,7 @@ void appendLog(ReplicationManager *rp, void *data, size_t dataLength) {
     message->sentByThisNode = true;
 
     /* Fill request data */
-    memcpy(message->reqBuffer.buf, data, dataLength);
+    memcpy(message->reqBuffer.buf, logEntryInFlight, dataLength);
     message->reqBufferSize = dataLength;
 
     DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");

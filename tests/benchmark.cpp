@@ -41,8 +41,8 @@ void send_read_message(uint64_t logOffset) {
 }
 
 /* Create an APPEND message, which is always sent */
-void send_append_message(void *data, size_t dataLength) {
-    localNode->append(data, dataLength);
+void send_append_message(LogEntryInFlight *logEntryInFlight, size_t dataLength) {
+    localNode->append(logEntryInFlight, dataLength);
     benchmarkData.amountAppendsSent++;
 }
 

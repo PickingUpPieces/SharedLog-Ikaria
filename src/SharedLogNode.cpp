@@ -38,9 +38,9 @@ void SharedLogNode::read(uint64_t logOffset) {
 }
 
 /* TODO: Documentation */
-void SharedLogNode::append(void *data, size_t dataLength) {
+void SharedLogNode::append(LogEntryInFlight *logEntryInFlight, size_t dataLength) {
     if (!threaded_)
-        appendLog(threads_.front().get(), data, dataLength);
+        appendLog(threads_.front().get(), logEntryInFlight, dataLength);
 }
 
 /* TODO: Documentation */
