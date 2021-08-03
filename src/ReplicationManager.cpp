@@ -15,9 +15,8 @@ static std::atomic<uint64_t> softCounter_{0};
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
  */
-ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec):
+ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec):
         nodeReady_{false},
-        nodeID_{nodeID},
         setupMessage_{nullptr},
         threadSync_{},
         Log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
@@ -35,9 +34,8 @@ ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const 
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */ 
-ReplicationManager::ReplicationManager(NodeType nodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
+ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
         nodeReady_{false},
-        nodeID_{nodeID},
         setupMessage_{nullptr},
         threadSync_{},
         benchmarkData_{benchmarkData},

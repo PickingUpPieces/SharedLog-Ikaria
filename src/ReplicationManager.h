@@ -24,7 +24,6 @@ class ReplicationManager {
 
     private:
         bool nodeReady_;
-        uint8_t nodeID_;
         Message *setupMessage_;
         std::thread thread_;
         static void run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
@@ -35,9 +34,9 @@ class ReplicationManager {
 
     public:
         // Multi Threaded
-        ReplicationManager(NodeType NodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
+        ReplicationManager(NodeType NodeType, const char* pathToLog, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
         // Single Threaded
-        ReplicationManager(NodeType NodeType, uint8_t nodeID, const char* pathToLog, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec);
+        ReplicationManager(NodeType NodeType, const char* pathToLog, erpc::Nexus *Nexus, string headURI, string successorURI, string tailURI, receive_local rec);
         void append(Message *message);
         void read(Message *message);
         void init();
@@ -47,7 +46,6 @@ class ReplicationManager {
         BenchmarkData benchmarkData_;
         Log Log_;
         bool chainReady_;
-        bool benchmarkReady_;
         NodeType NodeType_;
         receive_local rec;
         NetworkManager *NetworkManager_;

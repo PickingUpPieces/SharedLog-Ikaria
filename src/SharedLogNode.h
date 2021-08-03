@@ -14,7 +14,7 @@ using namespace std;
 class SharedLogNode
 {
 private:
-    std::vector<ReplicationManager *> threads_;
+    std::vector<unique_ptr<ReplicationManager>> threads_;
     erpc::Nexus Nexus_;
     uint8_t nodeID_;
     const NodeType NodeType_;
