@@ -21,7 +21,6 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
         nodeType_{nodeType},
         networkManager_{new NetworkManager(nodeType, nexus, 0, headURI, successorURI, tailURI, this)}, 
         log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
-        threadSync_{},
         rec{rec} 
 { threadSync_.threadReady = true; }
 
@@ -39,7 +38,6 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
         setupMessage_{nullptr},
         nodeType_{nodeType},
         log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
-        threadSync_{},
         benchmarkData_{benchmarkData},
         rec{nullptr} 
     {
@@ -115,6 +113,8 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 		rp->networkManager_->sync(1);
 
     rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
+    rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
+    rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }
 
 
@@ -285,12 +285,10 @@ void ReplicationManager::receive_locally(Message *message) {
 	benchmarkData_.messagesInFlight--;
     
     if (message->messageType == APPEND) {
-	    benchmarkData_.amountAppendsSent++; 
         auto *returnedLogOffset = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
         if (benchmarkData_.highestKnownLogOffset < *returnedLogOffset)
             benchmarkData_.highestKnownLogOffset = *returnedLogOffset;
-    } else if (message->messageType == READ) 
-	    benchmarkData_.amountReadsSent++; 
+    } 
 }
 
 
