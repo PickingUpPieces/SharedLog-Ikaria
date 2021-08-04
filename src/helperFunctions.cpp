@@ -9,15 +9,13 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
 
     message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
     while(!message->reqBuffer.buf) {
-        //rp->networkManager_->sync(1);
-        rp->networkManager_->rpc_.run_event_loop(10);  // 10ms 
+        rp->networkManager_->sync(1);
         message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
     }
 
     message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->respBuffer.buf) {
-        //rp->networkManager_->sync(1);
-        rp->networkManager_->rpc_.run_event_loop(10);  // 10ms 
+        rp->networkManager_->sync(1);
         message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
@@ -48,15 +46,13 @@ void appendLog(ReplicationManager *rp, LogEntryInFlight *logEntryInFlight, size_
 
     message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 8 + 8 + sizeof(MessageType));
     while(!message->reqBuffer.buf) {
-        //rp->networkManager_->sync(1);
-        rp->networkManager_->rpc_.run_event_loop(10);  // 10ms 
+        rp->networkManager_->sync(1);
         message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 8 + 8 + sizeof(MessageType));
     }
 
     message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->respBuffer.buf) {
-        //rp->networkManager_->sync(1);
-        rp->networkManager_->rpc_.run_event_loop(10);  // 10ms 
+        rp->networkManager_->sync(1);
         message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     }
 
