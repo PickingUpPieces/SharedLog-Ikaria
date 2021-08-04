@@ -53,7 +53,7 @@ void Outbound::connect() {
     DEBUG_MSG("Outbound.connect(): Establishing Connection...");
     /* Try until Client is connected */
     while (!rpc_->is_connected(sessionNum_)) 
-    	rpc_->run_event_loop_once();
+        rpc_->run_event_loop(100);  // 100ms
 
     DEBUG_MSG("Outbound.connect(): Connection is ready");
     DEBUG_MSG("Outbound.connect(): Connection Bandwith is " << std::to_string( rpc_->get_bandwidth() / (1024 * 1024)) << "MiB/s");
