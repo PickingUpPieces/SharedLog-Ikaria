@@ -93,11 +93,9 @@ void NetworkManager::receive_message(Message *message) {
             break;
         case READ: 
             ReplicationManager_->read(message); 
-            totalReadsProcessed_++;
             break;
         case APPEND: 
             ReplicationManager_->append(message); 
-            totalAppendsProcessed_++;
             break;
     }
 }

@@ -113,8 +113,8 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 		rp->networkManager_->sync(1);
 
     rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
-    rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
-    rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
+    rp->benchmarkData_.amountReadsSent = rp->totalReadsProcessed_;
+    rp->benchmarkData_.amountAppendsSent = rp->totalAppendsProcessed_;
 }
 
 
@@ -187,6 +187,7 @@ void ReplicationManager::append(Message *message) {
     DEBUG_MSG("ReplicationManager.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
+    totalAppendsProcessed_++;
 
     switch(nodeType_) {
         case HEAD: 
@@ -235,6 +236,7 @@ void ReplicationManager::append(Message *message) {
 void ReplicationManager::read(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
+    totalReadsProcessed_++;
 
     switch(nodeType_) {
         case MIDDLE: ;

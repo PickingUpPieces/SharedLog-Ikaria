@@ -48,6 +48,8 @@ class ReplicationManager {
         ThreadSync threadSync_;
         BenchmarkData benchmarkData_;
         receive_local rec;
+        size_t totalReadsProcessed_;
+        size_t totalAppendsProcessed_;
 };
 
 #endif // REPLICATIONNODE_REPLICATIONMANAGER_H

@@ -81,7 +81,12 @@ LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
     mt19937 generator{random_device{}()};
     uniform_int_distribution<> dist(0, possibleCharacters.size()-1);
     string randomString;
-    uint64_t stringLength = totalSize - 8 - 8 - sizeof(MessageType);
+    uint64_t stringLength;
+
+    if (totalSize < 20)
+        stringLength = 0;
+    else
+        stringLength = totalSize - 8 - 8 - sizeof(MessageType);
 
     for(uint64_t i = 0; i < stringLength; i++) {
         size_t random_index = static_cast<size_t>(dist(generator)); //get index between 0 and possible_characters.size()-1

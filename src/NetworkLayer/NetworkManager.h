@@ -45,8 +45,6 @@ class NetworkManager {
         size_t messagesInFlight_;
         size_t totalMessagesCompleted_;
         size_t totalMessagesProcessed_;
-        size_t totalReadsProcessed_;
-        size_t totalAppendsProcessed_;
 };
 
 #endif //REPLICATIONNODE_NETWORKMANAGER_H
