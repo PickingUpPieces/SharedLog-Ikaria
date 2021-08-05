@@ -92,6 +92,8 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     //while((rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.messagesInFlight) < (rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.progArgs.percentileNumberOfRequests))
 	//	rp->networkManager_->sync(1);
     rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
+    rp->benchmarkData_.amountReadsSent = rp->totalReadsProcessed_;
+    rp->benchmarkData_.amountAppendsSent = rp->totalAppendsProcessed_;
 }
 
 /* TODO: Documentation */
