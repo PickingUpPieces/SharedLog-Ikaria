@@ -125,7 +125,7 @@ void ReplicationManager::init() {
             appendLog(this, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 
         while(networkManager_->messagesInFlight_)
-		    networkManager_->sync(1);
+		    networkManager_->sync(1000);
 
         chainReady_ = false;
     #endif
