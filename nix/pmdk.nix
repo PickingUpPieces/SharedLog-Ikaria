@@ -12,7 +12,7 @@ stdenv.mkDerivation {
 	libfabric
 	fuse
     ];
-  makeFlags = ["DESTDIR=/home/vincent/ba-single-node/pmdk/lib" "prefix="];
+  makeFlags = ["PMEM_IS_PMEM_FORCE=1" "DESTDIR=/home/vincent/ba-single-node/pmdk/lib" "prefix="];
   nativeBuildInputs = [
     cmake
     pkg-config
