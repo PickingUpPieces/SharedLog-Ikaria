@@ -72,6 +72,11 @@ void start_benchmarking_threads() {
 void start_benchmarking_single() {
     /* Create data struct for APPEND */
     LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(benchmarkData.progArgs.valueSize);
+    localNode->get_thread_ready();
+
+    // Append few messages so something can be read
+    for(int i = 0; i < 100; i++) 
+    	send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking..." << endl;
@@ -114,9 +119,10 @@ void printbenchmarkData() {
     std::cout << "-------------------------------------" << endl;
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
-    std::cout << "Total Requests: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
-    std::cout << "Total Requests Processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
-    std::cout << "Sent READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
+    std::cout << "Total Requests to process: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
+    std::cout << "Total Requests to process by each thread: " << benchmarkData.remainderNumberOfRequests << endl;
+    std::cout << "Total Requests processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
+    std::cout << "Processed READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
     std::cout << "Total time: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
     std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
     std::cout << "-------------------------------------" << endl;

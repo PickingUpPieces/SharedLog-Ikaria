@@ -28,6 +28,7 @@ SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* path
         /* Just create the Object */
         threads_.emplace_back(make_unique<ReplicationManager>(nodeType, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
         threads_.front()->init();
+        threads_.front()->threadSync_.threadReady = true;
     }
 }
 

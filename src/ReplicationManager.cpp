@@ -21,8 +21,7 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
         nodeType_{nodeType},
         networkManager_{new NetworkManager(nodeType, nexus, 0, headURI, successorURI, tailURI, this)}, 
         log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
-        rec{rec} 
-{ threadSync_.threadReady = true; }
+        rec{rec} {}
 
 
 /* TODO: Documentation */
@@ -55,13 +54,6 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->init();
 
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
-
-    // Append few messages so something can be read
-    for(int i = 0; i < 100; i++) 
-        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
-
-    while(rp->networkManager_->messagesInFlight_)
-		rp->networkManager_->sync(1);
 
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
@@ -125,6 +117,18 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 */
 void ReplicationManager::init() {
     networkManager_->init();
+
+    #ifdef BENCHMARK
+        auto logEntryInFlight = generate_random_logEntryInFlight(benchmarkData_.progArgs.valueSize);
+        // Append few messages so something can be read
+        for(int i = 0; i < 100; i++) 
+            appendLog(this, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
+
+        while(networkManager_->messagesInFlight_)
+		    networkManager_->sync(1);
+
+        chainReady_ = false;
+    #endif
 
     if (nodeType_ == HEAD) {
         /*  Send SETUP message down the chain */

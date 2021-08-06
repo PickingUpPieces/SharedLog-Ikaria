@@ -34,6 +34,7 @@ set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 # User options:
 set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)") 
+set(BENCHMARK "ON" CACHE STRING "Enable benchmark (ON/OFF)") 
 set(TRANSPORT "dpdk" CACHE STRING "Which transport type to use(infiniband/dpdk)") 
 set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
 set(CHAIN_NODES "3" CACHE STRING "How many nodes are in the chain (3/4/5)") 
@@ -47,6 +48,11 @@ if (${DEBUG} STREQUAL "ON")
 else()
   message(STATUS "Debugging disabled")
   add_definitions(-O2)
+endif()
+
+string(TOUPPER ${BENCHMARK} BENCHMARK)
+if (${BENCHMARK} STREQUAL "ON")
+  add_compile_definitions(BENCHMARK)
 endif()
 
 string(TOUPPER ${DPDK_CLUSTER} DPDK_CLUSTER)
@@ -156,7 +162,6 @@ target_link_libraries(replication_node
 add_executable(benchmark
   ${BENCHMARK}
 )
-
 
 target_link_libraries(benchmark
   replication_node
