@@ -254,17 +254,17 @@ void ReplicationManager::read(Message *message) {
         }; break;
         case TAIL:
         {
-            size_t logEntrySize{0};
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
-            auto *logEntry = log_.read(reqLogEntryInFlight->logOffset, &logEntrySize);
+            auto [logEntry, logEntryLength] = log_.read(reqLogEntryInFlight->logOffset);
+
             // TODO: Check respBufferSize == 0, if read is legit e.g. not reading an offset which hasn't been written yet
             
             /* Prepare respBuffer */
-            message->respBufferSize = logEntrySize + sizeof(reqLogEntryInFlight->logOffset);
+            message->respBufferSize = logEntryLength + sizeof(reqLogEntryInFlight->logOffset);
             respLogEntryInFlight->logOffset = reqLogEntryInFlight->logOffset;
-            memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntrySize);
+            memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
             DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
             DEBUG_MSG("ReplicationManager.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");

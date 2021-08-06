@@ -20,7 +20,7 @@ class Log {
         Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog);
         ~Log();
         void append(uint64_t logOffset, LogEntry *logEntry);
-        LogEntry *read(uint64_t logOffset, size_t *logEntryLength);
+        pair<LogEntry *, uint64_t> read(uint64_t logOffset);
         void terminate();
 };
 

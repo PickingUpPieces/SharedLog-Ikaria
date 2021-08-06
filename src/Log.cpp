@@ -63,15 +63,11 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
  * @param logOffset The log entry number 
  * @param logEntryLength Pointer for the logSize of the requested log, which is returned back to the ReplicationManager
 */
-LogEntry *Log::read(uint64_t logOffset, size_t *logEntryLength) {
+pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
     LogEntry *logEntry = static_cast<LogEntry *>(pmemlog_read(plp_, logOffset * logEntryTotalSize));
-    // TODO: Check if first byte (LogEntry.dataLength) is 0 -> read failed
-
-	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->dataLength) << " ; data: " << logEntry->data << ")");
 
-    *logEntryLength = totalLogEntrySize;
-    return logEntry;
+	return make_pair(logEntry, 	logEntry->dataLength + sizeof(logEntry->dataLength));
 }
 
 /**
