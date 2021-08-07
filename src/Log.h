@@ -15,13 +15,11 @@ class Log {
         const uint64_t logBlockSize_;
         const char *pathToLog_;
 
-
     public:
         Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog);
         ~Log();
         void append(uint64_t logOffset, LogEntry *logEntry);
         pair<LogEntry *, uint64_t> read(uint64_t logOffset);
-        void terminate();
 };
 
 #endif // REPLICATIONNODE_LOG_H
