@@ -43,8 +43,8 @@ class ReplicationManager {
         void terminate(bool force);
 
         NodeType nodeType_;
-        Log log_;
         receive_local rec;
+        Log log_;
         ThreadSync threadSync_;
         BenchmarkData benchmarkData_;
         size_t totalReadsProcessed_;

@@ -19,8 +19,8 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
         chainReady_{false},
         setupMessage_{nullptr},
         nodeType_{nodeType},
-        log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         rec{rec}, 
+        log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
         networkManager_{new NetworkManager(nodeType, nexus, 0, headURI, successorURI, tailURI, this)} {} 
 
 
@@ -36,9 +36,9 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
         chainReady_{false},
         setupMessage_{nullptr},
         nodeType_{nodeType},
-        benchmarkData_{benchmarkData},
         rec{nullptr}, 
-        log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}
+        log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog},
+        benchmarkData_{benchmarkData}
     {
         if (benchmarkData_.progArgs.activeMode)
             thread_ = std::thread(run_active, this, nexus, erpcID, headURI, successorURI, tailURI); 
@@ -50,13 +50,13 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
 /* TODO: Documentation */
 /* Active Thread function */
 void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    cout << "start thread" << endl;
     rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
-    cout << "NetMan const finished" << endl;
     rp->init();
-    cout << "ReplMan init finished " << to_string(erpcID) << endl;
 
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
+    // Append few messages so something can be read
+    for(int i = 0; i < 100; i++) 
+        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
 
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
@@ -121,18 +121,6 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 void ReplicationManager::init() {
     networkManager_->init();
 
-    #ifdef BENCHMARK
-        auto logEntryInFlight = generate_random_logEntryInFlight(benchmarkData_.progArgs.valueSize);
-        // Append few messages so something can be read
-        for(int i = 0; i < 1; i++) 
-            appendLog(this, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
-
-        while(networkManager_->messagesInFlight_)
-		    networkManager_->sync(1000);
-
-        chainReady_ = false;
-    #endif
-
     if (nodeType_ == HEAD) {
         /*  Send SETUP message down the chain */
         LogEntryInFlight logEntryInFlight{0, SETUP, {0, ""}};
@@ -195,9 +183,6 @@ void ReplicationManager::setup_response() {
 void ReplicationManager::append(Message *message) {
     DEBUG_MSG("ReplicationManager.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
-    #ifdef BENCHMARK
-    if(nodeType_ != HEAD)
-    #endif
     chainReady_ = true;
 
     totalAppendsProcessed_++;
@@ -248,9 +233,6 @@ void ReplicationManager::append(Message *message) {
  */
 void ReplicationManager::read(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
-    #ifdef BENCHMARK
-    if(nodeType_ != HEAD)
-    #endif
     chainReady_ = true;
 
     totalReadsProcessed_++;
