@@ -123,7 +123,6 @@ set(REPLICATION_SOURCE
 
 set(SHAREDLOGNODE_SOURCE
   ${SRC}/SharedLogNode.h
-  ${SRC}/SharedLogNode.cpp
 )
 
 set(LOG_SOURCE

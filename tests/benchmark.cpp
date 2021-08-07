@@ -4,8 +4,7 @@
 #include <shared_mutex>
 #include "common_info.h"
 #include "common_tests.h"
-//#include "SharedLogNode.h"
-#include "SharedLogNode.cpp"
+#include "SharedLogNode.h"
 
 /* FIXME: In case IPs change */
 #define BILL_URI "131.159.102.1:31850"
