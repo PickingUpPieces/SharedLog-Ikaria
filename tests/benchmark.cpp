@@ -4,7 +4,8 @@
 #include <shared_mutex>
 #include "common_info.h"
 #include "common_tests.h"
-#include "SharedLogNode.h"
+//#include "SharedLogNode.h"
+#include "SharedLogNode.cpp"
 
 /* FIXME: In case IPs change */
 #define BILL_URI "131.159.102.1:31850"
@@ -16,7 +17,8 @@
 #define ROSE_URI "129.215.165.52:31850"
 #define MARTHA_URI "129.215.165.53:31850"
 
-SharedLogNode *localNode;
+template class SharedLogNode<ReplicationManager>;
+SharedLogNode<ReplicationManager> *localNode;
 BenchmarkData benchmarkData;
 std::mutex startBenchmark;
 bool benchmarkTime{false};
@@ -142,36 +144,36 @@ int main(int argc, char** argv) {
 
     #ifndef DPDK_CLUSTER
         switch(benchmarkData.progArgs.nodeType) {
-            case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData); break;
+            case HEAD: localNode = new SharedLogNode<ReplicationManager>(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData); break;
             case MIDDLE: break;
-            case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData); break;
+            case TAIL: localNode = new SharedLogNode<ReplicationManager>(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData); break;
         }
     #else
         #ifdef THREE_NODES
             switch(benchmarkData.progArgs.nodeID) {
-                //case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
-                //case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData); break;
-                //case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
-                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, ROSE_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, ROSE_URI, MARTHA_URI, MARTHA_URI, &benchmarkData ); break;
-                case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData ); break;
+                //case 0: localNode = new SharedLogNode<ReplicationManager>(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
+                //case 1: localNode = new SharedLogNode<ReplicationManager>(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData); break;
+                //case 2: localNode = new SharedLogNode<ReplicationManager>(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
+                case 0: localNode = new SharedLogNode<ReplicationManager>(HEAD, 0, poolPath, ROSE_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode<ReplicationManager>(MIDDLE, 1, poolPath, CLARA_URI, ROSE_URI, MARTHA_URI, MARTHA_URI, &benchmarkData ); break;
+                case 2: localNode = new SharedLogNode<ReplicationManager>(TAIL, 2, poolPath, MARTHA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
         #ifdef FOUR_NODES
             switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, ROSE_URI, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, ROSE_URI, &benchmarkData ); break;
-                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, ROSE_URI, &benchmarkData ); break;
-                case 3: localNode = new SharedLogNode(TAIL, 3, poolPath, ROSE_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
+                case 0: localNode = new SharedLogNode<ReplicationManager>(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, ROSE_URI, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode<ReplicationManager>(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, ROSE_URI, &benchmarkData ); break;
+                case 2: localNode = new SharedLogNode<ReplicationManager>(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, ROSE_URI, &benchmarkData ); break;
+                case 3: localNode = new SharedLogNode<ReplicationManager>(TAIL, 3, poolPath, ROSE_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
         #ifdef FIVE_NODES
             switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, DONNA_URI, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, DONNA_URI, &benchmarkData ); break;
-                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, DONNA_URI, &benchmarkData ); break;
-                case 3: localNode = new SharedLogNode(MIDDLE, 3, poolPath, ROSE_URI, AMY_URI, DONNA_URI, DONNA_URI, &benchmarkData ); break;
-                case 4: localNode = new SharedLogNode(TAIL, 4, poolPath, DONNA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
+                case 0: localNode = new SharedLogNode<ReplicationManager>(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, DONNA_URI, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode<ReplicationManager>(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, DONNA_URI, &benchmarkData ); break;
+                case 2: localNode = new SharedLogNode<ReplicationManager>(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, DONNA_URI, &benchmarkData ); break;
+                case 3: localNode = new SharedLogNode<ReplicationManager>(MIDDLE, 3, poolPath, ROSE_URI, AMY_URI, DONNA_URI, DONNA_URI, &benchmarkData ); break;
+                case 4: localNode = new SharedLogNode<ReplicationManager>(TAIL, 4, poolPath, DONNA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
     #endif
