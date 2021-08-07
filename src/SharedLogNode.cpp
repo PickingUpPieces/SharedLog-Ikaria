@@ -13,10 +13,8 @@
  * @param rec Callback function which is called when a message response is received which has been created by this node */ 
 SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData):
         Nexus_{hostURI, 0, 0},
-        nodeID_{nodeID},
-        threaded_{false}
+        nodeID_{nodeID}
 {
-    threaded_ = true;
     /* Create threads */
     for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
 	    DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");

@@ -68,12 +68,19 @@ void printbenchmarkData() {
     std::cout << "-------------------------------------" << endl;
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
-    std::cout << "Total Requests to process: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
-    std::cout << "Total Requests to process by each thread: " << benchmarkData.remainderNumberOfRequests << endl;
+    if (benchmarkTime)
+        std::cout << "Total time: " << benchmarkData.progArgs.time.count() << "s" << endl;
+    else {
+        std::cout << "Total Requests to process: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
+        std::cout << "Total Requests to process by each thread: " << benchmarkData.remainderNumberOfRequests << endl;
+    }
     std::cout << "Total Requests processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
     std::cout << "Processed READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
-    std::cout << "Total time: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
-    std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
+    std::cout << "Total time taken: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
+    if (benchmarkTime)
+        std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.progArgs.time.count()) << " Op/s" << endl;
+    else
+        std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
     std::cout << "-------------------------------------" << endl;
 }
 
