@@ -11,37 +11,17 @@
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node */ 
-SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec):
+SharedLogNode::SharedLogNode(NodeType nodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData):
         Nexus_{hostURI, 0, 0},
         nodeID_{nodeID},
         threaded_{false}
 {
-    
-    if (benchmarkData->progArgs.amountThreads > 1) {
-        threaded_ = true;
-        /* Create threads */
-        for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
-	        DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
-            threads_.emplace_back(make_unique<ReplicationManager>(nodeType, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData)); 
-        }
-    } else {
-        /* Just create the Object */
-        threads_.emplace_back(make_unique<ReplicationManager>(nodeType, pathToLog, &Nexus_, headURI, successorURI, tailURI, rec));
-        threads_.front()->init();
-        threads_.front()->threadSync_.threadReady = true;
+    threaded_ = true;
+    /* Create threads */
+    for (size_t i = 0; i < benchmarkData->progArgs.amountThreads; i++) {
+	    DEBUG_MSG("SharedLogNode(Thread number/erpcID: " << std::to_string(i) << ")");
+        threads_.emplace_back(make_unique<ReplicationManager>(nodeType, pathToLog, &Nexus_, i, headURI, successorURI, tailURI, *benchmarkData)); 
     }
-}
-
-/* TODO: Documentation */
-void SharedLogNode::read(uint64_t logOffset) {
-    if (!threaded_)
-        readLog(threads_.front().get(), logOffset);
-}
-
-/* TODO: Documentation */
-void SharedLogNode::append(LogEntryInFlight *logEntryInFlight, size_t dataLength) {
-    if (!threaded_)
-        appendLog(threads_.front().get(), logEntryInFlight, dataLength);
 }
 
 /* TODO: Documentation */
@@ -64,10 +44,4 @@ void SharedLogNode::get_results(BenchmarkData *benchmarkData) {
         benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
         benchmarkData->totalMessagesProcessed += rp->benchmarkData_.totalMessagesProcessed;
     }
-}
-
-/* TODO: Documentation */
-void SharedLogNode::sync(int numberOfRuns) {
-    if(!threaded_)
-        threads_.front().get()->networkManager_->sync(numberOfRuns);
 }

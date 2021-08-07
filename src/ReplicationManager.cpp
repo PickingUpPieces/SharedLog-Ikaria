@@ -5,25 +5,6 @@
 /* Init static softCounter */
 static std::atomic<uint64_t> softCounter_{0}; 
 
-
-/* TODO: Documentation */
-/**
- * Constructs the ReplicationManager as single threaded
- * @param NodeType Specifys the type of this node (HEAD, MIDDLE or TAIL)
- * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
- * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
- * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
- * @param rec Callback function which is called when a message response is received which has been created by this node
- */
-ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec):
-        chainReady_{false},
-        setupMessage_{nullptr},
-        nodeType_{nodeType},
-        rec{rec}, 
-        log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog}, 
-        networkManager_{new NetworkManager(nodeType, nexus, 0, headURI, successorURI, tailURI, this)} {} 
-
-
 /* TODO: Documentation */
 /**
  * Constructs the ReplicationManager as multi threaded Object

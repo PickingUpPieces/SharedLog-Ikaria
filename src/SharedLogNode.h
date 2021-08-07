@@ -21,7 +21,7 @@ class SharedLogNode {
         bool threaded_;
 
     public:
-        SharedLogNode(NodeType NodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData, receive_local rec);
+        SharedLogNode(NodeType NodeType, uint8_t nodeID, const char* pathToLog, string hostURI, string headURI, string successorURI, string tailURI, BenchmarkData *benchmarkData);
         void read(uint64_t logOffset);
         void append(LogEntryInFlight *logEntryInFlight, size_t dataLength);
         void sync(int numberOfRuns);

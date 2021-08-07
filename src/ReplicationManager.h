@@ -35,8 +35,6 @@ class ReplicationManager {
     public:
         // Multi Threaded
         ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
-        // Single Threaded
-        ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, string headURI, string successorURI, string tailURI, receive_local rec);
         void init();
         void append(Message *message);
         void read(Message *message);
