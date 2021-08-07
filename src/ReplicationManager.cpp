@@ -63,7 +63,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
         }
     }
 
-    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
+    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesCompleted_;
     rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
     rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }
@@ -86,7 +86,7 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
     while(likely(rp->threadSync_.threadReady))
 		rp->networkManager_->sync(1);
 
-    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
+    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesCompleted_;
     rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
     rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }

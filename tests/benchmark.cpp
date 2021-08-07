@@ -149,12 +149,12 @@ int main(int argc, char** argv) {
     #else
         #ifdef THREE_NODES
             switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData); break;
-                case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
-               // case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, ROSE_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
-               // case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, ROSE_URI, MARTHA_URI, MARTHA_URI, &benchmarkData ); break;
-               // case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData ); break;
+                //case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
+                //case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData); break;
+                //case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, ROSE_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, ROSE_URI, MARTHA_URI, MARTHA_URI, &benchmarkData ); break;
+                case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
         #ifdef FOUR_NODES
