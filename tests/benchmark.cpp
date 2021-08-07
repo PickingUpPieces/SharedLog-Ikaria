@@ -20,13 +20,13 @@ SharedLogNode *localNode;
 BenchmarkData benchmarkData;
 std::mutex startBenchmark;
 
-/* Benchmarking function for multiple threads */
-void start_benchmarking_threads() {
+/* Benchmarking function for operations */
+void start_benchmark_operations() {
     localNode->get_thread_ready();
     startBenchmark.unlock();
 
     std::cout << "-------------------------------------" << endl;
-    std::cout << "Start benchmarking..." << endl;
+    std::cout << "Start benchmarking on operations..." << endl;
     
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
@@ -39,6 +39,28 @@ void start_benchmarking_threads() {
 
     localNode->get_results(&benchmarkData);
 }
+
+/* Benchmarking function for time */
+void start_benchmark_time() {
+    localNode->get_thread_ready();
+    startBenchmark.unlock();
+
+    std::cout << "-------------------------------------" << endl;
+    std::cout << "Start benchmarking on time..." << endl;
+    
+    /* Take start time */
+    auto start = std::chrono::high_resolution_clock::now();
+
+    std::this_thread::sleep_for(benchmarkData.progArgs.time);
+    localNode->terminate(true);
+
+    /* Take end time */
+    auto end = std::chrono::high_resolution_clock::now();
+    benchmarkData.totalExecutionTime = end - start;
+
+    localNode->get_results(&benchmarkData);
+}
+
 
 /* Print out the benchmarkData struct and calculate additional information */
 void printbenchmarkData() {
@@ -84,15 +106,16 @@ void parser(int amountArgs, char **argv) {
             case 's': // Size value
                 benchmarkData.progArgs.valueSize = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
-            case 'p': // Percentile of messages to wait for 
-                benchmarkData.progArgs.percentile = std::stoul(&(argv[i][3]), nullptr, 0);
+            case 'h': // Time to run program in seconds
+                benchmarkData.progArgs.time = std::chrono::seconds(std::stoul(&(argv[i][3]), nullptr, 0));
+                benchmarkData.progArgs.totalNumberOfRequests = 1000000000;
                 break;
         }
     }
 
     benchmarkData.remainderNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests / benchmarkData.progArgs.amountThreads;
     benchmarkData.startBenchmark = &startBenchmark;
-    std::cout << "Input Parameters: nodeID: " << to_string(benchmarkData.progArgs.nodeID) << " nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " percentileMessages: " << benchmarkData.progArgs.percentileNumberOfRequests  << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
+    std::cout << "Input Parameters: nodeID: " << to_string(benchmarkData.progArgs.nodeID) << " nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " Time: " << std::to_string(benchmarkData.progArgs.time.count()) << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
 }
 
 
@@ -144,7 +167,7 @@ int main(int argc, char** argv) {
         #endif
     #endif
 
-    start_benchmarking_threads();
+    start_benchmark_operations();
 
     std::cout << "...Finished benchmarking" << endl;
     std::cout << "-------------------------------------" << endl;
