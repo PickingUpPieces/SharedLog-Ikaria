@@ -19,6 +19,7 @@
 SharedLogNode *localNode;
 BenchmarkData benchmarkData;
 std::mutex startBenchmark;
+bool benchmarkTime{false};
 
 /* Benchmarking function for operations */
 void start_benchmark_operations() {
@@ -109,6 +110,7 @@ void parser(int amountArgs, char **argv) {
             case 'h': // Time to run program in seconds
                 benchmarkData.progArgs.time = std::chrono::seconds(std::stoul(&(argv[i][3]), nullptr, 0));
                 benchmarkData.progArgs.totalNumberOfRequests = 1000000000;
+                benchmarkTime = true;
                 break;
         }
     }
@@ -167,7 +169,10 @@ int main(int argc, char** argv) {
         #endif
     #endif
 
-    start_benchmark_operations();
+    if (benchmarkTime)
+        start_benchmark_time();
+    else
+        start_benchmark_operations();
 
     std::cout << "...Finished benchmarking" << endl;
     std::cout << "-------------------------------------" << endl;
