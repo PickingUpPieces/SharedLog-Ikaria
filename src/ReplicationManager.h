@@ -43,13 +43,13 @@ class ReplicationManager {
         void terminate(bool force);
 
         NodeType nodeType_;
-        unique_ptr<NetworkManager> networkManager_;
         Log log_;
+        receive_local rec;
         ThreadSync threadSync_;
         BenchmarkData benchmarkData_;
-        receive_local rec;
         size_t totalReadsProcessed_;
         size_t totalAppendsProcessed_;
+        unique_ptr<NetworkManager> networkManager_;
 };
 
 #endif // REPLICATIONNODE_REPLICATIONMANAGER_H
