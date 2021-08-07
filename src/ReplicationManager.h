@@ -45,9 +45,6 @@ class ReplicationManager {
         Log log_;
         ThreadSync threadSync_;
         BenchmarkData benchmarkData_;
-        size_t totalReadsProcessed_{0};
-        size_t totalAppendsProcessed_{0};
-        size_t totalMessagesProcessed_{0};
         unique_ptr<NetworkManager> networkManager_;
 };
 

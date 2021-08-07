@@ -125,6 +125,14 @@ void NetworkManager::receive_response(Message *message) {
         if (nodeType_ == MIDDLE)
             send_response(message);
         break;
+    case APPEND:
+        totalAppendsProcessed_++;
+        Inbound_->send_response(message);
+        break;
+    case READ:
+        totalReadsProcessed_++;
+        Inbound_->send_response(message);
+        break;
     default:
         Inbound_->send_response(message);
         break;

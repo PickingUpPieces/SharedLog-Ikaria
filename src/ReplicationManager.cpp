@@ -49,7 +49,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
 
-    while(likely(rp->threadSync_.threadReady && ( rp->totalMessagesProcessed_ <= rp->benchmarkData_.remainderNumberOfRequests))) {
+    while(likely(rp->threadSync_.threadReady && ( rp->networkManager_->totalMessagesProcessed_ <= rp->benchmarkData_.remainderNumberOfRequests))) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -63,9 +63,9 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
         }
     }
 
-    rp->benchmarkData_.totalMessagesProcessed = rp->totalMessagesProcessed_;
-    rp->benchmarkData_.amountReadsSent = rp->totalReadsProcessed_;
-    rp->benchmarkData_.amountAppendsSent = rp->totalAppendsProcessed_;
+    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
+    rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
+    rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }
 
 /* TODO: Documentation */
@@ -87,8 +87,8 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 		rp->networkManager_->sync(1);
 
     rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
-    rp->benchmarkData_.amountReadsSent = rp->totalReadsProcessed_;
-    rp->benchmarkData_.amountAppendsSent = rp->totalAppendsProcessed_;
+    rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
+    rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }
 
 
@@ -199,9 +199,6 @@ void ReplicationManager::append(Message *message) {
             networkManager_->send_response(message);
         }; 
     }
-
-    totalAppendsProcessed_++;
-    totalMessagesProcessed_++;
 }
 
 /**
@@ -247,9 +244,6 @@ void ReplicationManager::read(Message *message) {
             networkManager_->send_response(message);
         }; 
     }
-
-    totalReadsProcessed_++;
-    totalMessagesProcessed_++;
 }
 
 

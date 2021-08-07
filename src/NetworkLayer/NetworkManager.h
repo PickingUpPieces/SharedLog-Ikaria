@@ -43,8 +43,10 @@ class NetworkManager {
 
         erpc::Rpc<erpc::CTransport> rpc_;
         size_t messagesInFlight_;
-        size_t totalMessagesCompleted_;
-        size_t totalMessagesProcessed_;
+        size_t totalMessagesCompleted_{0};
+        size_t totalMessagesProcessed_{0};
+        size_t totalReadsProcessed_{0};
+        size_t totalAppendsProcessed_{0};
 };
 
 #endif //REPLICATIONNODE_NETWORKMANAGER_H
