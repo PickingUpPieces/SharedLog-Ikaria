@@ -16,11 +16,9 @@
 #define ROSE_URI "129.215.165.52:31850"
 #define MARTHA_URI "129.215.165.53:31850"
 
-
 SharedLogNode *localNode;
 BenchmarkData benchmarkData;
 std::mutex startBenchmark;
-
 
 /* Callback function when a response is received */
 void receive_locally(Message *message) {
@@ -105,9 +103,6 @@ void start_benchmarking_single() {
         benchmarkData.remainderNumberOfRequests--;
     }
 
-    while((benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.messagesInFlight) < (benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.progArgs.percentileNumberOfRequests))
-		localNode->sync(1);
-
     /* Take end time */
     auto end = std::chrono::high_resolution_clock::now();
     benchmarkData.totalExecutionTime = end - start;
@@ -165,7 +160,6 @@ void parser(int amountArgs, char **argv) {
         }
     }
 
-    benchmarkData.progArgs.percentileNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests - ((benchmarkData.progArgs.percentile * benchmarkData.progArgs.totalNumberOfRequests) / 100);
     benchmarkData.remainderNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests / benchmarkData.progArgs.amountThreads;
     benchmarkData.startBenchmark = &startBenchmark;
     std::cout << "Input Parameters: nodeID: " << to_string(benchmarkData.progArgs.nodeID) << " nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " percentileMessages: " << benchmarkData.progArgs.percentileNumberOfRequests  << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
@@ -196,6 +190,9 @@ int main(int argc, char** argv) {
                 case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
                 case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
                 case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+               // case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, ROSE_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
+               // case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, ROSE_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
+               // case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
             }
         #endif
         #ifdef FOUR_NODES

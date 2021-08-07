@@ -106,6 +106,8 @@ void NetworkManager::receive_message(Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void NetworkManager::receive_response(Message *message) {
+    messagesInFlight_--;
+    totalMessagesCompleted_++;
     DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
     if (message->sentByThisNode) {
@@ -127,8 +129,6 @@ void NetworkManager::receive_response(Message *message) {
         Inbound_->send_response(message);
         break;
     }
-    messagesInFlight_--;
-    totalMessagesCompleted_++;
 }
 
 /**

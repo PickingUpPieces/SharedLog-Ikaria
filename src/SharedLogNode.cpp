@@ -63,8 +63,6 @@ void SharedLogNode::get_results(BenchmarkData *benchmarkData) {
         benchmarkData->amountAppendsSent += rp->benchmarkData_.amountAppendsSent;
         benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
         benchmarkData->totalMessagesProcessed += rp->benchmarkData_.totalMessagesProcessed;
-        benchmarkData->amountAppendsSent += rp->benchmarkData_.amountAppendsSent;
-        benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
     }
 }
 

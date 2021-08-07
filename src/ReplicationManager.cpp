@@ -68,7 +68,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
 
-    while(likely(rp->threadSync_.threadReady && ( rp->networkManager_->totalMessagesCompleted_ <= rp->benchmarkData_.remainderNumberOfRequests))) {
+    while(likely(rp->threadSync_.threadReady && ( rp->totalMessagesProcessed_ <= rp->benchmarkData_.remainderNumberOfRequests))) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -80,13 +80,9 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
         } else {
             appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
         }
-	    //rp->benchmarkData_.remainderNumberOfRequests--; 
     }
 
-    /* Wait for missing response messages */
-    //while((rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.messagesInFlight) < (rp->benchmarkData_.progArgs.totalNumberOfRequests - rp->benchmarkData_.progArgs.percentileNumberOfRequests))
-	//	rp->networkManager_->sync(1);
-    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesProcessed_;
+    rp->benchmarkData_.totalMessagesProcessed = rp->totalMessagesProcessed_;
     rp->benchmarkData_.amountReadsSent = rp->totalReadsProcessed_;
     rp->benchmarkData_.amountAppendsSent = rp->totalAppendsProcessed_;
 }
@@ -185,8 +181,6 @@ void ReplicationManager::append(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
 
-    totalAppendsProcessed_++;
-
     switch(nodeType_) {
         case HEAD: 
         {
@@ -224,6 +218,9 @@ void ReplicationManager::append(Message *message) {
             networkManager_->send_response(message);
         }; 
     }
+
+    totalAppendsProcessed_++;
+    totalMessagesProcessed_++;
 }
 
 /**
@@ -234,8 +231,6 @@ void ReplicationManager::append(Message *message) {
 void ReplicationManager::read(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
-
-    totalReadsProcessed_++;
 
     switch(nodeType_) {
         case MIDDLE: ;
@@ -271,6 +266,9 @@ void ReplicationManager::read(Message *message) {
             networkManager_->send_response(message);
         }; 
     }
+
+    totalReadsProcessed_++;
+    totalMessagesProcessed_++;
 }
 
 
