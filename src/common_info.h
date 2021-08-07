@@ -12,17 +12,17 @@
 #endif
 
 /* Max message size */
-#define MAX_MESSAGE_SIZE 4112
+#define MAX_MESSAGE_SIZE sizeof(LogEntryInFlight)
 
 // Log variables
 /* size of the pmemlog pool -- 1 GB = 2^30 */
 #define POOL_SIZE ((off_t)(1UL << 33))
 /* log data size in B */
-#define LOG_BLOCK_DATA_SIZE 4096
+#define LOG_BLOCK_DATA_SIZE 128
 /* log block size in B */
 #define LOG_BLOCK_TOTAL_SIZE sizeof(LogEntry)
 /* Path to the Pool file */
-#define POOL_PATH "/home/vincent/pmem/replNode-0.log"
+#define POOL_PATH "/dev/shm/replNode-0.log"
 
 struct LogEntry {
     uint64_t dataLength;

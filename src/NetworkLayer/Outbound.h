@@ -11,17 +11,17 @@ class NetworkManager;
 
 class Outbound {
     friend void cont_func(void *context, void *tag);
+    friend NetworkManager;
 
     private:
         int8_t sessionNum_;
-        NetworkManager *NetworkManager_;
+        NetworkManager *networkManager_;
         erpc::Rpc<erpc::CTransport> *rpc_;
-
-    public:
-        Outbound(string connectURI, uint8_t erpcID, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc);
         void send_message(Message *message);
         void connect();
-        void terminate();
+
+    public:
+        Outbound(string connectURI, uint8_t erpcID, NetworkManager *networkManager, erpc::Rpc<erpc::CTransport> *rpc);
 };
 
 #endif //REPLICATIONNODE_OUTBOUND_H

@@ -16,45 +16,18 @@
 #define ROSE_URI "129.215.165.52:31850"
 #define MARTHA_URI "129.215.165.53:31850"
 
-
 SharedLogNode *localNode;
 BenchmarkData benchmarkData;
 std::mutex startBenchmark;
-std::atomic<uint8_t> threadsReady{0};
+bool benchmarkTime{false};
 
-
-/* Callback function when a response is received */
-void receive_locally(Message *message) {
-	benchmarkData.messagesInFlight--;
-    
-    if (message->messageType == APPEND) {
-        uint64_t *returnedLogOffset = (uint64_t *) message->respBuffer.buf;
-        if (benchmarkData.highestKnownLogOffset < *returnedLogOffset)
-            benchmarkData.highestKnownLogOffset = *returnedLogOffset;
-    }  
-}
-
-
-/* Send a READ message */
-void send_read_message(uint64_t logOffset) {
-    localNode->read(logOffset);
-    benchmarkData.amountReadsSent++;
-}
-
-/* Create an APPEND message, which is always sent */
-void send_append_message(void *data, size_t dataLength) {
-    localNode->append(data, dataLength);
-    benchmarkData.amountAppendsSent++;
-}
-
-
-/* Benchmarking function for multiple threads */
-void start_benchmarking_threads() {
+/* Benchmarking function for operations */
+void start_benchmark_operations() {
     localNode->get_thread_ready();
     startBenchmark.unlock();
 
     std::cout << "-------------------------------------" << endl;
-    std::cout << "Start benchmarking..." << endl;
+    std::cout << "Start benchmarking on operations..." << endl;
     
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
@@ -68,45 +41,25 @@ void start_benchmarking_threads() {
     localNode->get_results(&benchmarkData);
 }
 
-
-/* Benchmarking function for single thread */
-void start_benchmarking_single() {
-    /* Create data struct for APPEND */
-    LogEntryInFlight logEntryInFlight = generate_random_logEntryInFlight(benchmarkData.progArgs.valueSize);
+/* Benchmarking function for time */
+void start_benchmark_time() {
+    localNode->get_thread_ready();
+    startBenchmark.unlock();
 
     std::cout << "-------------------------------------" << endl;
-    std::cout << "Start benchmarking..." << endl;
-
+    std::cout << "Start benchmarking on time..." << endl;
+    
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
 
-    while(likely(benchmarkData.remainderNumberOfRequests)) {
-        if (( rand() % 100 ) < benchmarkData.progArgs.probabilityOfRead) {
-	        if ( benchmarkData.highestKnownLogOffset < 1)
-		        continue;
-
-	        uint64_t randuint = static_cast<uint64_t>(rand());
-            uint64_t randReadOffset = randuint % benchmarkData.highestKnownLogOffset; 
-            logEntryInFlight.messageType = READ;
-            send_read_message(randReadOffset); 
-        } else {
-            logEntryInFlight.messageType = APPEND;
-    	    send_append_message(&logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
-        }
-
-	    while(benchmarkData.messagesInFlight > 20000)
-	        localNode->sync(10); 
-
-	    benchmarkData.messagesInFlight++;
-        benchmarkData.remainderNumberOfRequests--;
-    }
-
-    while((benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.messagesInFlight) < (benchmarkData.progArgs.totalNumberOfRequests - benchmarkData.progArgs.percentileNumberOfRequests))
-		localNode->sync(1);
+    std::this_thread::sleep_for(benchmarkData.progArgs.time);
+    localNode->terminate(true);
 
     /* Take end time */
     auto end = std::chrono::high_resolution_clock::now();
     benchmarkData.totalExecutionTime = end - start;
+
+    localNode->get_results(&benchmarkData);
 }
 
 
@@ -115,14 +68,21 @@ void printbenchmarkData() {
     std::cout << "-------------------------------------" << endl;
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
-    std::cout << "Total Requests: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
-    std::cout << "Total Requests Processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
-    std::cout << "Sent READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
-    std::cout << "Total time: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
-    std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
+    if (benchmarkTime)
+        std::cout << "Total time: " << benchmarkData.progArgs.time.count() << "s" << endl;
+    else {
+        std::cout << "Total Requests to process: " << benchmarkData.progArgs.totalNumberOfRequests << endl;
+        std::cout << "Total Requests to process by each thread: " << benchmarkData.remainderNumberOfRequests << endl;
+    }
+    std::cout << "Total Requests processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
+    std::cout << "Processed READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
+    std::cout << "Total time taken: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
+    if (benchmarkTime)
+        std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
+    else
+        std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
     std::cout << "-------------------------------------" << endl;
 }
-
 
 /* Parse the input arguments */
 void parser(int amountArgs, char **argv) {
@@ -154,16 +114,17 @@ void parser(int amountArgs, char **argv) {
             case 's': // Size value
                 benchmarkData.progArgs.valueSize = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
-            case 'p': // Percentile of messages to wait for 
-                benchmarkData.progArgs.percentile = std::stoul(&(argv[i][3]), nullptr, 0);
+            case 'h': // Time to run program in seconds
+                benchmarkData.progArgs.time = std::chrono::seconds(std::stoul(&(argv[i][3]), nullptr, 0));
+                benchmarkData.progArgs.totalNumberOfRequests = 1000000000;
+                benchmarkTime = true;
                 break;
         }
     }
 
-    benchmarkData.progArgs.percentileNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests - ((benchmarkData.progArgs.percentile * benchmarkData.progArgs.totalNumberOfRequests) / 100);
     benchmarkData.remainderNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests / benchmarkData.progArgs.amountThreads;
     benchmarkData.startBenchmark = &startBenchmark;
-    std::cout << "Input Parameters: nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " percentileMessages: " << benchmarkData.progArgs.percentileNumberOfRequests  << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
+    std::cout << "Input Parameters: nodeID: " << to_string(benchmarkData.progArgs.nodeID) << " nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " Time: " << std::to_string(benchmarkData.progArgs.time.count()) << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
 }
 
 
@@ -181,50 +142,44 @@ int main(int argc, char** argv) {
 
     #ifndef DPDK_CLUSTER
         switch(benchmarkData.progArgs.nodeType) {
-            case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData, &receive_locally); break;
-            case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
-
+            case HEAD: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, BILL_URI, std::string(), NARDOLE_URI, NARDOLE_URI, &benchmarkData); break;
             case MIDDLE: break;
+            case TAIL: localNode = new SharedLogNode(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData); break;
         }
     #else
         #ifdef THREE_NODES
             switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData, &receive_locally); break;
-                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData, &receive_locally ); break;
-                case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+                //case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
+                //case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, MARTHA_URI, &benchmarkData); break;
+                //case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, ROSE_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, ROSE_URI, MARTHA_URI, MARTHA_URI, &benchmarkData ); break;
+                case 2: localNode = new SharedLogNode(TAIL, 2, poolPath, MARTHA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
         #ifdef FOUR_NODES
             switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, ROSE_URI, &benchmarkData, &receive_locally); break;
-                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, ROSE_URI, &benchmarkData, &receive_locally ); break;
-                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, ROSE_URI, &benchmarkData, &receive_locally ); break;
-                case 3: localNode = new SharedLogNode(TAIL, 3, poolPath, ROSE_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, ROSE_URI, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, ROSE_URI, &benchmarkData ); break;
+                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, ROSE_URI, &benchmarkData ); break;
+                case 3: localNode = new SharedLogNode(TAIL, 3, poolPath, ROSE_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
         #ifdef FIVE_NODES
             switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, DONNA_URI, &benchmarkData, &receive_locally); break;
-                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
-                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
-                case 3: localNode = new SharedLogNode(MIDDLE, 3, poolPath, ROSE_URI, AMY_URI, DONNA_URI, DONNA_URI, &benchmarkData, &receive_locally ); break;
-                case 4: localNode = new SharedLogNode(TAIL, 4, poolPath, DONNA_URI, AMY_URI, std::string(), std::string(), &benchmarkData, &receive_locally ); break;
+                case 0: localNode = new SharedLogNode(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, DONNA_URI, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, DONNA_URI, &benchmarkData ); break;
+                case 2: localNode = new SharedLogNode(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, DONNA_URI, &benchmarkData ); break;
+                case 3: localNode = new SharedLogNode(MIDDLE, 3, poolPath, ROSE_URI, AMY_URI, DONNA_URI, DONNA_URI, &benchmarkData ); break;
+                case 4: localNode = new SharedLogNode(TAIL, 4, poolPath, DONNA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
     #endif
 
-
-    if (benchmarkData.progArgs.amountThreads < 2) {
-        if (benchmarkData.progArgs.activeMode)
-            start_benchmarking_single();
-        else {
-            send_read_message(0);
-            while(true) 
-                localNode->sync(1);
-        }
-    } else
-        start_benchmarking_threads();
-
+    if (benchmarkTime)
+        start_benchmark_time();
+    else
+        start_benchmark_operations();
 
     std::cout << "...Finished benchmarking" << endl;
     std::cout << "-------------------------------------" << endl;

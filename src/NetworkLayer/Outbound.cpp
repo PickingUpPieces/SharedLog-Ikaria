@@ -7,9 +7,9 @@
  * @param NetworkManager Reference needed for the message flow e.g. handing of messages for further process 
  * @param rpc RPC Object for creating the session and sending messages / receiving responses
  */
-Outbound::Outbound(string connectURI, uint8_t erpcID, NetworkManager *NetworkManager, erpc::Rpc<erpc::CTransport> *rpc):
+Outbound::Outbound(string connectURI, uint8_t erpcID, NetworkManager *networkManager, erpc::Rpc<erpc::CTransport> *rpc):
         sessionNum_{-1}, 
-        NetworkManager_{NetworkManager},
+        networkManager_{networkManager},
         rpc_{rpc}
 {
     sessionNum_ = rpc_->create_session(connectURI, erpcID);
@@ -53,13 +53,8 @@ void Outbound::connect() {
     DEBUG_MSG("Outbound.connect(): Establishing Connection...");
     /* Try until Client is connected */
     while (!rpc_->is_connected(sessionNum_)) 
-    	rpc_->run_event_loop_once();
+        rpc_->run_event_loop(100);  // 100ms
 
     DEBUG_MSG("Outbound.connect(): Connection is ready");
     DEBUG_MSG("Outbound.connect(): Connection Bandwith is " << std::to_string( rpc_->get_bandwidth() / (1024 * 1024)) << "MiB/s");
 }
-
-/**
- * Disconnects the client and terminates this session
- */
-void Outbound::terminate() {}

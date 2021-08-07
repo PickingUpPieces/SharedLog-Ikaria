@@ -2,7 +2,6 @@
 #include "Log.h"
 
 static once_flag plp_once;
-static uint64_t logEntryTotalSize = sizeof(LogEntry);
 static PMEMlogpool *plp_;
 
 /**
@@ -17,6 +16,14 @@ Log::Log(uint64_t logTotalSize, uint64_t logBlockSize, const char *pathToLog):
     pathToLog_{pathToLog}
 {
     std::call_once(plp_once, init, pathToLog, logTotalSize);
+}
+
+/**
+ * Closes the Log
+*/
+Log::~Log() {
+	if (plp_ != NULL)
+	    pmemlog_close(plp_);
 }
 
 /**
@@ -45,7 +52,7 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
 	// FIXME: When totalSize % 8 != 0 then the data is gonna be aligned. Is this a problem?
 	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
 
-	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logEntryTotalSize) < 0) {
+	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
 		exit(EXIT_FAILURE);
 	}
@@ -56,28 +63,9 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
  * @param logOffset The log entry number 
  * @param logEntryLength Pointer for the logSize of the requested log, which is returned back to the ReplicationManager
 */
-LogEntry *Log::read(uint64_t logOffset, size_t *logEntryLength) {
-    LogEntry *logEntry = static_cast<LogEntry *>(pmemlog_read(plp_, logOffset * logEntryTotalSize));
-    // TODO: Check if first byte (LogEntry.dataLength) is 0 -> read failed
-
-	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
+pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
+    LogEntry *logEntry = static_cast<LogEntry *>(pmemlog_read(plp_, logOffset * logBlockSize_));
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->dataLength) << " ; data: " << logEntry->data << ")");
 
-    *logEntryLength = totalLogEntrySize;
-    return logEntry;
-}
-
-/**
- * Terminates the Log
-*/
-void Log::terminate() {
-    DEBUG_MSG("Log.terminate()");
-
-	if (plp_ == NULL) {
-		perror("No log is open!");
-		exit(EXIT_FAILURE);
-	} else 
-	    pmemlog_close(plp_);
-
-    exit(EXIT_SUCCESS);
+	return make_pair(logEntry, 	logEntry->dataLength + sizeof(logEntry->dataLength));
 }

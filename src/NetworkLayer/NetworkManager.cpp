@@ -13,31 +13,25 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *ReplicationManager):
-        erpcID_{erpcID},
-        ReplicationManager_{ReplicationManager},
-        Nexus_{Nexus},
-        Inbound_{new Inbound(nodeType, Nexus_, this)},
-        Head_{nullptr},
-        Successor_{nullptr},
-        Tail_{nullptr},
+NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *replicationManager):
         nodeType_{nodeType},
+        erpcID_{erpcID},
+        ReplicationManager_{replicationManager},
+        Nexus_{nexus},
+        Inbound_(new Inbound(nodeType, Nexus_, this)),
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
 {
     rpc_.retry_connect_on_invalid_rpc_id = true;
     rpc_.set_pre_resp_msgbuf_size(MAX_MESSAGE_SIZE);
 
     if (nodeType_ != HEAD)
-        Head_ = new Outbound(headURI, erpcID, this, &rpc_);
+        Head_ = make_unique<Outbound>(headURI, erpcID, this, &rpc_);
 
     if (nodeType_ != TAIL) {
-        Tail_ = new Outbound(tailURI, erpcID, this, &rpc_);
+        Tail_ = make_shared<Outbound>(tailURI, erpcID, this, &rpc_);
     
         /* SUCCESSOR is the TAIL node */
-        if (successorURI.compare(tailURI) == 0)
-            Successor_ = Tail_;
-        else
-            Successor_ = new Outbound(successorURI, erpcID, this, &rpc_);
+        (successorURI.compare(tailURI) == 0) ? Successor_ = Tail_ : Successor_ = make_shared<Outbound>(successorURI, erpcID, this, &rpc_);
     }
 }
 
@@ -89,7 +83,7 @@ void NetworkManager::send_response(Message *message) {
 void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
     // FIXME: Can be deleted
-    if (!(totalMessagesProcessed_ % 100000))
+    if (!(totalMessagesProcessed_ % 1000000))
         std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
     switch (message->messageType) 
@@ -117,10 +111,21 @@ void NetworkManager::receive_response(Message *message) {
     DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
     if (message->sentByThisNode) {
+        switch (message->messageType)
+        {
+            case APPEND:
+                totalAppendsProcessed_++;
+                break;
+            case READ:
+                totalReadsProcessed_++;
+                break;
+            default:
+                break;
+        }
         ReplicationManager_->receive_locally(message);
         rpc_.free_msg_buffer(message->reqBuffer);
         rpc_.free_msg_buffer(message->respBuffer);
-        free(message);
+        delete message;
         return;
     }
 
@@ -128,9 +133,16 @@ void NetworkManager::receive_response(Message *message) {
     {
     case SETUP:
         ReplicationManager_->setup_response();
-        if (nodeType_ == MIDDLE){
+        if (nodeType_ == MIDDLE)
             send_response(message);
-        }
+        break;
+    case APPEND:
+        totalAppendsProcessed_++;
+        Inbound_->send_response(message);
+        break;
+    case READ:
+        totalReadsProcessed_++;
+        Inbound_->send_response(message);
         break;
     default:
         Inbound_->send_response(message);

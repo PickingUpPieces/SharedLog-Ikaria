@@ -9,9 +9,9 @@ static void register_req_handler(erpc::Nexus *nexus);
  * @param nexus Nexus needed for the eRPC connection
  * @param NetworkManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *NetworkManager):
+Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *networkManager):
         nodeType_{nodeType},
-        NetworkManager_{NetworkManager}
+        networkManager_{networkManager}
 {
     std::call_once(req_handler_once, register_req_handler, nexus);
 }
@@ -25,7 +25,7 @@ Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *NetworkM
 void req_handler(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(req_handle->get_req_msgbuf()->buf);
-    Message *message = (Message *) malloc(sizeof(Message));
+    Message *message = new Message(); 
 
     switch (logEntryInFlight->messageType) {
         case SETUP: 
@@ -89,16 +89,16 @@ void Inbound::send_response(Message *message) {
 
     /* Resize respBuffer if necessary */
 	if (message->respBufferSize < message->reqHandle->pre_resp_msgbuf.get_data_size())
-        NetworkManager_->rpc_.resize_msg_buffer(&message->reqHandle->pre_resp_msgbuf, message->respBufferSize);
+        networkManager_->rpc_.resize_msg_buffer(&message->reqHandle->pre_resp_msgbuf, message->respBufferSize);
 
-    NetworkManager_->rpc_.enqueue_response(message->reqHandle, &message->reqHandle->pre_resp_msgbuf);
-    NetworkManager_->rpc_.run_event_loop_once();
+    networkManager_->rpc_.enqueue_response(message->reqHandle, &message->reqHandle->pre_resp_msgbuf);
+    networkManager_->rpc_.run_event_loop_once();
 
     if (nodeType_ != TAIL) {
-        NetworkManager_->rpc_.free_msg_buffer(message->reqBuffer);
-        NetworkManager_->rpc_.free_msg_buffer(message->respBuffer);
+        networkManager_->rpc_.free_msg_buffer(message->reqBuffer);
+        networkManager_->rpc_.free_msg_buffer(message->respBuffer);
     }
-    free(message);
+    delete message;
 }
 
 /**

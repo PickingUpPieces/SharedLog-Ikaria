@@ -157,7 +157,6 @@ add_executable(benchmark
   ${BENCHMARK}
 )
 
-
 target_link_libraries(benchmark
   replication_node
 )
