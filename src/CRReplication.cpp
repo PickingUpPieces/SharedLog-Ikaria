@@ -18,7 +18,6 @@ CRReplication::CRReplication(NodeType nodeType, const char* pathToLog, erpc::Nex
         chainReady_{false},
         setupMessage_{nullptr},
         nodeType_{nodeType},
-        rec{nullptr}, 
         log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog},
         benchmarkData_{benchmarkData}
     {
@@ -251,12 +250,6 @@ void CRReplication::read(Message *message) {
 /* TODO: Documentation */
 /* Callback function when a response is received */
 void CRReplication::receive_locally(Message *message) {
-    // If single threaded
-    if (rec) { 
-        rec(message);
-        return;
-    }
-
 	benchmarkData_.messagesInFlight--;
     
     if (message->messageType == APPEND) {

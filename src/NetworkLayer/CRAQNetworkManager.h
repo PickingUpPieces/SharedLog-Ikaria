@@ -10,7 +10,11 @@
 #include "CRAQReplication.h"
 using namespace std;
 
-#define DEFAULT_RUN_EVENT_LOOP 10
+struct LogEntryInFlight {
+    uint64_t logOffset;
+    MessageType messageType;
+    LogEntry logEntry;
+};
 
 class CRAQReplication;
 class Inbound;
@@ -25,7 +29,7 @@ class NetworkManager {
     private:
         NodeType nodeType_;
         uint8_t erpcID_;
-        CRAQReplication *CRAQReplication_;
+        CRAQReplication *replicationManager_;
         erpc::Nexus *Nexus_;
         unique_ptr<Inbound> Inbound_;
         unique_ptr<Outbound> Head_;

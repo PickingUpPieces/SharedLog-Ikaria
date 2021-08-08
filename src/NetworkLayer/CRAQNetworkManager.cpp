@@ -16,7 +16,7 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRAQReplication *CRAQReplication):
         nodeType_{nodeType},
         erpcID_{erpcID},
-        CRAQReplication_{CRAQReplication},
+        replicationManager_{CRAQReplication},
         Nexus_{nexus},
         Inbound_(new Inbound(nodeType, Nexus_, this)),
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
@@ -86,16 +86,23 @@ void NetworkManager::receive_message(Message *message) {
     if (!(totalMessagesProcessed_ % 1000000))
         std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
-    switch (message->messageType) 
-    {
+    /* Fill the rest of the message meta information */
+    auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
+    message->logOffset = logEntryInFlight->logOffset;
+    message->sentByThisNode = false;
+
+    switch (logEntryInFlight->messageType) {
         case SETUP: 
-            CRAQReplication_->setup(message); 
+            message->messageType = SETUP;
+            replicationManager_->setup(message); 
             break;
         case READ: 
-            CRAQReplication_->read(message); 
+            message->messageType = READ;
+            replicationManager_->read(message); 
             break;
         case APPEND: 
-            CRAQReplication_->append(message); 
+            message->messageType = APPEND;
+            replicationManager_->append(message); 
             break;
     }
 }
@@ -122,7 +129,7 @@ void NetworkManager::receive_response(Message *message) {
             default:
                 break;
         }
-        CRAQReplication_->receive_locally(message);
+        replicationManager_->receive_locally(message);
         rpc_.free_msg_buffer(message->reqBuffer);
         rpc_.free_msg_buffer(message->respBuffer);
         delete message;
@@ -132,7 +139,7 @@ void NetworkManager::receive_response(Message *message) {
     switch (message->messageType)
     {
     case SETUP:
-        CRAQReplication_->setup_response();
+        replicationManager_->setup_response();
         if (nodeType_ == MIDDLE)
             send_response(message);
         break;

@@ -5,18 +5,11 @@
 #include <string>
 #include "common_info.h"
 #include "common_tests.h"
-#include "CRNetworkManager.h"
 #include "Log.h"
+#include "CRNetworkManager.h"
 using namespace std;
 
 class NetworkManager;
-typedef void (*receive_local)(Message *message);
-
-struct ThreadSync {
-    bool threadReady{false};
-    condition_variable cv;
-    mutex m;
-};
 
 class CRReplication {
     friend NetworkManager;
@@ -40,11 +33,14 @@ class CRReplication {
         void terminate(bool force);
 
         NodeType nodeType_;
-        receive_local rec;
         Log log_;
-        ThreadSync threadSync_;
         BenchmarkData benchmarkData_;
         unique_ptr<NetworkManager> networkManager_;
+        struct ThreadSync {
+            bool threadReady{false};
+            condition_variable cv;
+            mutex m;
+        } threadSync_;
 };
 
 #endif // REPLICATIONNODE_CRReplication_H

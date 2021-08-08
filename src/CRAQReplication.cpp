@@ -12,13 +12,11 @@ static std::atomic<uint64_t> softCounter_{0};
  * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
- * @param rec Callback function which is called when a message response is received which has been created by this node
 */ 
 CRAQReplication::CRAQReplication(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
         chainReady_{false},
         setupMessage_{nullptr},
         nodeType_{nodeType},
-        rec{nullptr}, 
         log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog},
         benchmarkData_{benchmarkData}
     {
@@ -142,6 +140,7 @@ void CRAQReplication::init() {
  */
 void CRAQReplication::setup(Message *message) {
     setupMessage_ = message;
+    message->respBufferSize = 1; 
 }
 
 /**
@@ -251,12 +250,6 @@ void CRAQReplication::read(Message *message) {
 /* TODO: Documentation */
 /* Callback function when a response is received */
 void CRAQReplication::receive_locally(Message *message) {
-    // If single threaded
-    if (rec) { 
-        rec(message);
-        return;
-    }
-
 	benchmarkData_.messagesInFlight--;
     
     if (message->messageType == APPEND) {

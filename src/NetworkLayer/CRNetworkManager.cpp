@@ -86,15 +86,22 @@ void NetworkManager::receive_message(Message *message) {
     if (!(totalMessagesProcessed_ % 1000000))
         std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
-    switch (message->messageType) 
-    {
+    /* Fill the rest of the message meta information */
+    auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
+    message->logOffset = logEntryInFlight->logOffset;
+    message->sentByThisNode = false;
+
+    switch (logEntryInFlight->messageType) {
         case SETUP: 
+            message->messageType = SETUP;
             ReplicationManager_->setup(message); 
             break;
         case READ: 
+            message->messageType = READ;
             ReplicationManager_->read(message); 
             break;
         case APPEND: 
+            message->messageType = APPEND;
             ReplicationManager_->append(message); 
             break;
     }
