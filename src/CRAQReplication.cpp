@@ -162,9 +162,10 @@ void CRAQReplication::append(Message *message) {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Count Sequencer up and set the log entry number */
             reqLogEntryInFlight->logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
+            message->logOffset = reqLogEntryInFlight->logOffset;
 
             /* Append the log entry to the local Log */
-            log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
+            log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
             
             /* Send APPEND to next node in chain */
             networkManager_->send_message(SUCCESSOR, message);
@@ -173,7 +174,7 @@ void CRAQReplication::append(Message *message) {
         {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Append the log entry to the local log */
-            log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
+            log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
 
             /* Send APPEND to next node in chain */
             networkManager_->send_message(SUCCESSOR, message);
@@ -181,14 +182,13 @@ void CRAQReplication::append(Message *message) {
         case TAIL: 
         {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
-            message->logOffset = reqLogEntryInFlight->logOffset;
             // Set state CLEAN, since TAIL is last node in the chain
             reqLogEntryInFlight->logEntry.state = CLEAN;
             /* Append the log entry to the local log */
-            log_.append(reqLogEntryInFlight->logOffset, &reqLogEntryInFlight->logEntry);
+            log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
             /* Add logOffset from reqBuffer to respBuffer */
             auto *respPointer = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
-            *respPointer = reqLogEntryInFlight->logOffset;
+            *respPointer = message->logOffset;
             message->respBufferSize = sizeof(message->logOffset);
 
             /* Send APPEND response */
