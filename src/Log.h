@@ -20,7 +20,9 @@ class Log {
         ~Log();
         void append(uint64_t logOffset, LogEntry *logEntry);
         pair<LogEntry *, uint64_t> read(uint64_t logOffset);
+#ifdef CRAQ
         void update_logEntryState(uint64_t logOffset, LogEntryState logEntryState);
+#endif
 };
 
 #endif // REPLICATIONNODE_LOG_H
