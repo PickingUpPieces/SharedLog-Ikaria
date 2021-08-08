@@ -10,12 +10,6 @@
 #include "CRAQReplication.h"
 using namespace std;
 
-struct LogEntryInFlight {
-    uint64_t logOffset;
-    MessageType messageType;
-    LogEntry logEntry;
-};
-
 class CRAQReplication;
 class Inbound;
 class Outbound;

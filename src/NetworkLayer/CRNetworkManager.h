@@ -16,11 +16,6 @@ class CRReplication;
 class Inbound;
 class Outbound;
 
-struct LogEntryInFlight {
-    uint64_t logOffset;
-    MessageType messageType;
-    LogEntry logEntry;
-};
 
 // Creates and holds connections to the other nodes
 class NetworkManager {

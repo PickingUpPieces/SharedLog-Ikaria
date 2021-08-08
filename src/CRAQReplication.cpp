@@ -36,7 +36,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
     // Append few messages so something can be read
     for(int i = 0; i < 100; i++) 
-        appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
+        appendLog(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
 
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
@@ -58,7 +58,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
             logEntryInFlight.messageType = READ;
             readLog(rp, randReadOffset);
         } else {
-            appendLog(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (2 * 8) + sizeof(MessageType));
+            appendLog(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
         }
     }
 
@@ -99,7 +99,7 @@ void CRAQReplication::init() {
 
     if (nodeType_ == HEAD) {
         /*  Send SETUP message down the chain */
-        LogEntryInFlight logEntryInFlight{0, SETUP, {0, ""}};
+        LogEntryInFlight logEntryInFlight{0, SETUP, {CLEAN, 0, ""}};
         setupMessage_ = new Message();
         setupMessage_->messageType = SETUP;
         setupMessage_->sentByThisNode = false;
@@ -246,6 +246,15 @@ void CRAQReplication::read(Message *message) {
     }
 }
 
+/* TODO: Documentation */
+void CRAQReplication::get_log_entry_state(Message *message) {
+
+}
+
+/* TODO: Documentation */
+void CRAQReplication::get_log_entry_state_response(Message *message) {
+
+}
 
 /* TODO: Documentation */
 /* Callback function when a response is received */

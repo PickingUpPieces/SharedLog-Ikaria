@@ -22,6 +22,8 @@ class CRAQReplication {
         static void run_passive(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
         void setup_response(); 
+        void get_log_entry_state(Message *message);
+        void get_log_entry_state_response(Message *message);
         void receive_locally(Message *message);
 
     public:

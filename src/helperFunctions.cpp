@@ -54,10 +54,10 @@ void appendLog(Replication *rp, LogEntryInFlight *logEntryInFlight, size_t dataL
     Message *message = new Message();
     logEntryInFlight->messageType = APPEND;
 
-    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 8 + 8 + sizeof(MessageType));
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 4 * 8);
     while(!message->reqBuffer.buf) {
         rp->networkManager_->sync(1);
-        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 8 + 8 + sizeof(MessageType));
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 4 * 8);
     }
 
     message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
@@ -87,16 +87,19 @@ void appendLog(Replication *rp, LogEntryInFlight *logEntryInFlight, size_t dataL
 /* Generate a random logEntryInFlight for sending in append requests */
 LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
     LogEntryInFlight logEntryInFlight;
+    #ifdef CRAQ
+    logEntryInFlight.logEntry.state = DIRTY;
+    #endif
     string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     mt19937 generator{random_device{}()};
     uniform_int_distribution<> dist(0, possibleCharacters.size()-1);
     string randomString;
     uint64_t stringLength;
 
-    if (totalSize < 20)
+    if (totalSize <= 32)
         stringLength = 0;
     else
-        stringLength = totalSize - 8 - 8 - sizeof(MessageType);
+        stringLength = totalSize - 4 * 8;
 
     for(uint64_t i = 0; i < stringLength; i++) {
         size_t random_index = static_cast<size_t>(dist(generator)); //get index between 0 and possible_characters.size()-1

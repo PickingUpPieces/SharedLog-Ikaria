@@ -37,14 +37,29 @@ struct LogEntry {
 #else
 enum MessageType {
     READ = 2,
-    APPEND = 3,
-    SETUP = 4
+    APPEND,
+    SETUP,
+    GET_LOG_ENTRY_STATE
 };
+
+enum LogEntryState {
+    CLEAN,
+    DIRTY
+}; 
+
 struct LogEntry {
+    LogEntryState state{DIRTY};
     uint64_t dataLength;
     char data[LOG_BLOCK_DATA_SIZE];
 };
 #endif
+
+struct LogEntryInFlight {
+    uint64_t logOffset;
+    MessageType messageType;
+    LogEntry logEntry;
+};
+
 
 enum NodeType {
     HEAD,
