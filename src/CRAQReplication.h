@@ -21,9 +21,10 @@ class CRAQReplication {
         static void run_active(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
-        void setup_response(); 
+        void setup_response(Message *message); 
         void get_log_entry_state(Message *message);
         void get_log_entry_state_response(Message *message);
+        void append_response(Message *message);
         void receive_locally(Message *message);
 
     public:
@@ -38,6 +39,7 @@ class CRAQReplication {
         Log log_;
         BenchmarkData benchmarkData_;
         unique_ptr<NetworkManager> networkManager_;
+
         struct ThreadSync {
             bool threadReady{false};
             condition_variable cv;

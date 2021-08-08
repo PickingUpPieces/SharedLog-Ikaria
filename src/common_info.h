@@ -47,7 +47,6 @@ enum LogEntryState {
     DIRTY,
     ERROR
 }; 
-
 struct LogEntry {
     LogEntryState state{DIRTY};
     uint64_t dataLength;

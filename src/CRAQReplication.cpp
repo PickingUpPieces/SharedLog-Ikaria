@@ -48,7 +48,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
 
-    while(likely(rp->threadSync_.threadReady && ( rp->networkManager_->totalMessagesCompleted_ <= rp->benchmarkData_.remainderNumberOfRequests))) {
+    while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -61,10 +61,6 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
             appendLog(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
         }
     }
-
-    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesCompleted_;
-    rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
-    rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }
 
 /* TODO: Documentation */
@@ -84,10 +80,6 @@ void CRAQReplication::run_passive(CRAQReplication *rp, erpc::Nexus *Nexus, uint8
 
     while(likely(rp->threadSync_.threadReady))
 		rp->networkManager_->sync(1);
-
-    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesCompleted_;
-    rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
-    rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }
 
 
@@ -147,9 +139,11 @@ void CRAQReplication::setup(Message *message) {
  * Handles an incoming response for a previous send out SETUP message
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void CRAQReplication::setup_response() {
+void CRAQReplication::setup_response(Message *message) {
     if (nodeType_ == HEAD)
         chainReady_ = true;
+    else if (nodeType_ == MIDDLE)
+        networkManager_->send_response(message);
 }
 
 /**
@@ -203,6 +197,15 @@ void CRAQReplication::append(Message *message) {
     }
 }
 
+
+void CRAQReplication::append_response(Message *message) {
+    log_.update_logEntryState(message->logOffset, CLEAN); 
+    if (message->sentByThisNode)
+        this->receive_locally(message);
+    else
+        networkManager_->send_response(message);
+}
+
 /**
  * Handles an incoming READ message
  * Depending on the NodeType the message has to be processed differently
@@ -227,12 +230,18 @@ void CRAQReplication::read(Message *message) {
                 respLogEntryInFlight->logOffset = message->logOffset;
                 memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
+                if (message->sentByThisNode) {
+                    this->receive_locally(message);
+                    return;
+                }
+
                 /* Send READ response */
                 networkManager_->send_response(message);
             } else {
                 auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
                 reqLogEntryInFlight->messageType = GET_LOG_ENTRY_STATE;
                 message->messageType = GET_LOG_ENTRY_STATE;
+
                 /* Send GET_LOG_ENTRY_STATE request to TAIL */
                 networkManager_->send_message(TAIL, message);
             }
@@ -241,10 +250,10 @@ void CRAQReplication::read(Message *message) {
         }; break;
         case TAIL:
         {
+            // TODO: Check if logOffset < counter
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
-            // TODO: Check respBufferSize == 0, if read is legit e.g. not reading an offset which hasn't been written yet
             
             /* Prepare respBuffer */
             message->respBufferSize = logEntryLength + 2 * 8;
@@ -260,7 +269,7 @@ void CRAQReplication::read(Message *message) {
 }
 
 void CRAQReplication::get_log_entry_state(Message *message) {
-    // TODO: Check if logOffset < counter
+    // TODO: Check if logOffset < counter: If true, set logEntryState ERROR in response
     auto [logEntry, logEntryLength] = log_.read(message->logOffset);
 
     /* Prepare respBuffer */
@@ -274,19 +283,44 @@ void CRAQReplication::get_log_entry_state(Message *message) {
 }
 
 void CRAQReplication::get_log_entry_state_response(Message *message) {
-    // TODO: Check respBuffer logEntry State
+    auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+    if(respLogEntryInFlight->logEntry.state == CLEAN) {
+        log_.update_logEntryState(message->logOffset, CLEAN); 
 
+        // Alloc new respBuffer with MAX_MESSAGE_SIZE
+        message->respBuffer = networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        while(!message->respBuffer.buf) {
+            networkManager_->rpc_.run_event_loop_once();
+            message->respBuffer = networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        }
+        
+        this->read(message);
+    } else if(respLogEntryInFlight->logEntry.state == ERROR) {
+        networkManager_->send_response(message);
+    }
 }
+
+
+
 
 /* Callback function when a response is received */
 void CRAQReplication::receive_locally(Message *message) {
-	benchmarkData_.messagesInFlight--;
+    benchmarkData_.totalMessagesProcessed++;
     
     if (message->messageType == APPEND) {
+        // TODO: Count up appends
+        benchmarkData_.amountAppendsSent++; 
         auto *returnedLogOffset = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
         if (benchmarkData_.highestKnownLogOffset < *returnedLogOffset)
             benchmarkData_.highestKnownLogOffset = *returnedLogOffset;
+    } else if(message->messageType == READ) {
+        // TODO: Count up reads
+        benchmarkData_.amountReadsSent++;
     } 
+
+    networkManager_->rpc_.free_msg_buffer(message->reqBuffer);
+    networkManager_->rpc_.free_msg_buffer(message->respBuffer);
+    delete message;
 }
 
 
