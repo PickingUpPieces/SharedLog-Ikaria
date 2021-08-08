@@ -262,6 +262,11 @@ void CRAQReplication::read(Message *message) {
             DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     	    DEBUG_MSG("CRAQReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
+            if (message->sentByThisNode) {
+                this->receive_locally(message);
+                return;
+            }
+
             /* Send READ response */
             networkManager_->send_response(message);
         }; 
@@ -287,6 +292,7 @@ void CRAQReplication::get_log_entry_state_response(Message *message) {
     if(respLogEntryInFlight->logEntry.state == CLEAN) {
         log_.update_logEntryState(message->logOffset, CLEAN); 
 
+        networkManager_->rpc_.free_msg_buffer(message->respBuffer);
         // Alloc new respBuffer with MAX_MESSAGE_SIZE
         message->respBuffer = networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
         while(!message->respBuffer.buf) {

@@ -40,11 +40,15 @@ void readLog(Replication *rp, uint64_t logOffset) {
     logEntryInFlight->messageType = message->messageType;
     message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
 
+    #ifdef CRAQ
+    rp->read(message);
+    #else
     /* Send the message */
     if (rp->nodeType_ == HEAD)
         rp->read(message);
     else 
         rp->networkManager_->send_message(HEAD, message);
+    #endif
 }
 
 /* TODO: Documentation */
