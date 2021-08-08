@@ -8,10 +8,6 @@
 using namespace std;
 
 static void init(const char *pathToLog, uint64_t logTotalSize);
-struct LogEntry {
-    uint64_t dataLength;
-    char data[LOG_BLOCK_DATA_SIZE];
-};
 
 class Log {
     private:

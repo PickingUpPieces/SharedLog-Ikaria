@@ -30,11 +30,19 @@ enum MessageType {
     APPEND = 3,
     SETUP = 4
 };
+struct LogEntry {
+    uint64_t dataLength;
+    char data[LOG_BLOCK_DATA_SIZE];
+};
 #else
 enum MessageType {
     READ = 2,
     APPEND = 3,
     SETUP = 4
+};
+struct LogEntry {
+    uint64_t dataLength;
+    char data[LOG_BLOCK_DATA_SIZE];
 };
 #endif
 
