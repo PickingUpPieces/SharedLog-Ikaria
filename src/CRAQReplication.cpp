@@ -60,6 +60,8 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
         } else {
             appendLog(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
         }
+        while(rp->networkManager_->messagesInFlight_ > 10000)
+            rp->networkManager_->sync(10);
     }
 }
 
