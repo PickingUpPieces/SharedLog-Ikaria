@@ -44,7 +44,8 @@ enum MessageType {
 
 enum LogEntryState {
     CLEAN,
-    DIRTY
+    DIRTY,
+    ERROR
 }; 
 
 struct LogEntry {
