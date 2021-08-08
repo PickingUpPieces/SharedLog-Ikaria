@@ -1,9 +1,18 @@
-#include "helperFunctions.h"
-#include "ReplicationManager.h"
+#ifndef HELPERFUNCTIONS_H 
+#define HELPERFUNCTIONS_H 
+#include <random>
+#include "rpc.h"
+#include "common_info.h"
+#ifdef CR
+#include "CRReplication.h"
+#elif CRAQ
+#include "CRAQReplication.h"
+#endif
 
 /* TODO: Documentation */
 /* readLog method */
-void readLog(ReplicationManager *rp, uint64_t logOffset) {
+template<typename Replication>
+void readLog(Replication *rp, uint64_t logOffset) {
     /* Allocate message struct */
     Message *message = new Message();
 
@@ -39,7 +48,8 @@ void readLog(ReplicationManager *rp, uint64_t logOffset) {
 }
 
 /* TODO: Documentation */
-void appendLog(ReplicationManager *rp, LogEntryInFlight *logEntryInFlight, size_t dataLength) {
+template<typename Replication>
+void appendLog(Replication *rp, LogEntryInFlight *logEntryInFlight, size_t dataLength) {
     /* Allocate message struct */
     Message *message = new Message();
     logEntryInFlight->messageType = APPEND;
@@ -99,3 +109,5 @@ LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
 
     return logEntryInFlight;
 }
+
+#endif

@@ -1,13 +1,12 @@
-#ifndef REPLICATIONNODE_REPLICATIONMANAGER_H
-#define REPLICATIONNODE_REPLICATIONMANAGER_H
+#ifndef REPLICATIONNODE_CRAQReplication_H
+#define REPLICATIONNODE_CRAQReplication_H
 
 #include <stdio.h>
 #include <string>
 #include "common_info.h"
 #include "common_tests.h"
-#include "NetworkManager.h"
+#include "CRAQNetworkManager.h"
 #include "Log.h"
-#include "helperFunctions.h"
 using namespace std;
 
 class NetworkManager;
@@ -19,22 +18,22 @@ struct ThreadSync {
     mutex m;
 };
 
-class ReplicationManager {
+class CRAQReplication {
     friend NetworkManager;
 
     private:
         bool chainReady_;
         Message *setupMessage_;
         std::thread thread_;
-        static void run_active(ReplicationManager *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
-        static void run_passive(ReplicationManager *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
+        static void run_active(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
+        static void run_passive(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
         void setup_response(); 
         void receive_locally(Message *message);
 
     public:
         // Multi Threaded
-        ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
+        CRAQReplication(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
         void init();
         void append(Message *message);
         void read(Message *message);
@@ -48,4 +47,4 @@ class ReplicationManager {
         unique_ptr<NetworkManager> networkManager_;
 };
 
-#endif // REPLICATIONNODE_REPLICATIONMANAGER_H
+#endif // REPLICATIONNODE_CRAQReplication_H

@@ -1,7 +1,6 @@
 #ifndef COMMONTESTS_H 
 #define COMMONTESTS_H 
 #include "rpc.h"
-#include "helperFunctions.h"
 #include <shared_mutex>
 
 /* Holds the program input arguments */

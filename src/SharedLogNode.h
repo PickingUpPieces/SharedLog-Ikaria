@@ -5,18 +5,20 @@
 #include <string>
 #include <condition_variable>
 #include "rpc.h"
-#include "ReplicationManager.h"
 #include "common_info.h"
 #include "common_tests.h"
-#include "helperFunctions.h"
+#ifdef CR
+#include "CRReplication.h"
+#else 
+#include "CRAQReplication.h"
+#endif
 using namespace std;
 
 template<class Replication>
 class SharedLogNode {
-    friend ReplicationManager;
 
     private:
-        std::vector<unique_ptr<ReplicationManager>> threads_;
+        std::vector<unique_ptr<Replication>> threads_;
         erpc::Nexus Nexus_;
         uint8_t nodeID_;
 

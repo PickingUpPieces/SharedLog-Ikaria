@@ -24,15 +24,15 @@
 /* Path to the Pool file */
 #define POOL_PATH "/dev/shm/replNode-0.log"
 
-struct LogEntry {
-    uint64_t dataLength;
-    char data[LOG_BLOCK_DATA_SIZE];
-};
-
 enum MessageType {
     READ = 2,
     APPEND = 3,
     SETUP = 4
+};
+
+struct LogEntry {
+    uint64_t dataLength;
+    char data[LOG_BLOCK_DATA_SIZE];
 };
 
 struct LogEntryInFlight {

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "NetworkManager.h"
+#include "CRNetworkManager.h"
 
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
@@ -13,7 +13,7 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *replicationManager):
+NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRReplication *replicationManager):
         nodeType_{nodeType},
         erpcID_{erpcID},
         ReplicationManager_{replicationManager},

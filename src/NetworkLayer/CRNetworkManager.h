@@ -7,25 +7,25 @@
 #include "common_info.h"
 #include "Inbound.h"
 #include "Outbound.h"
-#include "ReplicationManager.h"
+#include "CRReplication.h"
 using namespace std;
 
 #define DEFAULT_RUN_EVENT_LOOP 10
 
-class ReplicationManager;
+class CRReplication;
 class Inbound;
 class Outbound;
 
 // Creates and holds connections to the other nodes
 class NetworkManager {
-    friend ReplicationManager;
+    friend CRReplication;
     friend void req_handler(erpc::ReqHandle *req_handle, void *context);
     friend void cont_func(void *context, void *tag);
 
     private:
         NodeType nodeType_;
         uint8_t erpcID_;
-        ReplicationManager *ReplicationManager_;
+        CRReplication *ReplicationManager_;
         erpc::Nexus *Nexus_;
         unique_ptr<Inbound> Inbound_;
         unique_ptr<Outbound> Head_;
@@ -37,7 +37,7 @@ class NetworkManager {
         void send_response(Message *message); 
 
     public:
-        NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *replicationManager);
+        NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRReplication *replicationManager);
         void send_message(NodeType targetNode, Message *message); 
         void sync(int numberOfRuns);
 

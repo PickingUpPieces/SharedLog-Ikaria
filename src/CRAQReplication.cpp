@@ -1,19 +1,20 @@
 #include <iostream>
 #include <unistd.h>
-#include "ReplicationManager.h"
+#include "CRAQReplication.h"
+#include "helperFunctions.cpp"
 
 /* Init static softCounter */
 static std::atomic<uint64_t> softCounter_{0}; 
 
 /* TODO: Documentation */
 /**
- * Constructs the ReplicationManager as multi threaded Object
+ * Constructs the CRAQReplication as multi threaded Object
  * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param rec Callback function which is called when a message response is received which has been created by this node
 */ 
-ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
+CRAQReplication::CRAQReplication(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
         chainReady_{false},
         setupMessage_{nullptr},
         nodeType_{nodeType},
@@ -30,7 +31,7 @@ ReplicationManager::ReplicationManager(NodeType nodeType, const char* pathToLog,
 
 /* TODO: Documentation */
 /* Active Thread function */
-void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
+void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
     rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
@@ -70,7 +71,7 @@ void ReplicationManager::run_active(ReplicationManager *rp, erpc::Nexus *Nexus, 
 
 /* TODO: Documentation */
 /* Passive Thread function */
-void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
+void CRAQReplication::run_passive(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
     rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
@@ -95,7 +96,7 @@ void ReplicationManager::run_passive(ReplicationManager *rp, erpc::Nexus *Nexus,
 /**
  * Handles the SETUP process for this node
 */
-void ReplicationManager::init() {
+void CRAQReplication::init() {
     networkManager_->init();
 
     if (nodeType_ == HEAD) {
@@ -139,7 +140,7 @@ void ReplicationManager::init() {
  * Handles an incoming SETUP message
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void ReplicationManager::setup(Message *message) {
+void CRAQReplication::setup(Message *message) {
     setupMessage_ = message;
 }
 
@@ -147,7 +148,7 @@ void ReplicationManager::setup(Message *message) {
  * Handles an incoming response for a previous send out SETUP message
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void ReplicationManager::setup_response() {
+void CRAQReplication::setup_response() {
     if (nodeType_ == HEAD)
         chainReady_ = true;
 }
@@ -157,8 +158,8 @@ void ReplicationManager::setup_response() {
  * Depending on the NodeType the message has to be processed differently
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void ReplicationManager::append(Message *message) {
-    DEBUG_MSG("ReplicationManager.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+void CRAQReplication::append(Message *message) {
+    DEBUG_MSG("CRAQReplication.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
 
@@ -206,7 +207,7 @@ void ReplicationManager::append(Message *message) {
  * Depending on the NodeType the message has to be processed differently
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void ReplicationManager::read(Message *message) {
+void CRAQReplication::read(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
 
@@ -217,8 +218,8 @@ void ReplicationManager::read(Message *message) {
             #ifdef DEBUG
             message->logOffset = ((LogEntryInFlight *) message->reqBuffer.buf)->logOffset;
             #endif
-            DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-            DEBUG_MSG("ReplicationManager.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
+            DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+            DEBUG_MSG("CRAQReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
             /* Send READ request drectly to TAIL */
             networkManager_->send_message(TAIL, message);
         }; break;
@@ -236,9 +237,9 @@ void ReplicationManager::read(Message *message) {
             respLogEntryInFlight->logOffset = reqLogEntryInFlight->logOffset;
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
-            DEBUG_MSG("ReplicationManager.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-            DEBUG_MSG("ReplicationManager.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
-    	    DEBUG_MSG("ReplicationManager.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
+            DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+            DEBUG_MSG("CRAQReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
+    	    DEBUG_MSG("CRAQReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
             /* Send READ response */
             networkManager_->send_response(message);
@@ -249,7 +250,7 @@ void ReplicationManager::read(Message *message) {
 
 /* TODO: Documentation */
 /* Callback function when a response is received */
-void ReplicationManager::receive_locally(Message *message) {
+void CRAQReplication::receive_locally(Message *message) {
     // If single threaded
     if (rec) { 
         rec(message);
@@ -267,10 +268,10 @@ void ReplicationManager::receive_locally(Message *message) {
 
 
 /**
- * Terminates the current ReplicationManager thread
+ * Terminates the current CRAQReplication thread
  * @param force If true, forces the thread to finish
  */
-void ReplicationManager::terminate(bool force) {
+void CRAQReplication::terminate(bool force) {
     if (force)
         threadSync_.threadReady = false;
 
