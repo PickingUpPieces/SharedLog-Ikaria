@@ -16,7 +16,6 @@
 #define ROSE_URI "129.215.165.52:31850"
 #define MARTHA_URI "129.215.165.53:31850"
 
-template class SharedLogNode<ReplicationManager>;
 SharedLogNode<ReplicationManager> *localNode;
 BenchmarkData benchmarkData;
 std::mutex startBenchmark;
