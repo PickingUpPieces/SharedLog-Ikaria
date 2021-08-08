@@ -35,6 +35,7 @@ class CRAQReplication {
         void read(Message *message);
         void terminate(bool force);
 
+        static atomic<uint64_t> softCounter_;
         NodeType nodeType_;
         Log log_;
         BenchmarkData benchmarkData_;

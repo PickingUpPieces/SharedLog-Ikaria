@@ -82,6 +82,8 @@ void printbenchmarkData() {
     }
     std::cout << "Total Requests processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
     std::cout << "Processed READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
+    std::cout << "Sent READ ratio: " << benchmarkData.amountReadsSent / benchmarkData.totalMessagesProcessed << "% (shoud " << benchmarkData.progArgs.probabilityOfRead << "%" << endl;
+    std::cout << "Sequencer Number: " << benchmarkData.lastSequencerNumber << endl;
     std::cout << "Total time taken: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
     if (benchmarkTime)
         std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;

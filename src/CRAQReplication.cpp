@@ -4,7 +4,7 @@
 #include "helperFunctions.cpp"
 
 /* Init static softCounter */
-static std::atomic<uint64_t> softCounter_{0}; 
+atomic<uint64_t>  CRAQReplication::softCounter_{0}; 
 
 /* TODO: Documentation */
 /**
@@ -314,13 +314,11 @@ void CRAQReplication::receive_locally(Message *message) {
     benchmarkData_.totalMessagesProcessed++;
     
     if (message->messageType == APPEND) {
-        // TODO: Count up appends
         benchmarkData_.amountAppendsSent++; 
         auto *returnedLogOffset = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
         if (benchmarkData_.highestKnownLogOffset < *returnedLogOffset)
             benchmarkData_.highestKnownLogOffset = *returnedLogOffset;
     } else if(message->messageType == READ) {
-        // TODO: Count up reads
         benchmarkData_.amountReadsSent++;
     } 
 
