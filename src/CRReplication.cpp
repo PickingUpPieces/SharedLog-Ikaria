@@ -62,6 +62,8 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
         while(rp->networkManager_->messagesInFlight_ > 10000)
             rp->networkManager_->sync(10);
     }
+    if(rp->nodeType_ == HEAD)
+        send_terminate_message(rp);
 }
 
 /* TODO: Documentation */
