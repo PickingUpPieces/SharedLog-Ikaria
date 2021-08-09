@@ -48,7 +48,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
 
-    while(likely(rp->threadSync_.threadReady && ( rp->networkManager_->totalMessagesCompleted_ <= rp->benchmarkData_.remainderNumberOfRequests))) {
+    while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
         if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -62,10 +62,6 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
         while(rp->networkManager_->messagesInFlight_ > 10000)
             rp->networkManager_->sync(10);
     }
-
-    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesCompleted_;
-    rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
-    rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }
 
 /* TODO: Documentation */
@@ -85,10 +81,6 @@ void CRReplication::run_passive(CRReplication *rp, erpc::Nexus *Nexus, uint8_t e
 
     while(likely(rp->threadSync_.threadReady))
 		rp->networkManager_->sync(1);
-
-    rp->benchmarkData_.totalMessagesProcessed = rp->networkManager_->totalMessagesCompleted_;
-    rp->benchmarkData_.amountReadsSent = rp->networkManager_->totalReadsProcessed_;
-    rp->benchmarkData_.amountAppendsSent = rp->networkManager_->totalAppendsProcessed_;
 }
 
 
@@ -245,12 +237,20 @@ void CRReplication::read(Message *message) {
 /* TODO: Documentation */
 /* Callback function when a response is received */
 void CRReplication::receive_locally(Message *message) {
+    benchmarkData_.totalMessagesProcessed++;
     
     if (message->messageType == APPEND) {
+        benchmarkData_.amountAppendsSent++; 
         auto *returnedLogOffset = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
         if (benchmarkData_.highestKnownLogOffset < *returnedLogOffset)
             benchmarkData_.highestKnownLogOffset = *returnedLogOffset;
-    } 
+    } else if(message->messageType == READ) {
+        benchmarkData_.amountReadsSent++;
+    }
+
+    networkManager_->rpc_.free_msg_buffer(message->reqBuffer);
+    networkManager_->rpc_.free_msg_buffer(message->respBuffer);
+    delete message;
 }
 
 

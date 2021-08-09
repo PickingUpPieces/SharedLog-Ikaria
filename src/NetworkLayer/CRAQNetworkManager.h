@@ -40,7 +40,7 @@ class NetworkManager {
         void sync(int numberOfRuns);
 
         erpc::Rpc<erpc::CTransport> rpc_;
-        size_t messagesInFlight_;
+        size_t messagesInFlight_{0};
         size_t totalMessagesProcessed_{0};
 };
 

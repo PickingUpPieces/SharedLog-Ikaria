@@ -83,7 +83,7 @@ void NetworkManager::send_response(Message *message) {
 void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
     if (!(totalMessagesProcessed_ % 1000000))
-        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
+        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
     /* Fill the rest of the message meta information */
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
@@ -113,27 +113,7 @@ void NetworkManager::receive_message(Message *message) {
  */
 void NetworkManager::receive_response(Message *message) {
     messagesInFlight_--;
-    totalMessagesCompleted_++;
     DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
-
-    if (message->sentByThisNode) {
-        switch (message->messageType)
-        {
-            case APPEND:
-                totalAppendsProcessed_++;
-                break;
-            case READ:
-                totalReadsProcessed_++;
-                break;
-            default:
-                break;
-        }
-        ReplicationManager_->receive_locally(message);
-        rpc_.free_msg_buffer(message->reqBuffer);
-        rpc_.free_msg_buffer(message->respBuffer);
-        delete message;
-        return;
-    }
 
     switch (message->messageType)
     {
@@ -143,11 +123,17 @@ void NetworkManager::receive_response(Message *message) {
             send_response(message);
         break;
     case APPEND:
-        totalAppendsProcessed_++;
+        if (message->sentByThisNode) {
+            ReplicationManager_->receive_locally(message);
+            return;
+        }
         Inbound_->send_response(message);
         break;
     case READ:
-        totalReadsProcessed_++;
+        if (message->sentByThisNode) {
+            ReplicationManager_->receive_locally(message);
+            return;
+        }
         Inbound_->send_response(message);
         break;
     default:
