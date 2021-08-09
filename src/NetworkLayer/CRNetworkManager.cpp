@@ -11,7 +11,7 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
- * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
+ * @param replicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
 NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRReplication *replicationManager):
         nodeType_{nodeType},
@@ -84,7 +84,6 @@ void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
     if (!(totalMessagesProcessed_ % 1000000))
         std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
-
 
     /* Fill the rest of the message meta information */
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);

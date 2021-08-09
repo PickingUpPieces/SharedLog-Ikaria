@@ -72,7 +72,7 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void NetworkManager::send_response(Message *message) {
-    DEBUG_MSG("NetworkManager.send_response(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
+    DEBUG_MSG("NetworkManager.send_response(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
     Inbound_->send_response(message);
 }
 
@@ -104,10 +104,8 @@ void NetworkManager::receive_message(Message *message) {
             replicationManager_->append(message); 
             break;
         case TERMINATE:
-            cout << "TERMINATE!!!!" << endl;
             message->messageType = TERMINATE;
-            Successor_->send_message(message);
-            replicationManager_->threadSync_.threadReady = false;
+            replicationManager_->terminate(message);
             break;
         case GET_LOG_ENTRY_STATE: 
             message->messageType = GET_LOG_ENTRY_STATE;
@@ -123,7 +121,7 @@ void NetworkManager::receive_message(Message *message) {
  */
 void NetworkManager::receive_response(Message *message) {
     messagesInFlight_--;
-    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
+    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
     switch (message->messageType)
     {
@@ -133,11 +131,13 @@ void NetworkManager::receive_response(Message *message) {
     case APPEND:
         replicationManager_->append_response(message);
         break;
+    case TERMINATE:
+        replicationManager_->terminate_response(message);
+        break;
     case GET_LOG_ENTRY_STATE:
         replicationManager_->get_log_entry_state_response(message);
         break;
     default:
-        Inbound_->send_response(message);
         break;
     }
 }

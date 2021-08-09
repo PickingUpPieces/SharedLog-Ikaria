@@ -39,6 +39,7 @@ class CRReplication {
         Log log_;
         BenchmarkData benchmarkData_;
         unique_ptr<NetworkManager> networkManager_;
+
         struct ThreadSync {
             bool threadReady{false};
             condition_variable cv;

@@ -239,13 +239,13 @@ void CRReplication::read(Message *message) {
             respLogEntryInFlight->logOffset = message->logOffset;
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
+            DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+    	    DEBUG_MSG("CRReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
+
             if (message->sentByThisNode) {
                 this->receive_locally(message);
                 return;
             }
-
-            DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    	    DEBUG_MSG("CRReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
             /* Send READ response */
             networkManager_->send_response(message);
@@ -282,7 +282,9 @@ void CRReplication::terminate_response(Message *message) {
     waitForTerminateResponse_ = true;
 }
 
-/* TODO: Documentation */
+
+
+
 /* Callback function when a response is received */
 void CRReplication::receive_locally(Message *message) {
     benchmarkData_.totalMessagesProcessed++;
