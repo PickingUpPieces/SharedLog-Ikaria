@@ -17,6 +17,7 @@ class CRReplication {
     private:
         bool chainReady_;
         Message *setupMessage_;
+        bool waitForTerminateResponse_{false};
         std::thread thread_;
         static void run_active(CRReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(CRReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);

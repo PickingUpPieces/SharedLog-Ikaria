@@ -85,6 +85,9 @@ void NetworkManager::receive_message(Message *message) {
     if (!(totalMessagesProcessed_ % 1000000))
         std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
+    if (replicationManager_->threadSync_.threadReady == false)
+        return;
+
     /* Fill the rest of the message meta information */
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
     message->logOffset = logEntryInFlight->logOffset;
@@ -105,8 +108,13 @@ void NetworkManager::receive_message(Message *message) {
             break;
         case TERMINATE:
             message->messageType = TERMINATE;
-            Successor_->send_message(message);
-            replicationManager_->threadSync_.threadReady = false;
+            if (nodeType_ != TAIL)
+                Successor_->send_message(message);
+            else {
+                Inbound_->send_response(message);
+                replicationManager_->waitForTerminateResponse_ = true;
+            }
+
             break;
     }
 }
@@ -140,6 +148,11 @@ void NetworkManager::receive_response(Message *message) {
             return;
         }
         Inbound_->send_response(message);
+        break;
+    case TERMINATE:
+        if (nodeType_ != HEAD)
+            Inbound_->send_response(message);
+        replicationManager_->waitForTerminateResponse_ = true;
         break;
     default:
         Inbound_->send_response(message);
