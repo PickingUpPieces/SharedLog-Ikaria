@@ -74,6 +74,15 @@ void printbenchmarkData() {
     std::cout << "-------------------------------------" << endl;
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
+#ifdef CR 
+    std::cout << "Replication Type: CR" << endl;
+#endif
+#ifdef CRAQ
+    std::cout << "Replication Type: CRAQ" << endl;
+#endif
+#ifdef UCR
+    std::cout << "Replication Type: U-CR" << endl;
+#endif
     if (benchmarkTime)
         std::cout << "Total time: " << benchmarkData.progArgs.time.count() << "s" << endl;
     else {
