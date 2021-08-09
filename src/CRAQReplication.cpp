@@ -63,7 +63,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
             rp->networkManager_->sync(10);
     }
     if(rp->nodeType_ == HEAD)
-        send_terminate_message(rp);
+        generate_terminate_message(rp);
 }
 
 /* TODO: Documentation */

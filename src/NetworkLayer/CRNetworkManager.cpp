@@ -106,13 +106,7 @@ void NetworkManager::receive_message(Message *message) {
             break;
         case TERMINATE:
             message->messageType = TERMINATE;
-            replicationManager_->threadSync_.threadReady = false;
-            if (nodeType_ != TAIL)
-                Successor_->send_message(message);
-            else {
-                Inbound_->send_response(message);
-                replicationManager_->waitForTerminateResponse_ = true;
-            }
+            replicationManager_->terminate(message);
             break;
     }
 }
@@ -129,9 +123,7 @@ void NetworkManager::receive_response(Message *message) {
     switch (message->messageType)
     {
     case SETUP:
-        replicationManager_->setup_response();
-        if (nodeType_ == MIDDLE)
-            send_response(message);
+        replicationManager_->setup_response(message);
         break;
     case APPEND:
         if (message->sentByThisNode) {
@@ -148,12 +140,7 @@ void NetworkManager::receive_response(Message *message) {
         Inbound_->send_response(message);
         break;
     case TERMINATE:
-        if (nodeType_ != HEAD)
-            Inbound_->send_response(message);
-        replicationManager_->waitForTerminateResponse_ = true;
-        break;
-    default:
-        Inbound_->send_response(message);
+        replicationManager_->terminate_response(message);
         break;
     }
 }

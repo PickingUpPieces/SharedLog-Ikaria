@@ -80,7 +80,7 @@ void send_append_message(Replication *rp, LogEntryInFlight *logEntryInFlight, si
 } 
 
 template<typename Replication>
-void send_terminate_message(Replication *rp) {
+Message *generate_terminate_message(Replication *rp) {
     /* Allocate message struct */
     Message *message = new Message();
 
@@ -105,7 +105,7 @@ void send_terminate_message(Replication *rp) {
 	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
 
-    rp->networkManager_->send_message(SUCCESSOR, message);
+    return message;
 }
 
 /* Generate a random logEntryInFlight for sending in append requests */

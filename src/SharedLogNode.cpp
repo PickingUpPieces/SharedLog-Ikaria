@@ -33,5 +33,5 @@ void SharedLogNode<Replication>::get_results(BenchmarkData *benchmarkData) {
 template<class Replication>
 void SharedLogNode<Replication>::terminate(bool force) {
     for (auto& rp : threads_)
-        rp->terminate(force);
+        rp->join(force);
 }
