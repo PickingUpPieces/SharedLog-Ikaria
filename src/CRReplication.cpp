@@ -62,7 +62,12 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
         while(rp->networkManager_->messagesInFlight_ > 10000)
             rp->networkManager_->sync(10);
     }
-    rp->terminate(generate_terminate_message(rp));
+    if (rp->nodeType_ == HEAD)
+        rp->terminate(generate_terminate_message(rp));
+    else {
+        while(!rp->waitForTerminateResponse_)
+            rp->networkManager_->sync(1);
+    }
 }
 
 /* TODO: Documentation */
@@ -256,8 +261,8 @@ void CRReplication::terminate(Message *message) {
             networkManager_->send_message(SUCCESSOR, message);
             break;
         case TAIL:
-        networkManager_->send_response(message);
-        waitForTerminateResponse_ = true;
+            networkManager_->send_response(message);
+            waitForTerminateResponse_ = true;
     }
     while(!waitForTerminateResponse_)
         networkManager_->sync(1);
