@@ -77,7 +77,7 @@ void NetworkManager::send_response(Message *message) {
 }
 
 /**
- * Further delegates a received message from the Inbound to the CRAQReplication 
+ * Further delegates a received message from the Inbound to the ReplicationManager 
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void NetworkManager::receive_message(Message *message) {

@@ -55,7 +55,6 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
 
 	        auto randuint = static_cast<uint64_t>(rand());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
-            logEntryInFlight.messageType = READ;
             readLog(rp, randReadOffset);
         } else {
             appendLog(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
@@ -189,8 +188,8 @@ void CRAQReplication::append(Message *message) {
             /* Append the log entry to the local log */
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
             /* Add logOffset from reqBuffer to respBuffer */
-            auto *respPointer = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
-            *respPointer = message->logOffset;
+            auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+            respLogEntryInFlight->logOffset = message->logOffset;
             message->respBufferSize = sizeof(message->logOffset);
 
             /* Send APPEND response */
@@ -259,6 +258,7 @@ void CRAQReplication::read(Message *message) {
             
             /* Prepare respBuffer */
             message->respBufferSize = logEntryLength + 2 * 8;
+            respLogEntryInFlight->logOffset = message->logOffset;
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
             DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");

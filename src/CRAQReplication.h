@@ -28,7 +28,6 @@ class CRAQReplication {
         void receive_locally(Message *message);
 
     public:
-        // Multi Threaded
         CRAQReplication(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
         void init();
         void append(Message *message);

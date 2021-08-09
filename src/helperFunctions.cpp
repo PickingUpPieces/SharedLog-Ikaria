@@ -36,6 +36,7 @@ void readLog(Replication *rp, uint64_t logOffset) {
 
     /* Fill request data */
     auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+    logEntryInFlight->messageType = READ;
     logEntryInFlight->logOffset = message->logOffset;
     logEntryInFlight->messageType = message->messageType;
     message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);

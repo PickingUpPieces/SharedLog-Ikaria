@@ -74,11 +74,9 @@ pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
 }
 
 
-#ifdef CRAQ
 void Log::update_logEntryState(uint64_t logOffset, LogEntryState logEntryState) {
 	if (pmemlog_write(plp_, reinterpret_cast<void *>(&logEntryState), sizeof(LogEntryState), logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
 		exit(EXIT_FAILURE);
 	}
 }
-#endif

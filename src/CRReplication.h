@@ -25,13 +25,13 @@ class CRReplication {
         void receive_locally(Message *message);
 
     public:
-        // Multi Threaded
         CRReplication(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
         void init();
         void append(Message *message);
         void read(Message *message);
         void terminate(bool force);
 
+        static atomic<uint64_t> softCounter_;
         NodeType nodeType_;
         Log log_;
         BenchmarkData benchmarkData_;
