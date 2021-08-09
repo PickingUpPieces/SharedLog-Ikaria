@@ -101,8 +101,11 @@ void send_terminate_message(Replication *rp) {
     logEntryInFlight->logOffset = 0;
     logEntryInFlight->messageType = TERMINATE;
     message->reqBufferSize = 2 * 8; 
+    message->messageType = TERMINATE;
+	message->respBufferSize = MAX_MESSAGE_SIZE;
+    message->sentByThisNode = true;
 
-    rp->networkManager_->send_message(HEAD, message);
+    rp->networkManager_->send_message(SUCCESSOR, message);
 }
 
 /* Generate a random logEntryInFlight for sending in append requests */

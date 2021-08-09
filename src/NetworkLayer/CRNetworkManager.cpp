@@ -72,7 +72,7 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void NetworkManager::send_response(Message *message) {
-    DEBUG_MSG("NetworkManager.send_response(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
+    DEBUG_MSG("NetworkManager.send_response(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
     Inbound_->send_response(message);
 }
 
@@ -85,8 +85,6 @@ void NetworkManager::receive_message(Message *message) {
     if (!(totalMessagesProcessed_ % 1000000))
         std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
-    if (replicationManager_->threadSync_.threadReady == false)
-        return;
 
     /* Fill the rest of the message meta information */
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
@@ -108,13 +106,13 @@ void NetworkManager::receive_message(Message *message) {
             break;
         case TERMINATE:
             message->messageType = TERMINATE;
+            replicationManager_->threadSync_.threadReady = false;
             if (nodeType_ != TAIL)
                 Successor_->send_message(message);
             else {
                 Inbound_->send_response(message);
                 replicationManager_->waitForTerminateResponse_ = true;
             }
-
             break;
     }
 }
@@ -126,7 +124,7 @@ void NetworkManager::receive_message(Message *message) {
  */
 void NetworkManager::receive_response(Message *message) {
     messagesInFlight_--;
-    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
+    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
     switch (message->messageType)
     {

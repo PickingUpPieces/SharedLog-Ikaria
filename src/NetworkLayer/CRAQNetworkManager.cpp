@@ -104,6 +104,7 @@ void NetworkManager::receive_message(Message *message) {
             replicationManager_->append(message); 
             break;
         case TERMINATE:
+            cout << "TERMINATE!!!!" << endl;
             message->messageType = TERMINATE;
             Successor_->send_message(message);
             replicationManager_->threadSync_.threadReady = false;

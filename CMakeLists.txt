@@ -49,6 +49,8 @@ else()
   message(STATUS "Debugging disabled")
   add_definitions(-O2)
 endif()
+  add_definitions(-g -fsanitize=address)
+  link_libraries(-fsanitize=address)
 
 string(TOUPPER ${DPDK_CLUSTER} DPDK_CLUSTER)
 if (${DPDK_CLUSTER} STREQUAL "TRUE")

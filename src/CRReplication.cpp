@@ -66,7 +66,6 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
         send_terminate_message(rp);
     while(!rp->waitForTerminateResponse_)
             rp->networkManager_->sync(1);
-
 }
 
 /* TODO: Documentation */
