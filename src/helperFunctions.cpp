@@ -1,18 +1,16 @@
 #ifndef HELPERFUNCTIONS_H 
 #define HELPERFUNCTIONS_H 
 #include <random>
+#include <string>
+#include <unistd.h>
 #include "rpc.h"
 #include "common_info.h"
-#ifdef CR
-#include "CRReplication.h"
-#elif CRAQ
-#include "CRAQReplication.h"
-#endif
+using namespace std;
 
 /* TODO: Documentation */
 /* readLog method */
 template<typename Replication>
-void readLog(Replication *rp, uint64_t logOffset) {
+void send_read_message(Replication *rp, uint64_t logOffset) {
     /* Allocate message struct */
     Message *message = new Message();
 
@@ -41,20 +39,13 @@ void readLog(Replication *rp, uint64_t logOffset) {
     logEntryInFlight->messageType = message->messageType;
     message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
 
-    #ifdef CRAQ
-    rp->read(message);
-    #else
     /* Send the message */
-    if (rp->nodeType_ == HEAD)
-        rp->read(message);
-    else 
-        rp->networkManager_->send_message(HEAD, message);
-    #endif
+    rp->read(message);
 }
 
 /* TODO: Documentation */
 template<typename Replication>
-void appendLog(Replication *rp, LogEntryInFlight *logEntryInFlight, size_t dataLength) {
+void send_append_message(Replication *rp, LogEntryInFlight *logEntryInFlight, size_t dataLength) {
     /* Allocate message struct */
     Message *message = new Message();
     logEntryInFlight->messageType = APPEND;

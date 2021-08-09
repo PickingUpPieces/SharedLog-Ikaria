@@ -36,7 +36,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
     // Append few messages so something can be read
     for(int i = 0; i < 100; i++) 
-        appendLog(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
+        send_append_message(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
 
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
@@ -55,9 +55,10 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
 
 	        auto randuint = static_cast<uint64_t>(rand());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
-            readLog(rp, randReadOffset);
+            Message *readMessage = generate_read_message(rp, randReadOffset);
+            rp->read(readMessage);
         } else {
-            appendLog(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
+            send_append_message(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
         }
         while(rp->networkManager_->messagesInFlight_ > 10000)
             rp->networkManager_->sync(10);
@@ -76,8 +77,10 @@ void CRAQReplication::run_passive(CRAQReplication *rp, erpc::Nexus *Nexus, uint8
     lk.unlock();
     rp->threadSync_.cv.notify_all();
 
-    if (rp->nodeType_ == HEAD)
-        readLog(rp, 0);
+    if (rp->nodeType_ == HEAD) {
+        auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
+        send_append_message(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
+    }
 
     while(likely(rp->threadSync_.threadReady))
 		rp->networkManager_->sync(1);
