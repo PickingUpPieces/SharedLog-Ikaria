@@ -55,8 +55,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
 
 	        auto randuint = static_cast<uint64_t>(rand());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
-            Message *readMessage = generate_read_message(rp, randReadOffset);
-            rp->read(readMessage);
+            send_read_message(rp, randReadOffset);
         } else {
             send_append_message(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
         }
