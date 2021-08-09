@@ -103,6 +103,11 @@ void NetworkManager::receive_message(Message *message) {
             message->messageType = APPEND;
             replicationManager_->append(message); 
             break;
+        case TERMINATE:
+            message->messageType = TERMINATE;
+            Successor_->send_message(message);
+            replicationManager_->threadSync_.threadReady = false;
+            break;
         case GET_LOG_ENTRY_STATE: 
             message->messageType = GET_LOG_ENTRY_STATE;
             replicationManager_->get_log_entry_state(message); 

@@ -34,7 +34,8 @@ enum LogEntryState {
 enum MessageType {
     READ = 2,
     APPEND,
-    SETUP
+    SETUP,
+    TERMINATE
 };
 struct LogEntry {
     uint64_t dataLength;
@@ -45,6 +46,7 @@ enum MessageType {
     READ = 2,
     APPEND,
     SETUP,
+    TERMINATE,
     GET_LOG_ENTRY_STATE
 };
 

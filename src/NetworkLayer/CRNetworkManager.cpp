@@ -16,7 +16,7 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRReplication *replicationManager):
         nodeType_{nodeType},
         erpcID_{erpcID},
-        ReplicationManager_{replicationManager},
+        replicationManager_{replicationManager},
         Nexus_{nexus},
         Inbound_(new Inbound(nodeType, Nexus_, this)),
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
@@ -93,15 +93,20 @@ void NetworkManager::receive_message(Message *message) {
     switch (logEntryInFlight->messageType) {
         case SETUP: 
             message->messageType = SETUP;
-            ReplicationManager_->setup(message); 
+            replicationManager_->setup(message); 
             break;
         case READ: 
             message->messageType = READ;
-            ReplicationManager_->read(message); 
+            replicationManager_->read(message); 
             break;
         case APPEND: 
             message->messageType = APPEND;
-            ReplicationManager_->append(message); 
+            replicationManager_->append(message); 
+            break;
+        case TERMINATE:
+            message->messageType = TERMINATE;
+            Successor_->send_message(message);
+            replicationManager_->threadSync_.threadReady = false;
             break;
     }
 }
@@ -118,20 +123,20 @@ void NetworkManager::receive_response(Message *message) {
     switch (message->messageType)
     {
     case SETUP:
-        ReplicationManager_->setup_response();
+        replicationManager_->setup_response();
         if (nodeType_ == MIDDLE)
             send_response(message);
         break;
     case APPEND:
         if (message->sentByThisNode) {
-            ReplicationManager_->receive_locally(message);
+            replicationManager_->receive_locally(message);
             return;
         }
         Inbound_->send_response(message);
         break;
     case READ:
         if (message->sentByThisNode) {
-            ReplicationManager_->receive_locally(message);
+            replicationManager_->receive_locally(message);
             return;
         }
         Inbound_->send_response(message);
