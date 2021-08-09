@@ -37,6 +37,7 @@ set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)")
 set(TRANSPORT "dpdk" CACHE STRING "Which transport type to use(infiniband/dpdk)") 
 set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
 set(CHAIN_NODES "3" CACHE STRING "How many nodes are in the chain (3/4/5)") 
+set(REPLICATION_PROTOCOL "CR" CACHE STRING "Choose Replication Protocoll (CR/CRAQ)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -82,11 +83,16 @@ elseif(TRANSPORT STREQUAL "dpdk")
   include_directories(SYSTEM ${DPDK_INCLUDE_DIR})
   set(DPDK_LIBS 
             -L${DPDK-PATH}/lib -Wl,--whole-archive dpdk -Wl,--no-whole-archive dl)
-
 else()
     message(FATAL_ERROR "Invalid transport: ${TRANSPORT}")
 endif()
 
+string(TOUPPER ${REPLICATION_PROTOCOL} REPLICATION_PROTOCOL)
+if(${REPLICATION_PROTOCOL} STREQUAL "CR")
+  add_compile_definitions(CR)
+else()
+  add_compile_definitions(CRAQ)
+endif()
 
 
 # PMDK
@@ -107,23 +113,33 @@ include_directories(${TESTS})
 link_libraries(${LIBRARIES})
 
 set(NETWORK_SOURCE
-  ${SRC}/NetworkLayer/NetworkManager.h
-  ${SRC}/NetworkLayer/NetworkManager.cpp
   ${SRC}/NetworkLayer/Inbound.h
   ${SRC}/NetworkLayer/Inbound.cpp
   ${SRC}/NetworkLayer/Outbound.h
   ${SRC}/NetworkLayer/Outbound.cpp
 )
 
+
+if(${REPLICATION_PROTOCOL} STREQUAL "CR")
 set(REPLICATION_SOURCE
-  ${SRC}/ReplicationManager.h
-  ${SRC}/ReplicationManager.cpp
+  ${SRC}/NetworkLayer/CRNetworkManager.h
+  ${SRC}/NetworkLayer/CRNetworkManager.cpp
+  ${SRC}/CRReplication.h
+  ${SRC}/CRReplication.cpp
   ${SRC}/helperFunctions.cpp
 )
+else()
+set(REPLICATION_SOURCE
+  ${SRC}/NetworkLayer/CRAQNetworkManager.h
+  ${SRC}/NetworkLayer/CRAQNetworkManager.cpp
+  ${SRC}/CRAQReplication.h
+  ${SRC}/CRAQReplication.cpp
+  ${SRC}/helperFunctions.cpp
+)
+endif()
 
 set(SHAREDLOGNODE_SOURCE
   ${SRC}/SharedLogNode.h
-  ${SRC}/SharedLogNode.cpp
 )
 
 set(LOG_SOURCE

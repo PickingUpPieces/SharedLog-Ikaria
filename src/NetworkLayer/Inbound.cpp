@@ -24,23 +24,8 @@ Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *networkM
  */
 void req_handler(erpc::ReqHandle *req_handle, void *context) {
     auto networkManager = static_cast<NetworkManager *>(context);
-    auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(req_handle->get_req_msgbuf()->buf);
     Message *message = new Message(); 
-
-    switch (logEntryInFlight->messageType) {
-        case SETUP: 
-            message->respBufferSize = 1; 
-            message->messageType = SETUP;
-            break;
-        case READ: 
-            message->respBufferSize = MAX_MESSAGE_SIZE; 
-            message->messageType = READ;
-            break;
-        case APPEND: 
-            message->respBufferSize = sizeof(uint64_t); 
-            message->messageType = APPEND;
-            break;
-    }
+    message->reqHandle = req_handle;
 
     /* Alloc new request Buffer */
     if (networkManager->nodeType_ != TAIL) {
@@ -58,20 +43,14 @@ void req_handler(erpc::ReqHandle *req_handle, void *context) {
 
     /* Alloc new response Buffer */
     if (networkManager->nodeType_ != TAIL) {
-        message->respBuffer = networkManager->rpc_.alloc_msg_buffer(message->respBufferSize);
+        message->respBuffer = networkManager->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
         while(!message->respBuffer.buf) {
             networkManager->rpc_.run_event_loop_once();
-            message->respBuffer = networkManager->rpc_.alloc_msg_buffer(message->respBufferSize);
+            message->respBuffer = networkManager->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
         }
     } else 
         message->respBuffer = req_handle->pre_resp_msgbuf;
     
-    /* Fill the rest of the message meta information */
-    message->logOffset = logEntryInFlight->logOffset;
-    message->sentByThisNode = false;
-    message->reqHandle = req_handle;
-    DEBUG_MSG("Inbound.req_handler(LogEntryInFlight: logOffset: " << std::to_string(logEntryInFlight->logOffset) << " ; MessageType: " << std::to_string(logEntryInFlight->messageType) << ")"); 
-
     networkManager->receive_message(message);
 }
 

@@ -49,8 +49,11 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
     DEBUG_MSG("Log.append(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->dataLength) << " ; data: " << logEntry->data << ")");
     
 	/* Only copy the real entry size */
-	// FIXME: When totalSize % 8 != 0 then the data is gonna be aligned. Is this a problem?
+	#ifdef CR
 	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
+	#else
+	uint64_t totalLogEntrySize = logEntry->dataLength + 8 + sizeof(logEntry->dataLength);
+	#endif
 
 	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
@@ -68,4 +71,12 @@ pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->dataLength) << " ; data: " << logEntry->data << ")");
 
 	return make_pair(logEntry, 	logEntry->dataLength + sizeof(logEntry->dataLength));
+}
+
+
+void Log::update_logEntryState(uint64_t logOffset, LogEntryState logEntryState) {
+	if (pmemlog_write(plp_, reinterpret_cast<void *>(&logEntryState), sizeof(LogEntryState), logOffset * logBlockSize_) < 0) {
+		perror("pmemlog_write");
+		exit(EXIT_FAILURE);
+	}
 }

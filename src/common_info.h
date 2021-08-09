@@ -24,22 +24,43 @@
 /* Path to the Pool file */
 #define POOL_PATH "/dev/shm/replNode-0.log"
 
+enum LogEntryState {
+    CLEAN,
+    DIRTY,
+    ERROR
+}; 
+
+#ifdef CR
+enum MessageType {
+    READ = 2,
+    APPEND,
+    SETUP
+};
 struct LogEntry {
     uint64_t dataLength;
     char data[LOG_BLOCK_DATA_SIZE];
 };
-
+#else
 enum MessageType {
     READ = 2,
-    APPEND = 3,
-    SETUP = 4
+    APPEND,
+    SETUP,
+    GET_LOG_ENTRY_STATE
 };
+
+struct LogEntry {
+    LogEntryState state{DIRTY};
+    uint64_t dataLength;
+    char data[LOG_BLOCK_DATA_SIZE];
+};
+#endif
 
 struct LogEntryInFlight {
     uint64_t logOffset;
     MessageType messageType;
     LogEntry logEntry;
 };
+
 
 enum NodeType {
     HEAD,

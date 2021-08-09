@@ -1,7 +1,6 @@
 #ifndef COMMONTESTS_H 
 #define COMMONTESTS_H 
 #include "rpc.h"
-#include "helperFunctions.h"
 #include <shared_mutex>
 
 /* Holds the program input arguments */
@@ -21,7 +20,7 @@ struct BenchmarkData {
     ProgArgs progArgs;
     std::mutex *startBenchmark{nullptr};
     size_t remainderNumberOfRequests{1000000};
-    size_t messagesInFlight{0}; 
+    size_t lastSequencerNumber{0}; 
     size_t amountReadsSent{0};
     size_t amountAppendsSent{0};
     size_t totalMessagesProcessed{0};

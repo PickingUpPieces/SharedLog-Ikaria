@@ -4,7 +4,11 @@
 #include <string>
 #include "rpc.h"
 #include "common_info.h"
-#include "NetworkManager.h"
+#ifdef CR
+#include "CRNetworkManager.h"
+#else
+#include "CRAQNetworkManager.h"
+#endif
 using namespace std;
 
 class NetworkManager;

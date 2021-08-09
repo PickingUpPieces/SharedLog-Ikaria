@@ -1,5 +1,5 @@
 #include <iostream>
-#include "NetworkManager.h"
+#include "CRAQNetworkManager.h"
 
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
@@ -11,12 +11,12 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
- * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
+ * @param replicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, ReplicationManager *replicationManager):
+NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRAQReplication *replicationManager):
         nodeType_{nodeType},
         erpcID_{erpcID},
-        ReplicationManager_{replicationManager},
+        replicationManager_{replicationManager},
         Nexus_{nexus},
         Inbound_(new Inbound(nodeType, Nexus_, this)),
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
@@ -82,20 +82,30 @@ void NetworkManager::send_response(Message *message) {
  */
 void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
-    // FIXME: Can be deleted
     if (!(totalMessagesProcessed_ % 1000000))
-        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted_: " << std::to_string(totalMessagesCompleted_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
+        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
-    switch (message->messageType) 
-    {
+    /* Fill the rest of the message meta information */
+    auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
+    message->logOffset = logEntryInFlight->logOffset;
+    message->sentByThisNode = false;
+
+    switch (logEntryInFlight->messageType) {
         case SETUP: 
-            ReplicationManager_->setup(message); 
+            message->messageType = SETUP;
+            replicationManager_->setup(message); 
             break;
         case READ: 
-            ReplicationManager_->read(message); 
+            message->messageType = READ;
+            replicationManager_->read(message); 
             break;
         case APPEND: 
-            ReplicationManager_->append(message); 
+            message->messageType = APPEND;
+            replicationManager_->append(message); 
+            break;
+        case GET_LOG_ENTRY_STATE: 
+            message->messageType = GET_LOG_ENTRY_STATE;
+            replicationManager_->get_log_entry_state(message); 
             break;
     }
 }
@@ -107,42 +117,18 @@ void NetworkManager::receive_message(Message *message) {
  */
 void NetworkManager::receive_response(Message *message) {
     messagesInFlight_--;
-    totalMessagesCompleted_++;
     DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
-
-    if (message->sentByThisNode) {
-        switch (message->messageType)
-        {
-            case APPEND:
-                totalAppendsProcessed_++;
-                break;
-            case READ:
-                totalReadsProcessed_++;
-                break;
-            default:
-                break;
-        }
-        ReplicationManager_->receive_locally(message);
-        rpc_.free_msg_buffer(message->reqBuffer);
-        rpc_.free_msg_buffer(message->respBuffer);
-        delete message;
-        return;
-    }
 
     switch (message->messageType)
     {
     case SETUP:
-        ReplicationManager_->setup_response();
-        if (nodeType_ == MIDDLE)
-            send_response(message);
+        replicationManager_->setup_response(message);
         break;
     case APPEND:
-        totalAppendsProcessed_++;
-        Inbound_->send_response(message);
+        replicationManager_->append_response(message);
         break;
-    case READ:
-        totalReadsProcessed_++;
-        Inbound_->send_response(message);
+    case GET_LOG_ENTRY_STATE:
+        replicationManager_->get_log_entry_state_response(message);
         break;
     default:
         Inbound_->send_response(message);
