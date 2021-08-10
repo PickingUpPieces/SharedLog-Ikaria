@@ -16,8 +16,8 @@ atomic<uint64_t>  CRAQReplication::softCounter_{0};
 CRAQReplication::CRAQReplication(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData): 
         chainReady_{false},
         setupMessage_{nullptr},
-        nodeType_{nodeType},
         log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog},
+        nodeType_{nodeType},
         benchmarkData_{benchmarkData}
     {
         if (benchmarkData_.progArgs.activeMode)

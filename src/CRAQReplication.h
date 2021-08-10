@@ -19,27 +19,27 @@ class CRAQReplication {
         Message *setupMessage_;
         bool waitForTerminateResponse_{false};
         std::thread thread_;
+        Log log_;
         static void run_active(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
+        void init();
         void setup(Message *message);
         void setup_response(Message *message); 
+        void append_response(Message *message);
         void get_log_entry_state(Message *message);
         void get_log_entry_state_response(Message *message);
-        void append_response(Message *message);
+        void terminate(Message *message);
+        void terminate_response(Message *message);
         void receive_locally(Message *message);
 
     public:
         CRAQReplication(NodeType nodeType, const char* pathToLog, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, BenchmarkData benchmarkData);
-        void init();
         void append(Message *message);
         void read(Message *message);
         void join(bool force);
-        void terminate(Message *message);
-        void terminate_response(Message *message);
 
         static atomic<uint64_t> softCounter_;
         NodeType nodeType_;
-        Log log_;
         BenchmarkData benchmarkData_;
         unique_ptr<NetworkManager> networkManager_;
 
