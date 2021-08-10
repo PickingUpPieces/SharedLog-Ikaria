@@ -9,7 +9,7 @@
 #include "common_tests.h"
 #ifdef CR
 #include "CRReplication.h"
-#else 
+#elif CRAQ 
 #include "CRAQReplication.h"
 #endif
 using namespace std;
