@@ -7,8 +7,37 @@
 #include "common_info.h"
 using namespace std;
 
-/* TODO: Documentation */
-/* readLog method */
+template<typename Replication>
+Message *generate_init_message(Replication *rp) {
+    /*  Send SETUP message down the chain */
+    Message *message = new Message();
+
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
+    while(!message->reqBuffer.buf) {
+        rp->networkManager_->sync(1);
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
+    }
+
+    message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    while(!message->respBuffer.buf) {
+        rp->networkManager_->sync(1);
+        message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    }
+
+    /* Fill message struct */
+    message->messageType = SETUP;
+    message->reqBufferSize = 8 + sizeof(MessageType);
+	message->respBufferSize = MAX_MESSAGE_SIZE;
+
+    /* Fill request data */
+    auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+    logEntryInFlight->logOffset = 0;
+    logEntryInFlight->messageType = message->messageType;
+
+    return message;
+}
+
+/* Send read request */
 template<typename Replication>
 void send_read_message(Replication *rp, uint64_t logOffset) {
     /* Allocate message struct */

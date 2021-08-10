@@ -18,7 +18,7 @@
 /* size of the pmemlog pool -- 1 GB = 2^30 */
 #define POOL_SIZE ((off_t)(1UL << 33))
 /* log data size in B */
-#define LOG_BLOCK_DATA_SIZE 128
+#define LOG_BLOCK_DATA_SIZE 1024
 /* log block size in B */
 #define LOG_BLOCK_TOTAL_SIZE sizeof(LogEntry)
 /* Path to the Pool file */
@@ -41,8 +41,7 @@ struct LogEntry {
     uint64_t dataLength;
     char data[LOG_BLOCK_DATA_SIZE];
 };
-#endif
-#ifdef CRAQ
+#elif CRAQ
 enum MessageType {
     READ = 2,
     APPEND,
@@ -51,6 +50,12 @@ enum MessageType {
     GET_LOG_ENTRY_STATE
 };
 
+struct LogEntry {
+    LogEntryState state{DIRTY};
+    uint64_t dataLength;
+    char data[LOG_BLOCK_DATA_SIZE];
+};
+#else
 struct LogEntry {
     LogEntryState state{DIRTY};
     uint64_t dataLength;

@@ -89,6 +89,14 @@ void CRReplication::run_passive(CRReplication *rp, erpc::Nexus *Nexus, uint8_t e
 
     while(likely(rp->threadSync_.threadReady))
 		rp->networkManager_->sync(1);
+
+    /* Terminate */
+    if (rp->nodeType_ == HEAD)
+        rp->terminate(generate_terminate_message(rp));
+    else {
+        while(!rp->waitForTerminateResponse_)
+            rp->networkManager_->sync(1);
+    }
 }
 
 
@@ -99,22 +107,12 @@ void CRReplication::init() {
     networkManager_->init();
 
     if (nodeType_ == HEAD) {
-        /*  Send SETUP message down the chain */
-        LogEntryInFlight logEntryInFlight{0, SETUP, {0, ""}};
-        setupMessage_ = new Message();
-        setupMessage_->messageType = SETUP;
-        setupMessage_->sentByThisNode = false;
-        setupMessage_->reqBuffer = networkManager_->rpc_.alloc_msg_buffer_or_die(8 + sizeof(MessageType));
-        setupMessage_->reqBufferSize = 8 + sizeof(MessageType);
-        setupMessage_->respBuffer = networkManager_->rpc_.alloc_msg_buffer_or_die(1);
-        /* Fill request data */
-        memcpy(setupMessage_->reqBuffer.buf, &logEntryInFlight, setupMessage_->reqBufferSize);
+        setupMessage_ = generate_init_message(this);
         networkManager_->send_message(SUCCESSOR, setupMessage_);
 
         /* Wait for SETUP response */
         while(!chainReady_)
             networkManager_->sync(1);
-
     } else {
         /* Wait for the SETUP message */
         while (!setupMessage_)
