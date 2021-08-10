@@ -12,13 +12,15 @@ Message *generate_init_message(Replication *rp) {
     /*  Send SETUP message down the chain */
     Message *message = new Message();
 
-    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
+    message->reqBufferSize = sizeof(LogEntryInFlightHeader);
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->reqBufferSize);
     while(!message->reqBuffer.buf) {
         rp->networkManager_->sync(1);
-        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->reqBufferSize);
     }
 
     message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+	message->respBufferSize = MAX_MESSAGE_SIZE;
     while(!message->respBuffer.buf) {
         rp->networkManager_->sync(1);
         message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
@@ -26,13 +28,11 @@ Message *generate_init_message(Replication *rp) {
 
     /* Fill message struct */
     message->messageType = SETUP;
-    message->reqBufferSize = 8 + sizeof(MessageType);
-	message->respBufferSize = MAX_MESSAGE_SIZE;
 
     /* Fill request data */
     auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
-    logEntryInFlight->logOffset = 0;
-    logEntryInFlight->messageType = message->messageType;
+    logEntryInFlight->header.logOffset = 0;
+    logEntryInFlight->header.messageType = message->messageType;
 
     return message;
 }
@@ -43,13 +43,15 @@ void send_read_message(Replication *rp, uint64_t logOffset) {
     /* Allocate message struct */
     Message *message = new Message();
 
-    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
+    message->reqBufferSize = sizeof(LogEntryInFlightHeader);
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->reqBufferSize);
     while(!message->reqBuffer.buf) {
         rp->networkManager_->sync(1);
-        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(8 + sizeof(MessageType));
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->reqBufferSize);
     }
 
     message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+	message->respBufferSize = MAX_MESSAGE_SIZE;
     while(!message->respBuffer.buf) {
         rp->networkManager_->sync(1);
         message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
@@ -57,15 +59,13 @@ void send_read_message(Replication *rp, uint64_t logOffset) {
 
     /* Fill message struct */
     message->messageType = READ;
-	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
     message->logOffset = logOffset;
 
     /* Fill request data */
     auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
-    logEntryInFlight->logOffset = message->logOffset;
-    logEntryInFlight->messageType = message->messageType;
-    message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
+    logEntryInFlight->header.logOffset = message->logOffset;
+    logEntryInFlight->header.messageType = message->messageType;
 
     /* Send the message */
     rp->read(message);
@@ -73,17 +73,19 @@ void send_read_message(Replication *rp, uint64_t logOffset) {
 
 /* TODO: Documentation */
 template<typename Replication>
-void send_append_message(Replication *rp, LogEntryInFlight *logEntryInFlight, size_t dataLength) {
+void send_append_message(Replication *rp, LogEntryInFlight *logEntryInFlight, size_t logEntryInFlightLength) {
     /* Allocate message struct */
     Message *message = new Message();
-    logEntryInFlight->messageType = APPEND;
+    logEntryInFlight->header.messageType = APPEND;
 
-    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 4 * 8);
+    message->reqBufferSize = logEntryInFlightLength;
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->reqBufferSize);
     while(!message->reqBuffer.buf) {
         rp->networkManager_->sync(1);
-        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(dataLength + 4 * 8);
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->reqBufferSize);
     }
 
+	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
     while(!message->respBuffer.buf) {
         rp->networkManager_->sync(1);
@@ -92,12 +94,10 @@ void send_append_message(Replication *rp, LogEntryInFlight *logEntryInFlight, si
 
     /* Fill message struct */
     message->messageType = APPEND;
-	message->respBufferSize = MAX_MESSAGE_SIZE;
     message->sentByThisNode = true;
 
     /* Fill request data */
-    memcpy(message->reqBuffer.buf, logEntryInFlight, dataLength);
-    message->reqBufferSize = dataLength;
+    memcpy(message->reqBuffer.buf, logEntryInFlight, logEntryInFlightLength); 
 
     DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
 
@@ -113,26 +113,27 @@ Message *generate_terminate_message(Replication *rp) {
     /* Allocate message struct */
     Message *message = new Message();
 
-    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(2 * 8);
+    message->reqBufferSize = sizeof(LogEntryInFlightHeader); 
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->reqBufferSize);
     while(!message->reqBuffer.buf) {
         rp->networkManager_->sync(1);
-        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(2 * 8);
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->reqBufferSize);
     }
 
-    message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+	message->respBufferSize = MAX_MESSAGE_SIZE;
+    message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->respBufferSize);
     while(!message->respBuffer.buf) {
         rp->networkManager_->sync(1);
-        message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+        message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(message->respBufferSize);
     }
+
+    /* Fill message struct */
+    message->messageType = TERMINATE;
+    message->sentByThisNode = true;
 
     /* Fill request data */
     auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
-    logEntryInFlight->logOffset = 0;
-    logEntryInFlight->messageType = TERMINATE;
-    message->reqBufferSize = 2 * 8; 
-    message->messageType = TERMINATE;
-	message->respBufferSize = MAX_MESSAGE_SIZE;
-    message->sentByThisNode = true;
+    logEntryInFlight->header.messageType = message->messageType;
 
     return message;
 }
@@ -141,7 +142,7 @@ Message *generate_terminate_message(Replication *rp) {
 LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
     LogEntryInFlight logEntryInFlight;
     #ifdef CRAQ
-    logEntryInFlight.logEntry.state = DIRTY;
+    logEntryInFlight.logEntry.header.state = DIRTY;
     #endif
     string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     mt19937 generator{random_device{}()};
@@ -149,18 +150,18 @@ LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
     string randomString;
     uint64_t stringLength;
 
-    if (totalSize <= 32)
+    if (totalSize <= (sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader)))
         stringLength = 0;
     else
-        stringLength = totalSize - 4 * 8;
+        stringLength = totalSize - (sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader));
 
     for(uint64_t i = 0; i < stringLength; i++) {
         size_t random_index = static_cast<size_t>(dist(generator)); //get index between 0 and possible_characters.size()-1
         randomString += possibleCharacters[random_index];
     }
 
-    logEntryInFlight.logOffset = 0; 
-    logEntryInFlight.logEntry.dataLength = stringLength;
+    logEntryInFlight.header.logOffset = 0; 
+    logEntryInFlight.logEntry.header.dataLength = stringLength;
     randomString.copy(logEntryInFlight.logEntry.data, randomString.length());
 
     return logEntryInFlight;

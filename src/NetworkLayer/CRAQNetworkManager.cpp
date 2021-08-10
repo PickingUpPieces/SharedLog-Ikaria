@@ -87,10 +87,10 @@ void NetworkManager::receive_message(Message *message) {
 
     /* Fill the rest of the message meta information */
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
-    message->logOffset = logEntryInFlight->logOffset;
+    message->logOffset = logEntryInFlight->header.logOffset;
     message->sentByThisNode = false;
 
-    switch (logEntryInFlight->messageType) {
+    switch (logEntryInFlight->header.messageType) {
         case SETUP: 
             message->messageType = SETUP;
             replicationManager_->setup(message); 

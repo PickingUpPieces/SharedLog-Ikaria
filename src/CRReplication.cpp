@@ -36,7 +36,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
     // Append few messages so something can be read
     for(int i = 0; i < 100; i++) 
-        send_append_message(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (3 * 8));
+        send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
 
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
@@ -57,11 +57,12 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
         } else {
-            send_append_message(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (3 * 8));
+            send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
         while(rp->networkManager_->messagesInFlight_ > 10000)
             rp->networkManager_->sync(1);
     }
+    /* Terminate */
     if (rp->nodeType_ == HEAD)
         rp->terminate(generate_terminate_message(rp));
     else {
@@ -84,7 +85,7 @@ void CRReplication::run_passive(CRReplication *rp, erpc::Nexus *Nexus, uint8_t e
 
     if (rp->nodeType_ == HEAD) {
         auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
-        send_append_message(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
+        send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
     }
 
     while(likely(rp->threadSync_.threadReady))
@@ -172,8 +173,8 @@ void CRReplication::append(Message *message) {
         {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Count Sequencer up and set the log entry number */
-            reqLogEntryInFlight->logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
-            message->logOffset = reqLogEntryInFlight->logOffset;
+            reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
+            message->logOffset = reqLogEntryInFlight->header.logOffset;
 
             /* Append the log entry to the local Log */
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
@@ -197,8 +198,8 @@ void CRReplication::append(Message *message) {
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
             /* Add logOffset from reqBuffer to respBuffer */
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
-            respLogEntryInFlight->logOffset = message->logOffset;
-            message->respBufferSize = sizeof(message->logOffset);
+            respLogEntryInFlight->header.logOffset = message->logOffset;
+            message->respBufferSize = sizeof(LogEntryInFlightHeader);
 
             /* Send APPEND response */
             networkManager_->send_response(message);
@@ -229,7 +230,7 @@ void CRReplication::read(Message *message) {
             #ifndef UCR
             // TODO: Check if logOffset < counter
             DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-            DEBUG_MSG("CRReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
+            DEBUG_MSG("CRReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->header.logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
             /* Send READ request drectly to TAIL */
             networkManager_->send_message(TAIL, message);
         }; break;
@@ -244,12 +245,12 @@ void CRReplication::read(Message *message) {
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
             
             /* Prepare respBuffer */
-            message->respBufferSize = logEntryLength + 1 * 8;
-            respLogEntryInFlight->logOffset = message->logOffset;
+            message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
+            respLogEntryInFlight->header.logOffset = message->logOffset;
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
             DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    	    DEBUG_MSG("CRReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
+    	    DEBUG_MSG("CRReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
             if (message->sentByThisNode) {
                 this->receive_locally(message);
@@ -307,9 +308,9 @@ void CRReplication::receive_locally(Message *message) {
     
     if (message->messageType == APPEND) {
         benchmarkData_.amountAppendsSent++; 
-        auto *returnedLogOffset = reinterpret_cast<uint64_t *>(message->respBuffer.buf);
-        if (benchmarkData_.highestKnownLogOffset < *returnedLogOffset)
-            benchmarkData_.highestKnownLogOffset = *returnedLogOffset;
+        auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+        if (benchmarkData_.highestKnownLogOffset < respLogEntryInFlight->header.logOffset)
+            benchmarkData_.highestKnownLogOffset = respLogEntryInFlight->header.logOffset;
     } else if(message->messageType == READ) {
         benchmarkData_.amountReadsSent++;
     }
