@@ -59,8 +59,9 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
         } else {
             send_append_message(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
         }
-        while(rp->networkManager_->messagesInFlight_ > 10000)
-            rp->networkManager_->sync(10);
+        while(rp->networkManager_->messagesInFlight_ > 10000) {
+            rp->networkManager_->sync(1);
+        }
     }
     if (rp->nodeType_ == HEAD)
         rp->terminate(generate_terminate_message(rp));
@@ -114,10 +115,6 @@ void CRAQReplication::init() {
         /* Wait for SETUP response */
         while(!chainReady_)
             networkManager_->sync(1);
-
-        networkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
-        networkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
-        delete setupMessage_;
     } else {
         /* Wait for the SETUP message */
         while (!setupMessage_)
@@ -326,6 +323,7 @@ void CRAQReplication::get_log_entry_state_response(Message *message) {
 
 void CRAQReplication::terminate(Message *message) {
     threadSync_.threadReady = false;
+
     switch(nodeType_){
         case HEAD:
         case MIDDLE:
