@@ -41,7 +41,8 @@ struct LogEntry {
     uint64_t dataLength;
     char data[LOG_BLOCK_DATA_SIZE];
 };
-#else
+#endif
+#ifdef CRAQ
 enum MessageType {
     READ = 2,
     APPEND,

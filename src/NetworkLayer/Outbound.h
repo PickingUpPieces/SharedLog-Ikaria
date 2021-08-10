@@ -6,8 +6,8 @@
 #include "common_info.h"
 #ifdef CR
 #include "CRNetworkManager.h"
-#else
-#include "CRAQNetworkManager.h"
+#elif CRAQ 
+#include "CRAQReplication.h"
 #endif
 using namespace std;
 

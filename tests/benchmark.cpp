@@ -18,7 +18,7 @@
 
 #ifdef CR
 #define REPLICATION CRReplication
-#else 
+#elif CRAQ
 #define REPLICATION CRAQReplication
 #endif
 SharedLogNode<REPLICATION> *localNode;
@@ -75,13 +75,14 @@ void printbenchmarkData() {
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
 #ifdef CR 
+#ifdef UCR
+    std::cout << "Replication Type: U-CR" << endl;
+#else
     std::cout << "Replication Type: CR" << endl;
+#endif
 #endif
 #ifdef CRAQ
     std::cout << "Replication Type: CRAQ" << endl;
-#endif
-#ifdef UCR
-    std::cout << "Replication Type: U-CR" << endl;
 #endif
     if (benchmarkTime)
         std::cout << "Total time: " << benchmarkData.progArgs.time.count() << "s" << endl;

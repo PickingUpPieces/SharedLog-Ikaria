@@ -228,12 +228,16 @@ void CRReplication::read(Message *message) {
         case HEAD: ;
         case MIDDLE:
         {
+            #ifndef UCR
             // TODO: Check if logOffset < counter
             DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
             DEBUG_MSG("CRReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
             /* Send READ request drectly to TAIL */
             networkManager_->send_message(TAIL, message);
         }; break;
+        #else  // If UCR, just read local like the TAIL does
+        }; 
+        #endif
         case TAIL:
         {
             // TODO: Check if logOffset < counter

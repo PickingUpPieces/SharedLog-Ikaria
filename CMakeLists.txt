@@ -37,7 +37,7 @@ set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)")
 set(TRANSPORT "dpdk" CACHE STRING "Which transport type to use(infiniband/dpdk)") 
 set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
 set(CHAIN_NODES "3" CACHE STRING "How many nodes are in the chain (3/4/5)") 
-set(REPLICATION_PROTOCOL "CR" CACHE STRING "Choose Replication Protocoll (CR/CRAQ)")
+set(REPLICATION_PROTOCOL "CR" CACHE STRING "Choose Replication Protocoll (CR/UCR/CRAQ)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -65,6 +65,8 @@ elseif (${CHAIN_NODES} STREQUAL "4")
 elseif (${CHAIN_NODES} STREQUAL "5")
   add_compile_definitions(FIVE_NODES)
   message(STATUS "Using a 5-Node Chain")
+else()
+  message(FATAL_ERROR "Invalid Node Setup")
 endif()
 
 
@@ -90,8 +92,16 @@ endif()
 string(TOUPPER ${REPLICATION_PROTOCOL} REPLICATION_PROTOCOL)
 if(${REPLICATION_PROTOCOL} STREQUAL "CR")
   add_compile_definitions(CR)
-else()
+  message(STATUS "Using Chain Replication")
+elseif(${REPLICATION_PROTOCOL} STREQUAL "UCR")
+  add_compile_definitions(CR)
+  add_compile_definitions(UCR)
+  message(STATUS "Using Uncommited Chain Replication")
+elseif(${REPLICATION_PROTOCOL} STREQUAL "CRAQ")
   add_compile_definitions(CRAQ)
+  message(STATUS "Using CRAQ Replication")
+else()
+  message(FATAL_ERROR "Invalid Replication Protocol")
 endif()
 
 
@@ -120,7 +130,7 @@ set(NETWORK_SOURCE
 )
 
 
-if(${REPLICATION_PROTOCOL} STREQUAL "CR")
+if(${REPLICATION_PROTOCOL} STREQUAL "CR" OR ${REPLICATION_PROTOCOL} STREQUAL "UCR")
 set(REPLICATION_SOURCE
   ${SRC}/NetworkLayer/CRNetworkManager.h
   ${SRC}/NetworkLayer/CRNetworkManager.cpp
@@ -128,7 +138,7 @@ set(REPLICATION_SOURCE
   ${SRC}/CRReplication.cpp
   ${SRC}/helperFunctions.cpp
 )
-else()
+elseif(${REPLICATION_PROTOCOL} STREQUAL "CRAQ")
 set(REPLICATION_SOURCE
   ${SRC}/NetworkLayer/CRAQNetworkManager.h
   ${SRC}/NetworkLayer/CRAQNetworkManager.cpp
