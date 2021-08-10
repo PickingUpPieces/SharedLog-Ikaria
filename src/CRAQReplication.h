@@ -6,7 +6,7 @@
 #include "common_info.h"
 #include "common_tests.h"
 #include "Log.h"
-#include "CRAQNetworkManager.h"
+#include "NetworkManager.h"
 using namespace std;
 
 class NetworkManager;

@@ -1,6 +1,10 @@
 #include <iostream>
-#include "CRAQNetworkManager.h"
-
+#include "NetworkManager.h"
+#ifdef CR
+#define REPLICATION CRReplication
+#elif CRAQ
+#define REPLICATION CRAQReplication
+#endif
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
 /**
@@ -13,7 +17,7 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param replicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRAQReplication *replicationManager):
+NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, REPLICATION *replicationManager):
         nodeType_{nodeType},
         erpcID_{erpcID},
         replicationManager_{replicationManager},
@@ -107,10 +111,12 @@ void NetworkManager::receive_message(Message *message) {
             message->messageType = TERMINATE;
             replicationManager_->terminate(message);
             break;
+        #ifdef CRAQ
         case GET_LOG_ENTRY_STATE: 
             message->messageType = GET_LOG_ENTRY_STATE;
             replicationManager_->get_log_entry_state(message); 
             break;
+        #endif
     }
 }
 
@@ -136,9 +142,11 @@ void NetworkManager::receive_response(Message *message) {
     case TERMINATE:
         replicationManager_->terminate_response(message);
         break;
+    #ifdef CRAQ
     case GET_LOG_ENTRY_STATE:
         replicationManager_->get_log_entry_state_response(message);
         break;
+    #endif
     }
 }
 

@@ -127,21 +127,19 @@ set(NETWORK_SOURCE
   ${SRC}/NetworkLayer/Inbound.cpp
   ${SRC}/NetworkLayer/Outbound.h
   ${SRC}/NetworkLayer/Outbound.cpp
+  ${SRC}/NetworkLayer/NetworkManager.h
+  ${SRC}/NetworkLayer/NetworkManager.cpp
 )
 
 
 if(${REPLICATION_PROTOCOL} STREQUAL "CR" OR ${REPLICATION_PROTOCOL} STREQUAL "UCR")
 set(REPLICATION_SOURCE
-  ${SRC}/NetworkLayer/CRNetworkManager.h
-  ${SRC}/NetworkLayer/CRNetworkManager.cpp
   ${SRC}/CRReplication.h
   ${SRC}/CRReplication.cpp
   ${SRC}/helperFunctions.cpp
 )
 elseif(${REPLICATION_PROTOCOL} STREQUAL "CRAQ")
 set(REPLICATION_SOURCE
-  ${SRC}/NetworkLayer/CRAQNetworkManager.h
-  ${SRC}/NetworkLayer/CRAQNetworkManager.cpp
   ${SRC}/CRAQReplication.h
   ${SRC}/CRAQReplication.cpp
   ${SRC}/helperFunctions.cpp
