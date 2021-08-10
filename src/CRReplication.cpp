@@ -208,6 +208,13 @@ void CRReplication::append(Message *message) {
     }
 }
 
+void CRReplication::append_response(Message *message) {
+   if (message->sentByThisNode)
+       this->receive_locally(message);
+   else
+       networkManager_->send_response(message);
+}
+
 /**
  * Handles an incoming READ message
  * Depending on the NodeType the message has to be processed differently
@@ -251,6 +258,13 @@ void CRReplication::read(Message *message) {
             networkManager_->send_response(message);
         }; 
     }
+}
+
+void CRReplication::read_response(Message *message) {
+   if (message->sentByThisNode)
+       this->receive_locally(message);
+   else
+       networkManager_->send_response(message);
 }
 
 void CRReplication::terminate(Message *message) {

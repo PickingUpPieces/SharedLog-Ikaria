@@ -125,18 +125,10 @@ void NetworkManager::receive_response(Message *message) {
         replicationManager_->setup_response(message);
         break;
     case APPEND:
-        if (message->sentByThisNode) {
-            replicationManager_->receive_locally(message);
-            return;
-        }
-        Inbound_->send_response(message);
+        replicationManager_->append_response(message);
         break;
     case READ:
-        if (message->sentByThisNode) {
-            replicationManager_->receive_locally(message);
-            return;
-        }
-        Inbound_->send_response(message);
+        replicationManager_->read_response(message);
         break;
     case TERMINATE:
         replicationManager_->terminate_response(message);

@@ -23,6 +23,8 @@ class CRReplication {
         static void run_passive(CRReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void setup(Message *message);
         void setup_response(Message *message); 
+        void append_response(Message *message);
+        void read_response(Message *message);
         void receive_locally(Message *message);
 
     public:
