@@ -131,13 +131,13 @@ void NetworkManager::receive_response(Message *message) {
     case APPEND:
         replicationManager_->append_response(message);
         break;
+    case READ:
+        break;
     case TERMINATE:
         replicationManager_->terminate_response(message);
         break;
     case GET_LOG_ENTRY_STATE:
         replicationManager_->get_log_entry_state_response(message);
-        break;
-    default:
         break;
     }
 }
