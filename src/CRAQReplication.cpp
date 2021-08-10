@@ -59,8 +59,15 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
         } else {
             send_append_message(rp, &logEntryInFlight, (4 * 8) + logEntryInFlight.logEntry.dataLength);
         }
-        while(rp->networkManager_->messagesInFlight_ > 10000)
-            rp->networkManager_->sync(10);
+        while(rp->networkManager_->messagesInFlight_ > 10000) {
+            rp->networkManager_->sync(1);
+        }
+    }
+    if (rp->nodeType_ == HEAD)
+        rp->terminate(generate_terminate_message(rp));
+    else {
+        while(!rp->waitForTerminateResponse_)
+            rp->networkManager_->sync(1);
     }
 }
 
@@ -108,10 +115,6 @@ void CRAQReplication::init() {
         /* Wait for SETUP response */
         while(!chainReady_)
             networkManager_->sync(1);
-
-        networkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
-        networkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
-        delete setupMessage_;
     } else {
         /* Wait for the SETUP message */
         while (!setupMessage_)
@@ -135,7 +138,6 @@ void CRAQReplication::init() {
  */
 void CRAQReplication::setup(Message *message) {
     setupMessage_ = message;
-    message->respBufferSize = 1; 
 }
 
 /**
@@ -143,10 +145,18 @@ void CRAQReplication::setup(Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void CRAQReplication::setup_response(Message *message) {
-    if (nodeType_ == HEAD)
-        chainReady_ = true;
-    else if (nodeType_ == MIDDLE)
-        networkManager_->send_response(message);
+    switch (nodeType_) {
+        case HEAD:
+            chainReady_ = true;
+            networkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
+            networkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
+            delete setupMessage_;
+            break;
+        case MIDDLE:
+            networkManager_->send_response(message);
+            break;
+        case TAIL: ;
+    }
 }
 
 /**
@@ -311,6 +321,37 @@ void CRAQReplication::get_log_entry_state_response(Message *message) {
 }
 
 
+void CRAQReplication::terminate(Message *message) {
+    threadSync_.threadReady = false;
+
+    switch(nodeType_){
+        case HEAD:
+        case MIDDLE:
+            networkManager_->send_message(SUCCESSOR, message);
+            break;
+        case TAIL:
+            networkManager_->send_response(message);
+            waitForTerminateResponse_ = true;
+    }
+    while(!waitForTerminateResponse_)
+        networkManager_->sync(1);
+}
+
+void CRAQReplication::terminate_response(Message *message) {
+    switch(nodeType_) {
+        case HEAD: 
+            networkManager_->rpc_.free_msg_buffer(message->reqBuffer);
+            networkManager_->rpc_.free_msg_buffer(message->respBuffer);
+            delete message;
+            break;
+        case MIDDLE: ;
+        case TAIL:
+            networkManager_->send_response(message);
+    }
+    waitForTerminateResponse_ = true;
+}
+
+
 
 
 /* Callback function when a response is received */
@@ -336,7 +377,7 @@ void CRAQReplication::receive_locally(Message *message) {
  * Terminates the current CRAQReplication thread
  * @param force If true, forces the thread to finish
  */
-void CRAQReplication::terminate(bool force) {
+void CRAQReplication::join(bool force) {
     if (force)
         threadSync_.threadReady = false;
 

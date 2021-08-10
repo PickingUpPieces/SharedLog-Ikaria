@@ -26,7 +26,7 @@ class NetworkManager {
     private:
         NodeType nodeType_;
         uint8_t erpcID_;
-        CRReplication *ReplicationManager_;
+        CRReplication *replicationManager_;
         erpc::Nexus *Nexus_;
         unique_ptr<Inbound> Inbound_;
         unique_ptr<Outbound> Head_;

@@ -17,6 +17,7 @@ class CRAQReplication {
     private:
         bool chainReady_;
         Message *setupMessage_;
+        bool waitForTerminateResponse_{false};
         std::thread thread_;
         static void run_active(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
@@ -32,7 +33,9 @@ class CRAQReplication {
         void init();
         void append(Message *message);
         void read(Message *message);
-        void terminate(bool force);
+        void join(bool force);
+        void terminate(Message *message);
+        void terminate_response(Message *message);
 
         static atomic<uint64_t> softCounter_;
         NodeType nodeType_;

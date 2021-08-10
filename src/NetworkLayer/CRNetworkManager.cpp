@@ -11,12 +11,12 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param headURI String "hostname:port" of the HEAD node of the chain. If this node is the HEAD, leave it empty.
  * @param successorURI String "hostname:port" of the SUCCESSOR node of this node in the chain.
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
- * @param ReplicationManager Reference needed for the message flow e.g. handing of messages for further process 
+ * @param replicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
 NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRReplication *replicationManager):
         nodeType_{nodeType},
         erpcID_{erpcID},
-        ReplicationManager_{replicationManager},
+        replicationManager_{replicationManager},
         Nexus_{nexus},
         Inbound_(new Inbound(nodeType, Nexus_, this)),
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
@@ -72,7 +72,7 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
 void NetworkManager::send_response(Message *message) {
-    DEBUG_MSG("NetworkManager.send_response(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
+    DEBUG_MSG("NetworkManager.send_response(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
     Inbound_->send_response(message);
 }
 
@@ -93,15 +93,19 @@ void NetworkManager::receive_message(Message *message) {
     switch (logEntryInFlight->messageType) {
         case SETUP: 
             message->messageType = SETUP;
-            ReplicationManager_->setup(message); 
+            replicationManager_->setup(message); 
             break;
         case READ: 
             message->messageType = READ;
-            ReplicationManager_->read(message); 
+            replicationManager_->read(message); 
             break;
         case APPEND: 
             message->messageType = APPEND;
-            ReplicationManager_->append(message); 
+            replicationManager_->append(message); 
+            break;
+        case TERMINATE:
+            message->messageType = TERMINATE;
+            replicationManager_->terminate(message);
             break;
     }
 }
@@ -113,31 +117,29 @@ void NetworkManager::receive_message(Message *message) {
  */
 void NetworkManager::receive_response(Message *message) {
     messagesInFlight_--;
-    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; totalMessagesCompleted: " << std::to_string(totalMessagesCompleted_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
+    DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
     switch (message->messageType)
     {
     case SETUP:
-        ReplicationManager_->setup_response();
-        if (nodeType_ == MIDDLE)
-            send_response(message);
+        replicationManager_->setup_response(message);
         break;
     case APPEND:
         if (message->sentByThisNode) {
-            ReplicationManager_->receive_locally(message);
+            replicationManager_->receive_locally(message);
             return;
         }
         Inbound_->send_response(message);
         break;
     case READ:
         if (message->sentByThisNode) {
-            ReplicationManager_->receive_locally(message);
+            replicationManager_->receive_locally(message);
             return;
         }
         Inbound_->send_response(message);
         break;
-    default:
-        Inbound_->send_response(message);
+    case TERMINATE:
+        replicationManager_->terminate_response(message);
         break;
     }
 }

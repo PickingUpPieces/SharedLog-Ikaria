@@ -60,7 +60,13 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
             send_append_message(rp, &logEntryInFlight, logEntryInFlight.logEntry.dataLength + (3 * 8));
         }
         while(rp->networkManager_->messagesInFlight_ > 10000)
-            rp->networkManager_->sync(10);
+            rp->networkManager_->sync(1);
+    }
+    if (rp->nodeType_ == HEAD)
+        rp->terminate(generate_terminate_message(rp));
+    else {
+        while(!rp->waitForTerminateResponse_)
+            rp->networkManager_->sync(1);
     }
 }
 
@@ -109,9 +115,6 @@ void CRReplication::init() {
         while(!chainReady_)
             networkManager_->sync(1);
 
-        networkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
-        networkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
-        delete setupMessage_;
     } else {
         /* Wait for the SETUP message */
         while (!setupMessage_)
@@ -141,9 +144,19 @@ void CRReplication::setup(Message *message) {
  * Handles an incoming response for a previous send out SETUP message
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void CRReplication::setup_response() {
-    if (nodeType_ == HEAD)
-        chainReady_ = true;
+void CRReplication::setup_response(Message *message) {
+    switch (nodeType_) {
+        case HEAD:
+            chainReady_ = true;
+            networkManager_->rpc_.free_msg_buffer(setupMessage_->reqBuffer);
+            networkManager_->rpc_.free_msg_buffer(setupMessage_->respBuffer);
+            delete setupMessage_;
+            break;
+        case MIDDLE:
+            networkManager_->send_response(message);
+            break;
+        case TAIL: ;
+    }
 }
 
 /**
@@ -205,8 +218,8 @@ void CRReplication::read(Message *message) {
     chainReady_ = true;
 
     switch(nodeType_) {
-        case MIDDLE: ;
-        case HEAD: 
+        case HEAD: ;
+        case MIDDLE:
         {
             // TODO: Check if logOffset < counter
             DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
@@ -226,13 +239,13 @@ void CRReplication::read(Message *message) {
             respLogEntryInFlight->logOffset = message->logOffset;
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
+            DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+    	    DEBUG_MSG("CRReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
+
             if (message->sentByThisNode) {
                 this->receive_locally(message);
                 return;
             }
-
-            DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    	    DEBUG_MSG("CRReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
             /* Send READ response */
             networkManager_->send_response(message);
@@ -240,8 +253,38 @@ void CRReplication::read(Message *message) {
     }
 }
 
+void CRReplication::terminate(Message *message) {
+    threadSync_.threadReady = false;
+    switch(nodeType_){
+        case HEAD:
+        case MIDDLE:
+            networkManager_->send_message(SUCCESSOR, message);
+            break;
+        case TAIL:
+            networkManager_->send_response(message);
+            waitForTerminateResponse_ = true;
+    }
+    while(!waitForTerminateResponse_)
+        networkManager_->sync(1);
+}
 
-/* TODO: Documentation */
+void CRReplication::terminate_response(Message *message) {
+    switch(nodeType_) {
+        case HEAD: 
+            networkManager_->rpc_.free_msg_buffer(message->reqBuffer);
+            networkManager_->rpc_.free_msg_buffer(message->respBuffer);
+            delete message;
+            break;
+        case MIDDLE: ;
+        case TAIL:
+            networkManager_->send_response(message);
+    }
+    waitForTerminateResponse_ = true;
+}
+
+
+
+
 /* Callback function when a response is received */
 void CRReplication::receive_locally(Message *message) {
     benchmarkData_.totalMessagesProcessed++;
@@ -265,7 +308,7 @@ void CRReplication::receive_locally(Message *message) {
  * Terminates the current CRReplication thread
  * @param force If true, forces the thread to finish
  */
-void CRReplication::terminate(bool force) {
+void CRReplication::join(bool force) {
     if (force)
         threadSync_.threadReady = false;
 

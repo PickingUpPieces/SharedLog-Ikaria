@@ -34,7 +34,6 @@ void send_read_message(Replication *rp, uint64_t logOffset) {
 
     /* Fill request data */
     auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
-    logEntryInFlight->messageType = READ;
     logEntryInFlight->logOffset = message->logOffset;
     logEntryInFlight->messageType = message->messageType;
     message->reqBufferSize = 8 + sizeof(logEntryInFlight->messageType);
@@ -79,6 +78,35 @@ void send_append_message(Replication *rp, LogEntryInFlight *logEntryInFlight, si
     else 
         rp->networkManager_->send_message(HEAD, message);
 } 
+
+template<typename Replication>
+Message *generate_terminate_message(Replication *rp) {
+    /* Allocate message struct */
+    Message *message = new Message();
+
+    message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(2 * 8);
+    while(!message->reqBuffer.buf) {
+        rp->networkManager_->sync(1);
+        message->reqBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(2 * 8);
+    }
+
+    message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    while(!message->respBuffer.buf) {
+        rp->networkManager_->sync(1);
+        message->respBuffer = rp->networkManager_->rpc_.alloc_msg_buffer(MAX_MESSAGE_SIZE);
+    }
+
+    /* Fill request data */
+    auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+    logEntryInFlight->logOffset = 0;
+    logEntryInFlight->messageType = TERMINATE;
+    message->reqBufferSize = 2 * 8; 
+    message->messageType = TERMINATE;
+	message->respBufferSize = MAX_MESSAGE_SIZE;
+    message->sentByThisNode = true;
+
+    return message;
+}
 
 /* Generate a random logEntryInFlight for sending in append requests */
 LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
