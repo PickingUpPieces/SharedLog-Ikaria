@@ -18,7 +18,7 @@
 /* size of the pmemlog pool -- 1 GB = 2^30 */
 #define POOL_SIZE ((off_t)(1UL << 33))
 /* log data size in B */
-#define LOG_BLOCK_DATA_SIZE 128
+#define LOG_BLOCK_DATA_SIZE 64
 /* log block size in B */
 #define LOG_BLOCK_TOTAL_SIZE sizeof(LogEntry)
 /* Path to the Pool file */
@@ -30,19 +30,8 @@ enum LogEntryState {
     ERROR
 }; 
 
-#ifdef CR
-enum MessageType {
-    READ = 2,
-    APPEND,
-    SETUP,
-    TERMINATE
-};
-struct LogEntry {
-    uint64_t dataLength;
-    char data[LOG_BLOCK_DATA_SIZE];
-};
-#endif
-#ifdef CRAQ
+/* CRAQ types */
+#ifndef CR
 enum MessageType {
     READ = 2,
     APPEND,
@@ -51,16 +40,35 @@ enum MessageType {
     GET_LOG_ENTRY_STATE
 };
 
-struct LogEntry {
+struct LogEntryHeader {
     LogEntryState state{DIRTY};
     uint64_t dataLength;
-    char data[LOG_BLOCK_DATA_SIZE];
+};
+/* CR / U-CR types */
+#else 
+enum MessageType {
+    READ = 2,
+    APPEND,
+    SETUP,
+    TERMINATE
+};
+struct LogEntryHeader {
+    uint64_t dataLength;
 };
 #endif
 
-struct LogEntryInFlight {
+struct LogEntry {
+    LogEntryHeader header;
+    char data[LOG_BLOCK_DATA_SIZE];
+};
+
+struct LogEntryInFlightHeader {
     uint64_t logOffset;
     MessageType messageType;
+};
+
+struct LogEntryInFlight {
+    LogEntryInFlightHeader header;
     LogEntry logEntry;
 };
 

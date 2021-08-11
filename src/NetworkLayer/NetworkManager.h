@@ -7,23 +7,28 @@
 #include "common_info.h"
 #include "Inbound.h"
 #include "Outbound.h"
-#include "CRAQReplication.h"
 using namespace std;
-
-class CRAQReplication;
+#ifdef CR
+#include "CRReplication.h"
+#define REPLICATION CRReplication
+#elif CRAQ
+#include "CRAQReplication.h"
+#define REPLICATION CRAQReplication
+#endif
+class REPLICATION;
 class Inbound;
 class Outbound;
 
 // Creates and holds connections to the other nodes
 class NetworkManager {
-    friend CRAQReplication;
+    friend REPLICATION;
     friend void req_handler(erpc::ReqHandle *req_handle, void *context);
     friend void cont_func(void *context, void *tag);
 
     private:
         NodeType nodeType_;
         uint8_t erpcID_;
-        CRAQReplication *replicationManager_;
+        REPLICATION *replicationManager_;
         erpc::Nexus *Nexus_;
         unique_ptr<Inbound> Inbound_;
         unique_ptr<Outbound> Head_;
@@ -35,7 +40,7 @@ class NetworkManager {
         void send_response(Message *message); 
 
     public:
-        NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRAQReplication *CRAQReplication);
+        NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, REPLICATION *CRAQReplication);
         void send_message(NodeType targetNode, Message *message); 
         void sync(int numberOfRuns);
 

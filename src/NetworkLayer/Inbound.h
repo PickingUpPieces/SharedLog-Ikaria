@@ -5,11 +5,7 @@
 #include <cstdint>
 #include "rpc.h"
 #include "common_info.h"
-#ifdef CR
-#include "CRNetworkManager.h"
-#elif CRAQ 
-#include "CRAQReplication.h"
-#endif
+#include "NetworkManager.h"
 using namespace std;
 
 class NetworkManager;

@@ -46,14 +46,10 @@ static void init(const char *pathToLog, uint64_t logTotalSize) {
  * @param logEntry Pointer to the LogEntry which should be logged
 */
 void Log::append(uint64_t logOffset, LogEntry *logEntry) {
-    DEBUG_MSG("Log.append(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->dataLength) << " ; data: " << logEntry->data << ")");
+    DEBUG_MSG("Log.append(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->header.dataLength) << " ; data: " << logEntry->data << ")");
     
 	/* Only copy the real entry size */
-	#ifdef CR
-	uint64_t totalLogEntrySize = logEntry->dataLength + sizeof(logEntry->dataLength);
-	#else
-	uint64_t totalLogEntrySize = logEntry->dataLength + 8 + sizeof(logEntry->dataLength);
-	#endif
+	uint64_t totalLogEntrySize = logEntry->header.dataLength + sizeof(LogEntryHeader);
 
 	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
@@ -68,9 +64,9 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
 */
 pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
     LogEntry *logEntry = static_cast<LogEntry *>(pmemlog_read(plp_, logOffset * logBlockSize_));
-    DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->dataLength) << " ; data: " << logEntry->data << ")");
+    DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->header.dataLength) << " ; data: " << logEntry->data << ")");
 
-	return make_pair(logEntry, 	logEntry->dataLength + sizeof(logEntry->dataLength));
+	return make_pair(logEntry, logEntry->header.dataLength + sizeof(LogEntryHeader));
 }
 
 

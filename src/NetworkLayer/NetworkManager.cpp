@@ -1,6 +1,10 @@
 #include <iostream>
-#include "CRNetworkManager.h"
-
+#include "NetworkManager.h"
+#ifdef CR
+#define REPLICATION CRReplication
+#elif CRAQ
+#define REPLICATION CRAQReplication
+#endif
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
 /**
@@ -13,7 +17,7 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param replicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, CRReplication *replicationManager):
+NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, REPLICATION *replicationManager):
         nodeType_{nodeType},
         erpcID_{erpcID},
         replicationManager_{replicationManager},
@@ -82,15 +86,13 @@ void NetworkManager::send_response(Message *message) {
  */
 void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
-    if (!(totalMessagesProcessed_ % 1000000))
-        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
     /* Fill the rest of the message meta information */
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
-    message->logOffset = logEntryInFlight->logOffset;
+    message->logOffset = logEntryInFlight->header.logOffset;
     message->sentByThisNode = false;
 
-    switch (logEntryInFlight->messageType) {
+    switch (logEntryInFlight->header.messageType) {
         case SETUP: 
             message->messageType = SETUP;
             replicationManager_->setup(message); 
@@ -107,6 +109,12 @@ void NetworkManager::receive_message(Message *message) {
             message->messageType = TERMINATE;
             replicationManager_->terminate(message);
             break;
+        #ifdef CRAQ
+        case GET_LOG_ENTRY_STATE: 
+            message->messageType = GET_LOG_ENTRY_STATE;
+            replicationManager_->get_log_entry_state(message); 
+            break;
+        #endif
     }
 }
 
@@ -128,11 +136,18 @@ void NetworkManager::receive_response(Message *message) {
         replicationManager_->append_response(message);
         break;
     case READ:
+    #ifdef CR
         replicationManager_->read_response(message);
+#endif
         break;
     case TERMINATE:
         replicationManager_->terminate_response(message);
         break;
+    #ifdef CRAQ
+    case GET_LOG_ENTRY_STATE:
+        replicationManager_->get_log_entry_state_response(message);
+        break;
+    #endif
     }
 }
 

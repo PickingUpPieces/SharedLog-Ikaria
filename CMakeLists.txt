@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(replication_node)
 
 set(CMAKE_CXX_STANDARD 17)
-add_definitions(-Wall -Wextra -Wpedantic -Wsign-conversion -Wunused)
+add_definitions(-Wall -Wextra -Wpedantic -Wsign-conversion -Wunused -Wimplicit-fallthrough )
 add_definitions(-Wno-unused-function -Wno-deprecated-declarations)
 add_definitions(-Wno-format -Wno-format-security)
 add_definitions(-msse4.1)
@@ -127,21 +127,19 @@ set(NETWORK_SOURCE
   ${SRC}/NetworkLayer/Inbound.cpp
   ${SRC}/NetworkLayer/Outbound.h
   ${SRC}/NetworkLayer/Outbound.cpp
+  ${SRC}/NetworkLayer/NetworkManager.h
+  ${SRC}/NetworkLayer/NetworkManager.cpp
 )
 
 
 if(${REPLICATION_PROTOCOL} STREQUAL "CR" OR ${REPLICATION_PROTOCOL} STREQUAL "UCR")
 set(REPLICATION_SOURCE
-  ${SRC}/NetworkLayer/CRNetworkManager.h
-  ${SRC}/NetworkLayer/CRNetworkManager.cpp
   ${SRC}/CRReplication.h
   ${SRC}/CRReplication.cpp
   ${SRC}/helperFunctions.cpp
 )
 elseif(${REPLICATION_PROTOCOL} STREQUAL "CRAQ")
 set(REPLICATION_SOURCE
-  ${SRC}/NetworkLayer/CRAQNetworkManager.h
-  ${SRC}/NetworkLayer/CRAQNetworkManager.cpp
   ${SRC}/CRAQReplication.h
   ${SRC}/CRAQReplication.cpp
   ${SRC}/helperFunctions.cpp
