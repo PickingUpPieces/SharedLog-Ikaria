@@ -60,9 +60,12 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
-        while(rp->networkManager_->messagesInFlight_ > 10000)
+
+        rp->messagesInFlight_++;
+        while(rp->messagesInFlight_ > 10000)
             rp->networkManager_->sync(1);
     }
+
     /* Terminate */
     if (rp->nodeType_ == HEAD)
         rp->terminate(generate_terminate_message(rp));
@@ -356,6 +359,7 @@ void CRAQReplication::terminate_response(Message *message) {
 /* Callback function when a response is received */
 void CRAQReplication::receive_locally(Message *message) {
     benchmarkData_.totalMessagesProcessed++;
+    messagesInFlight_--;
     
     if (message->messageType == APPEND) {
         benchmarkData_.amountAppendsSent++; 

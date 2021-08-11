@@ -20,6 +20,7 @@ class CRReplication {
         bool waitForTerminateResponse_{false};
         std::thread thread_;
         Log log_;
+        size_t messagesInFlight_{0};
         static void run_active(CRReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(CRReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void init();
