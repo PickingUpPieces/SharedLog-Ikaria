@@ -229,8 +229,8 @@ void CRAQReplication::read(Message *message) {
     chainReady_ = true;
 
     switch(nodeType_) {
-        case MIDDLE: ;
         case HEAD: 
+        case MIDDLE: 
         {
             // TODO: Check if logOffset < counter
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);

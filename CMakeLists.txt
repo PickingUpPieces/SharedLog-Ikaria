@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(replication_node)
 
 set(CMAKE_CXX_STANDARD 17)
-add_definitions(-Wall -Wextra -Wpedantic -Wsign-conversion -Wunused)
+add_definitions(-Wall -Wextra -Wpedantic -Wsign-conversion -Wunused -Wimplicit-fallthrough )
 add_definitions(-Wno-unused-function -Wno-deprecated-declarations)
 add_definitions(-Wno-format -Wno-format-security)
 add_definitions(-msse4.1)

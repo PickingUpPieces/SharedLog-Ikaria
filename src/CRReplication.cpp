@@ -38,7 +38,6 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     for(int i = 0; i < 100; i++) 
         send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
 
-
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
     rp->threadSync_.threadReady = true;
@@ -51,12 +50,10 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 
     while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
         if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
-        //if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
 
 	        auto randuint = static_cast<uint64_t>(xorshf96());
-	        //auto randuint = static_cast<uint64_t>(rand());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
         } else {
@@ -227,24 +224,21 @@ void CRReplication::read(Message *message) {
     chainReady_ = true;
 
     switch(nodeType_) {
-        case HEAD: ;
+        case HEAD: 
         case MIDDLE:
+        #ifndef UCR
         {
-            #ifndef UCR
             // TODO: Check if logOffset < counter
             DEBUG_MSG("CRReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
             DEBUG_MSG("CRReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->header.logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
             /* Send READ request drectly to TAIL */
             networkManager_->send_message(TAIL, message);
         }; break;
-        #else  // If UCR, just read local like the TAIL does
-        }; 
         #endif
         case TAIL:
         {
             // TODO: Check if logOffset < counter
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
-
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
             
             /* Prepare respBuffer */
