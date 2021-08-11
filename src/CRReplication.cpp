@@ -38,6 +38,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     for(int i = 0; i < 100; i++) 
         send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
 
+
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
     rp->threadSync_.threadReady = true;
@@ -49,11 +50,13 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     rp->benchmarkData_.startBenchmark->unlock();
 
     while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
-        if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
+        if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
+        //if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
 
-	        auto randuint = static_cast<uint64_t>(rand());
+	        auto randuint = static_cast<uint64_t>(xorshf96());
+	        //auto randuint = static_cast<uint64_t>(rand());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
         } else {

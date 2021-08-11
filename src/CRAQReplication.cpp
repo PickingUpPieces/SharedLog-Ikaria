@@ -6,6 +6,7 @@
 /* Init static softCounter */
 atomic<uint64_t>  CRAQReplication::softCounter_{0}; 
 
+
 /* TODO: Documentation */
 /**
  * Constructs the CRAQReplication as multi threaded Object
@@ -49,11 +50,11 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
     rp->benchmarkData_.startBenchmark->unlock();
 
     while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
-        if (( rand() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
+        if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
 
-	        auto randuint = static_cast<uint64_t>(rand());
+	        auto randuint = static_cast<uint64_t>(xorshf96());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
         } else {

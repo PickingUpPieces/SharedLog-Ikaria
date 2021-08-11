@@ -86,8 +86,6 @@ void NetworkManager::send_response(Message *message) {
  */
 void NetworkManager::receive_message(Message *message) {
     totalMessagesProcessed_++;
-    if (!(totalMessagesProcessed_ % 1000000))
-        std::cout << "localNode: messagesInFlight_: " << std::to_string(messagesInFlight_) << " ; totalMessagesProcessed_: " << std::to_string(totalMessagesProcessed_) << " ; erpcID: " << std::to_string(erpcID_) << endl;
 
     /* Fill the rest of the message meta information */
     auto *logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqHandle->get_req_msgbuf()->buf);
@@ -138,6 +136,9 @@ void NetworkManager::receive_response(Message *message) {
         replicationManager_->append_response(message);
         break;
     case READ:
+    #ifdef CR
+        replicationManager_->read_response(message);
+#endif
         break;
     case TERMINATE:
         replicationManager_->terminate_response(message);
