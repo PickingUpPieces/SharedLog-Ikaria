@@ -173,9 +173,9 @@ int main(int argc, char** argv) {
                 //case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, ROSE_URI, std::string(), CLARA_URI, MARTHA_URI, &benchmarkData); break;
                 //case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, CLARA_URI, ROSE_URI, MARTHA_URI, MARTHA_URI, &benchmarkData ); break;
                 //case 2: localNode = new SharedLogNode<REPLICATION>(TAIL, 2, poolPath, MARTHA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData ); break;
-                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, ROSE_URI, std::string(), DONNA_URI, MARTHA_URI, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, DONNA_URI, ROSE_URI, MARTHA_URI, MARTHA_URI, &benchmarkData); break;
-                case 2: localNode = new SharedLogNode<REPLICATION>(TAIL, 2, poolPath, MARTHA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData ); break;
+                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, ROSE_URI, std::string(), DONNA_URI, CLARA_URI, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, DONNA_URI, ROSE_URI, CLARA_URI, CLARA_URI, &benchmarkData); break;
+                case 2: localNode = new SharedLogNode<REPLICATION>(TAIL, 2, poolPath, CLARA_URI, ROSE_URI, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
         #ifdef FOUR_NODES
