@@ -62,7 +62,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
         }
 
         rp->messagesInFlight_++;
-        while(rp->messagesInFlight_ > 10000)
+        while(rp->messagesInFlight_ > 1000)
             rp->networkManager_->sync(1);
     }
 
@@ -110,6 +110,7 @@ void CRAQReplication::run_passive(CRAQReplication *rp, erpc::Nexus *Nexus, uint8
 */
 void CRAQReplication::init() {
     networkManager_->init();
+    messagesInFlight_ = 0;
 
     if (nodeType_ == HEAD) {
         setupMessage_ = generate_init_message(this);
@@ -246,6 +247,9 @@ void CRAQReplication::read(Message *message) {
                 respLogEntryInFlight->header.logOffset = message->logOffset;
                 memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
+                DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+                DEBUG_MSG("CRAQReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->header.logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
+
                 if (message->sentByThisNode) {
                     this->receive_locally(message);
                     return;
@@ -258,11 +262,12 @@ void CRAQReplication::read(Message *message) {
                 reqLogEntryInFlight->header.messageType = GET_LOG_ENTRY_STATE;
                 message->messageType = GET_LOG_ENTRY_STATE;
 
+                DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+                DEBUG_MSG("CRAQReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->header.logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
+
                 /* Send GET_LOG_ENTRY_STATE request to TAIL */
                 networkManager_->send_message(TAIL, message);
             }
-            DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-            DEBUG_MSG("CRAQReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->header.logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
         }; break;
         case TAIL:
         {
@@ -277,7 +282,7 @@ void CRAQReplication::read(Message *message) {
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
 
             DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    	    DEBUG_MSG("CRAQReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.data << ")");
+    	    DEBUG_MSG("CRAQReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
             if (message->sentByThisNode) {
                 this->receive_locally(message);

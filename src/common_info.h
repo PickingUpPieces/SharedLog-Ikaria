@@ -16,7 +16,7 @@
 
 // Log variables
 /* size of the pmemlog pool -- 1 GB = 2^30 */
-#define POOL_SIZE ((off_t)(1UL << 33))
+#define POOL_SIZE ((off_t)(1UL << 34))
 /* log data size in B */
 #define LOG_BLOCK_DATA_SIZE 64
 /* log block size in B */

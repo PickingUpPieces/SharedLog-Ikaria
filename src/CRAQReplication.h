@@ -20,7 +20,7 @@ class CRAQReplication {
         bool waitForTerminateResponse_{false};
         std::thread thread_;
         Log log_;
-        size_t messagesInFlight_{0};
+        int messagesInFlight_;
         static void run_active(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         static void run_passive(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
         void init();
