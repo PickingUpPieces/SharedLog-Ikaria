@@ -9,10 +9,12 @@ readProb=(50 70 90)
 current_time=$(date "+%d-%H.%M.%S")
 fileName=$current_time"-"$nodeID"-benchmark.csv"
 
-echo $nodeID " " $runTime " " $size
+echo "NodeID: " $nodeID " RunTime: " $runTime " Value Size: " $size
 
 for r in ${readProb[@]}; do
     for t in ${threads[@]}; do
+        echo "Current run: Read Prob: " $r " Threads: " $t 
+
         sudo ./../benchmark -i $nodeID -r $r -t $t -h $runTime -f $fileName
         sleep $sleepTime
     done

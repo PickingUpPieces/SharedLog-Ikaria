@@ -160,13 +160,17 @@ void parser(int amountArgs, char **argv) {
 
     benchmarkData.remainderNumberOfRequests = benchmarkData.progArgs.totalNumberOfRequests / benchmarkData.progArgs.amountThreads;
     benchmarkData.startBenchmark = &startBenchmark;
+    #ifndef BENCHMARK
     std::cout << "Input Parameters: nodeID: " << to_string(benchmarkData.progArgs.nodeID) << " nodeType: " << benchmarkData.progArgs.nodeType << " activeMode: " << benchmarkData.progArgs.activeMode << " amountThreads: " << benchmarkData.progArgs.amountThreads << " totalNumOfRequests: " << benchmarkData.progArgs.totalNumberOfRequests << " RequestsPerThread: " << benchmarkData.remainderNumberOfRequests  << " Probability of Reads: " << benchmarkData.progArgs.probabilityOfRead << " Time: " << std::to_string(benchmarkData.progArgs.time.count()) << " valueSize: " << benchmarkData.progArgs.valueSize << endl;
+    #endif
 }
 
 
 int main(int argc, char** argv) {
+    #ifndef BENCHMARK
     std::cout << "-------------------------------------" << endl;
     std::cout << "Init everything..." << endl;
+    #endif
 
     parser(argc, argv);
     startBenchmark.lock();
@@ -217,9 +221,14 @@ int main(int argc, char** argv) {
     else
         start_benchmark_operations();
 
+    #ifndef BENCHMARK
     std::cout << "...Finished benchmarking" << endl;
     std::cout << "-------------------------------------" << endl;
+    #endif
 
-    printbenchmarkData();
+    #ifdef BENCHMARK
     printToCSV();
+    #else
+    printbenchmarkData();
+    #endif
 }

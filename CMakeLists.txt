@@ -39,6 +39,7 @@ set(TRANSPORT "dpdk" CACHE STRING "Which transport type to use(infiniband/dpdk)"
 set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
 set(CHAIN_NODES "3" CACHE STRING "How many nodes are in the chain (3/4/5)") 
 set(REPLICATION_PROTOCOL "CR" CACHE STRING "Choose Replication Protocoll (CR/UCR/CRAQ)")
+set(BENCHMARK "TRUE" CACHE STRING "Enable benchmark (TRUE/FALSE)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -106,6 +107,11 @@ else()
 endif()
 
 
+string(TOUPPER ${BENCHMARK} BENCHMARK)
+if (${DPDK_CLUSTER} STREQUAL "TRUE")
+  add_compile_definitions(BENCHMARK)
+endif()
+
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
 include_directories(SYSTEM ${PMDK}/src)
@@ -157,7 +163,7 @@ set(LOG_SOURCE
   ${SRC}/Log.cpp
 )  
 
-set(BENCHMARK
+set(BENCHMARK_PROGRAM
   ${BENCHMARKS}/benchmark.cpp
 )
 
@@ -176,7 +182,7 @@ target_link_libraries(replication_node
 
 # Compile benchmark
 add_executable(benchmark
-  ${BENCHMARK}
+  ${BENCHMARK_PROGRAM}
 )
 
 target_link_libraries(benchmark
