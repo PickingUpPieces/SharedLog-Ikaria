@@ -31,6 +31,7 @@ message(STATUS "DPDK-path: ${DPDK-PATH}")
 # This project source/test directory:
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+set(BENCHMARKS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
 
 # User options:
 set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)") 
@@ -119,6 +120,7 @@ link_libraries(erpc)
 include_directories(${SRC})
 include_directories(${SRC}/NetworkLayer)
 include_directories(${TESTS})
+include_directories(${BENCHMARKS})
 
 link_libraries(${LIBRARIES})
 
@@ -155,12 +157,8 @@ set(LOG_SOURCE
   ${SRC}/Log.cpp
 )  
 
-set(TEST_UTILS 
-  ${TESTS}/run_node.cpp 
-)
-
 set(BENCHMARK
-  ${TESTS}/benchmark.cpp
+  ${BENCHMARKS}/benchmark.cpp
 )
 
 # Compile as static library
