@@ -32,8 +32,10 @@ void start_benchmark_operations() {
     localNode->get_thread_ready();
     startBenchmark.unlock();
 
+    #ifndef BENCHMARK
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking on operations..." << endl;
+    #endif
     
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
@@ -52,8 +54,10 @@ void start_benchmark_time() {
     localNode->get_thread_ready();
     startBenchmark.unlock();
 
+    #ifndef BENCHMARK
     std::cout << "-------------------------------------" << endl;
     std::cout << "Start benchmarking on time..." << endl;
+    #endif
     
     /* Take start time */
     auto start = std::chrono::high_resolution_clock::now();
@@ -80,8 +84,7 @@ void printbenchmarkData() {
 #else
     std::cout << "Replication Type: CR" << endl;
 #endif
-#endif
-#ifdef CRAQ
+#elif CRAQ
     std::cout << "Replication Type: CRAQ" << endl;
 #endif
     if (benchmarkTime)
@@ -103,11 +106,30 @@ void printbenchmarkData() {
 }
 
 void printToCSV() {
+    // Check if file already exists for printing header
+    ifstream f(benchmarkData.progArgs.csvName);
+    bool newFile = f.good();
+    string replicationType{};
+#ifdef CR 
+#ifdef UCR
+    replicationType = "UCR";
+#else
+    replicationType = "CR";
+#endif
+#elif CRAQ
+    replicationType = "CRAQ";
+#endif
+
     // Open CSV file in append mode
     std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
+
+    if (!newFile)
+        file << "#Reads,Appends,Op/s,probRead,time,valueSize,threads - Replication: " << replicationType << endl;
+
+
     // Reads,Appends,Op/s,probRead,time,valueSize,threads
-    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << benchmarkData.operationsPerSecond << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << endl;
+    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << endl;
     
     // Close the file
     file.close();

@@ -110,6 +110,7 @@ endif()
 string(TOUPPER ${BENCHMARK} BENCHMARK)
 if (${DPDK_CLUSTER} STREQUAL "TRUE")
   add_compile_definitions(BENCHMARK)
+  message(STATUS "Benchmarking enabled")
 endif()
 
 # PMDK
