@@ -103,7 +103,14 @@ void printbenchmarkData() {
 }
 
 void printToCSV() {
+    // Open CSV file in append mode
+    std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
+    // Reads,Appends,Op/s,probRead,time,valueSize,threads
+    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << benchmarkData.operationsPerSecond << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << endl;
+    
+    // Close the file
+    file.close();
 }
 
 /* Parse the input arguments */
@@ -217,4 +224,5 @@ int main(int argc, char** argv) {
     std::cout << "-------------------------------------" << endl;
 
     printbenchmarkData();
+    printToCSV();
 }
