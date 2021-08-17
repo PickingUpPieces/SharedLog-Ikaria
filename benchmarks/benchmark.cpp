@@ -110,26 +110,24 @@ void printToCSV() {
     ifstream f(benchmarkData.progArgs.csvName);
     bool newFile = f.good();
     string replicationType{};
-#ifdef CR 
-#ifdef UCR
-    replicationType = "UCR";
-#else
-    replicationType = "CR";
-#endif
-#elif CRAQ
+    #ifdef CR 
+        #ifdef UCR
+        replicationType = "UCR";
+        #else
+        replicationType = "CR";
+        #endif
+    #elif CRAQ
     replicationType = "CRAQ";
-#endif
+    #endif
 
     // Open CSV file in append mode
     std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
-
     if (!newFile)
-        file << "#Reads,Appends,Op/s,probRead,time,valueSize,threads - Replication: " << replicationType << endl;
+        file << "reads,appends,ops,probRead,time,valueSize,threads,replType" << endl;
 
-
-    // Reads,Appends,Op/s,probRead,time,valueSize,threads
-    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << endl;
+    // Reads,Appends,Op/s,probRead,time,valueSize,threads,replType
+    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << replicationType << endl;
     
     // Close the file
     file.close();

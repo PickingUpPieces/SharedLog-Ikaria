@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
 nodeID=$1
-runTime=5
+runTime=25
 sleepTime=5
 size=256
-threads=(1 2 4 8 16)
-#readProb=(50 70 90)
-readProb=(90)
+#threads=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
+threads=(1 2 4 6 8 10 12 14 16)
+readProb=(50 90)
 current_time=$(date "+%d-%H.%M.%S")
-fileName=$current_time"-"$nodeID"-benchmark.csv"
 
 echo "NodeID: " $nodeID " RunTime: " $runTime " Value Size: " $size
 
 for r in ${readProb[@]}; do
+    fileName=$current_time"-"$nodeID"-"$r"-benchmark.csv"
     for t in ${threads[@]}; do
         echo "Current run: Read Prob: " $r " Threads: " $t 
 
