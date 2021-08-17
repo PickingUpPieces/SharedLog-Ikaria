@@ -1,6 +1,7 @@
 import string
 import csv
 from argparse import ArgumentParser
+import pandas as pd
 
 parser = ArgumentParser()
 parser.add_argument('-n', '--names-list', nargs='+', default=[])
@@ -9,13 +10,12 @@ files = parser.parse_args()
 merged = open('merged.csv', 'w')
 writer = csv.writer(merged)
 
-for f in files.names_list[1:]: 
-    with open('minitest.csv', 'rb') as f:
-    reader = csv.reader(f)
-    data = [next(reader)]  # title row
-    for row in reader:
-        data.append(row + [float(row[2]) * float(row[5])])
-            for line1, line2 in zip(file1, file2):
-		        line1Columns = line1.split(",") 
-		        line2Columns = line2.split(",") 
-                writer.writerow(value)
+node1 = pd.read_csv(files.names_list[0], sep=",")
+node2 = pd.read_csv(files.names_list[1], sep=",")
+node3 = pd.read_csv(files.names_list[2], sep=",")
+
+node1["reads"] = node1["reads"] + node2["reads"] + node3["reads"]
+node1["appends"] = node1["appends"] + node2["appends"] + node3["appends"]
+node1["ops"] = node1["ops"] + node2["ops"] + node3["ops"]
+
+node1.to_csv("mergedCSV.csv")
