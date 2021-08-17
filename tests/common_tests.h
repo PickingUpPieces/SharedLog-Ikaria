@@ -13,7 +13,7 @@ struct ProgArgs {
     std::chrono::duration<long> time{};
     int probabilityOfRead{50}; // -r ; Between 0 - 100
     size_t valueSize{64}; // -v ; Bytes
-    char csvName[32]{"benchmark.csv"};
+    char csvName[64]{"benchmark.csv"};
 };
 
 /* Collects the measured data */
