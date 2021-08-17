@@ -2,10 +2,11 @@
 
 nodeID=$1
 runTime=5
-sleepTime=$(expr $runTime + 5)
+sleepTime=5
 size=256
 threads=(1 2 4 8 16)
-readProb=(50 70 90)
+#readProb=(50 70 90)
+readProb=(90)
 current_time=$(date "+%d-%H.%M.%S")
 fileName=$current_time"-"$nodeID"-benchmark.csv"
 
@@ -16,6 +17,8 @@ for r in ${readProb[@]}; do
         echo "Current run: Read Prob: " $r " Threads: " $t 
 
         sudo ./../benchmark -i $nodeID -r $r -t $t -h $runTime -f $fileName
+        pid=$!
+        wait $pid
         sleep $sleepTime
     done
 done
