@@ -102,6 +102,10 @@ void printbenchmarkData() {
     std::cout << "-------------------------------------" << endl;
 }
 
+void printToCSV() {
+
+}
+
 /* Parse the input arguments */
 void parser(int amountArgs, char **argv) {
     for (int i = 1; i < amountArgs; i++) {
@@ -136,6 +140,13 @@ void parser(int amountArgs, char **argv) {
                 benchmarkData.progArgs.time = std::chrono::seconds(std::stoul(&(argv[i][3]), nullptr, 0));
                 benchmarkData.progArgs.totalNumberOfRequests = 1000000000;
                 benchmarkTime = true;
+                break;
+            case 'f': // csv file name
+                if (strlen(&(argv[i][3])) >= sizeof(benchmarkData.progArgs.csvName)) {
+                    std::cout << "filename too long: " << argv[i][3] << endl;
+                    exit(1);
+                }
+                strcpy(benchmarkData.progArgs.csvName, &(argv[i][3]));
                 break;
         }
     }
