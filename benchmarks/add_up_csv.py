@@ -7,9 +7,6 @@ parser = ArgumentParser()
 parser.add_argument('-n', '--names-list', nargs='+', default=[])
 files = parser.parse_args()
 
-merged = open('merged.csv', 'w')
-writer = csv.writer(merged)
-
 node1 = pd.read_csv(files.names_list[0], sep=",")
 node2 = pd.read_csv(files.names_list[1], sep=",")
 node3 = pd.read_csv(files.names_list[2], sep=",")
