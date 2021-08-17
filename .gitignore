@@ -8,3 +8,4 @@ libreplication_node.a
 run_node
 benchmark
 perf.*
+*.csv

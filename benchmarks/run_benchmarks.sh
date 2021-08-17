@@ -1,13 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 nodeID=$1
-runTime=60
+runTime=5
 sleepTime=$(expr $runTime + 5)
 size=256
 threads=(1 2 4 8 16)
 readProb=(50 70 90)
 current_time=$(date "+%d-%H.%M.%S")
-fileName=$current_time"-benchmark.csv"
+fileName=$current_time"-"$nodeID"-benchmark.csv"
 
 echo $nodeID " " $runTime " " $size
 

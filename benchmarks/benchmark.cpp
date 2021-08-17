@@ -184,9 +184,9 @@ int main(int argc, char** argv) {
         }
     #else
         #ifdef THREE_NODES
-        #define FIRST_NODE AMY_URI
-        #define SECOND_NODE DONNA_URI
-        #define THIRD_NODE CLARA_URI
+        #define FIRST_NODE ROSE_URI
+        #define SECOND_NODE CLARA_URI
+        #define THIRD_NODE MARTHA_URI
             switch(benchmarkData.progArgs.nodeID) {
                 case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, FIRST_NODE, std::string(), SECOND_NODE, THIRD_NODE, &benchmarkData); break;
                 case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, SECOND_NODE, FIRST_NODE, THIRD_NODE, THIRD_NODE, &benchmarkData); break;
