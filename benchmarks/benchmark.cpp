@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
         #ifdef THREE_NODES
         #define FIRST_NODE ROSE_URI
         #define SECOND_NODE CLARA_URI
-        #define THIRD_NODE MARTHA_URI
+        #define THIRD_NODE DONNA_URI
             switch(benchmarkData.progArgs.nodeID) {
                 case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, FIRST_NODE, std::string(), SECOND_NODE, THIRD_NODE, &benchmarkData); break;
                 case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, SECOND_NODE, FIRST_NODE, THIRD_NODE, THIRD_NODE, &benchmarkData); break;
@@ -218,20 +218,29 @@ int main(int argc, char** argv) {
             }
         #endif
         #ifdef FOUR_NODES
+        #define FIRST_NODE ROSE_URI
+        #define SECOND_NODE CLARA_URI
+        #define THIRD_NODE DONNA_URI
+	#define FOURTH_NODE AMY_URI
             switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, ROSE_URI, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, ROSE_URI, &benchmarkData ); break;
-                case 2: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, ROSE_URI, &benchmarkData ); break;
-                case 3: localNode = new SharedLogNode<REPLICATION>(TAIL, 3, poolPath, ROSE_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
+                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, FIRST_NODE, std::string(), SECOND_NODE, FOURTH_NODE, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, SECOND_NODE, FIRST_NODE, THIRD_NODE, FOURTH_NODE, &benchmarkData); break;
+                case 2: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 2, poolPath, THIRD_NODE, FIRST_NODE, FOURTH_NODE, FOURTH_NODE, &benchmarkData ); break;
+		case 3: localNode = new SharedLogNode<REPLICATION>(TAIL, 3, poolPath, FOURTH_NODE, FIRST_NODE, std::string(), std::string(), &benchmarkData ); break;
             }
         #endif
         #ifdef FIVE_NODES
+        #define FIRST_NODE ROSE_URI
+        #define SECOND_NODE CLARA_URI
+        #define THIRD_NODE DONNA_URI
+	#define FOURTH_NODE AMY_URI
+	#define FIFTH_NODE MARTHA_URI
             switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, AMY_URI, std::string(), CLARA_URI, DONNA_URI, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, CLARA_URI, AMY_URI, MARTHA_URI, DONNA_URI, &benchmarkData ); break;
-                case 2: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 2, poolPath, MARTHA_URI, AMY_URI, ROSE_URI, DONNA_URI, &benchmarkData ); break;
-                case 3: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 3, poolPath, ROSE_URI, AMY_URI, DONNA_URI, DONNA_URI, &benchmarkData ); break;
-                case 4: localNode = new SharedLogNode<REPLICATION>(TAIL, 4, poolPath, DONNA_URI, AMY_URI, std::string(), std::string(), &benchmarkData ); break;
+                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, FIRST_NODE, std::string(), SECOND_NODE, FIFTH_NODE, &benchmarkData); break;
+                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, SECOND_NODE, FIRST_NODE, THIRD_NODE, FIFTH_NODE, &benchmarkData); break;
+                case 2: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 2, poolPath, THIRD_NODE, FIRST_NODE, FOURTH_NODE, FIFTH_NODE, &benchmarkData ); break;
+		case 3: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 3, poolPath, FOURTH_NODE, FIRST_NODE, FIFTH_NODE, FIFTH_NODE, &benchmarkData ); break;
+                case 4: localNode = new SharedLogNode<REPLICATION>(TAIL, 4, poolPath, FIFTH_NODE, FIRST_NODE, std::string(), FIFTH_NODE, &benchmarkData ); break;
             }
         #endif
     #endif

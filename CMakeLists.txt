@@ -8,7 +8,7 @@ add_definitions(-Wno-format -Wno-format-security)
 add_definitions(-msse4.1)
 
 # Libraries that are required:
-set(LIBRARIES pthread numa dl ibverbs)
+set(LIBRARIES pthread numa dl ibverbs ndctl daxctl)
 
 # These paths might need to be changed:
 # eRPC

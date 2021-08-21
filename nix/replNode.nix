@@ -13,6 +13,7 @@ stdenv.mkDerivation {
 	rdma-core
 	numactl
 	pmdk
+	libndctl
 	fio
     boost
     python-with-my-packages
