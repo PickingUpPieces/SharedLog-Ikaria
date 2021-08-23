@@ -124,10 +124,10 @@ void printToCSV() {
     std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
     if (!newFile)
-        file << "reads,appends,ops,probRead,time,valueSize,threads,replType" << endl;
+        file << "reads,appends,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,replType" << endl;
 
     // Reads,Appends,Op/s,probRead,time,valueSize,threads,replType
-    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << replicationType << endl;
+    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << replicationType << endl;
     
     // Close the file
     file.close();
@@ -162,6 +162,12 @@ void parser(int amountArgs, char **argv) {
                 break;
             case 's': // Size value
                 benchmarkData.progArgs.valueSize = std::stoul(&(argv[i][3]), nullptr, 0);
+                break;
+            case 'c': // Chain Nodes
+                benchmarkData.progArgs.chainNodes = std::stoul(&(argv[i][3]), nullptr, 0);
+                break;
+            case 'j': // Cap
+                benchmarkData.progArgs.messageInFlightCap = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
             case 'h': // Time to run program in seconds
                 benchmarkData.progArgs.time = std::chrono::seconds(std::stoul(&(argv[i][3]), nullptr, 0));
@@ -207,42 +213,41 @@ int main(int argc, char** argv) {
             case TAIL: localNode = new SharedLogNode<REPLICATION>(benchmarkData.progArgs.nodeType, benchmarkData.progArgs.nodeID, poolPath, NARDOLE_URI, BILL_URI, std::string(), std::string(), &benchmarkData); break;
         }
     #else
-        #ifdef THREE_NODES
-        #define FIRST_NODE ROSE_URI
-        #define SECOND_NODE CLARA_URI
-        #define THIRD_NODE DONNA_URI
-            switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, FIRST_NODE, std::string(), SECOND_NODE, THIRD_NODE, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, SECOND_NODE, FIRST_NODE, THIRD_NODE, THIRD_NODE, &benchmarkData); break;
-                case 2: localNode = new SharedLogNode<REPLICATION>(TAIL, 2, poolPath, THIRD_NODE, FIRST_NODE, std::string(), std::string(), &benchmarkData ); break;
-            }
-        #endif
-        #ifdef FOUR_NODES
-        #define FIRST_NODE ROSE_URI
-        #define SECOND_NODE CLARA_URI
-        #define THIRD_NODE DONNA_URI
-	#define FOURTH_NODE AMY_URI
-            switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, FIRST_NODE, std::string(), SECOND_NODE, FOURTH_NODE, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, SECOND_NODE, FIRST_NODE, THIRD_NODE, FOURTH_NODE, &benchmarkData); break;
-                case 2: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 2, poolPath, THIRD_NODE, FIRST_NODE, FOURTH_NODE, FOURTH_NODE, &benchmarkData ); break;
-		case 3: localNode = new SharedLogNode<REPLICATION>(TAIL, 3, poolPath, FOURTH_NODE, FIRST_NODE, std::string(), std::string(), &benchmarkData ); break;
-            }
-        #endif
-        #ifdef FIVE_NODES
-        #define FIRST_NODE ROSE_URI
-        #define SECOND_NODE CLARA_URI
-        #define THIRD_NODE DONNA_URI
-	#define FOURTH_NODE AMY_URI
-	#define FIFTH_NODE MARTHA_URI
-            switch(benchmarkData.progArgs.nodeID) {
-                case 0: localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, FIRST_NODE, std::string(), SECOND_NODE, FIFTH_NODE, &benchmarkData); break;
-                case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, SECOND_NODE, FIRST_NODE, THIRD_NODE, FIFTH_NODE, &benchmarkData); break;
-                case 2: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 2, poolPath, THIRD_NODE, FIRST_NODE, FOURTH_NODE, FIFTH_NODE, &benchmarkData ); break;
-		case 3: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 3, poolPath, FOURTH_NODE, FIRST_NODE, FIFTH_NODE, FIFTH_NODE, &benchmarkData ); break;
-                case 4: localNode = new SharedLogNode<REPLICATION>(TAIL, 4, poolPath, FIFTH_NODE, FIRST_NODE, std::string(), FIFTH_NODE, &benchmarkData ); break;
-            }
-        #endif
+        string headNode = ROSE_URI;
+        string middleFirstNode = CLARA_URI;
+        string middleSecondNode = DONNA_URI;
+        string middleThirdNode = AMY_URI;
+        string tailNode = MARTHA_URI;
+
+        if (benchmarkData.progArgs.nodeID == 0)
+            localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, headNode, std::string(), middleFirstNode, tailNode, &benchmarkData); 
+
+        switch(benchmarkData.progArgs.chainNodes) {
+            case 3: {
+                switch(benchmarkData.progArgs.nodeID) {
+                    case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, middleFirstNode, headNode, tailNode, tailNode, &benchmarkData); break;
+                    case 2: localNode = new SharedLogNode<REPLICATION>(TAIL, 2, poolPath, tailNode, headNode, std::string(), std::string(), &benchmarkData ); break;
+                }
+            };
+            break;
+            case 4: {
+                switch(benchmarkData.progArgs.nodeID) {
+                    case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, middleFirstNode, headNode, middleSecondNode, tailNode, &benchmarkData); break;
+                    case 2: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 2, poolPath, middleSecondNode, headNode, tailNode, tailNode, &benchmarkData); break;
+                    case 3: localNode = new SharedLogNode<REPLICATION>(TAIL, 3, poolPath, tailNode, headNode, std::string(), std::string(), &benchmarkData ); break;
+                }
+            };
+            break;
+            case 5: {
+                switch(benchmarkData.progArgs.nodeID) {
+                    case 1: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 1, poolPath, middleFirstNode, headNode, middleSecondNode, tailNode, &benchmarkData); break;
+                    case 2: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 2, poolPath, middleSecondNode, headNode, middleThirdNode, tailNode, &benchmarkData); break;
+                    case 3: localNode = new SharedLogNode<REPLICATION>(MIDDLE, 3, poolPath, middleThirdNode, headNode, tailNode, tailNode, &benchmarkData); break;
+                    case 4: localNode = new SharedLogNode<REPLICATION>(TAIL, 4, poolPath, tailNode, headNode, std::string(), std::string(), &benchmarkData ); break;
+                }
+            };
+            break;
+        }
     #endif
 
     if (benchmarkTime)
