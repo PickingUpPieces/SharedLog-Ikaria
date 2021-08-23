@@ -59,7 +59,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
-        while(rp->networkManager_->messagesInFlight_ > 10000)
+        while(rp->networkManager_->messagesInFlight_ > rp->benchmarkData_.progArgs.messageInFlightCap)
             rp->networkManager_->sync(1);
     }
     /* Terminate */
