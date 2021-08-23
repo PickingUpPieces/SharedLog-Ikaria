@@ -8,7 +8,7 @@ add_definitions(-Wno-format -Wno-format-security)
 add_definitions(-msse4.1)
 
 # Libraries that are required:
-set(LIBRARIES pthread numa dl ibverbs)
+set(LIBRARIES pthread numa dl ibverbs ndctl daxctl)
 
 # These paths might need to be changed:
 # eRPC
@@ -31,13 +31,14 @@ message(STATUS "DPDK-path: ${DPDK-PATH}")
 # This project source/test directory:
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+set(BENCHMARKS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
 
 # User options:
 set(DEBUG "OFF" CACHE STRING "Enable debugging options (ON/OFF)") 
 set(TRANSPORT "dpdk" CACHE STRING "Which transport type to use(infiniband/dpdk)") 
 set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
-set(CHAIN_NODES "3" CACHE STRING "How many nodes are in the chain (3/4/5)") 
 set(REPLICATION_PROTOCOL "CR" CACHE STRING "Choose Replication Protocoll (CR/UCR/CRAQ)")
+set(BENCHMARK "TRUE" CACHE STRING "Enable benchmark (TRUE/FALSE)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -55,20 +56,6 @@ if (${DPDK_CLUSTER} STREQUAL "TRUE")
   add_compile_definitions(DPDK_CLUSTER)
   message(STATUS "Using DPDK Cluster")
 endif()
-
-if (${CHAIN_NODES} STREQUAL "3")
-  add_compile_definitions(THREE_NODES)
-  message(STATUS "Using a 3-Node Chain")
-elseif (${CHAIN_NODES} STREQUAL "4")
-  add_compile_definitions(FOUR_NODES)
-  message(STATUS "Using a 4-Node Chain")
-elseif (${CHAIN_NODES} STREQUAL "5")
-  add_compile_definitions(FIVE_NODES)
-  message(STATUS "Using a 5-Node Chain")
-else()
-  message(FATAL_ERROR "Invalid Node Setup")
-endif()
-
 
 if(TRANSPORT STREQUAL "infiniband")
   set(ERPC "${CMAKE_CURRENT_SOURCE_DIR}/eRPC")
@@ -105,6 +92,12 @@ else()
 endif()
 
 
+string(TOUPPER ${BENCHMARK} BENCHMARK)
+if (${DPDK_CLUSTER} STREQUAL "TRUE")
+  add_compile_definitions(BENCHMARK)
+  message(STATUS "Benchmarking enabled")
+endif()
+
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
 include_directories(SYSTEM ${PMDK}/src)
@@ -119,6 +112,7 @@ link_libraries(erpc)
 include_directories(${SRC})
 include_directories(${SRC}/NetworkLayer)
 include_directories(${TESTS})
+include_directories(${BENCHMARKS})
 
 link_libraries(${LIBRARIES})
 
@@ -155,12 +149,8 @@ set(LOG_SOURCE
   ${SRC}/Log.cpp
 )  
 
-set(TEST_UTILS 
-  ${TESTS}/run_node.cpp 
-)
-
-set(BENCHMARK
-  ${TESTS}/benchmark.cpp
+set(BENCHMARK_PROGRAM
+  ${BENCHMARKS}/benchmark.cpp
 )
 
 # Compile as static library
@@ -178,7 +168,7 @@ target_link_libraries(replication_node
 
 # Compile benchmark
 add_executable(benchmark
-  ${BENCHMARK}
+  ${BENCHMARK_PROGRAM}
 )
 
 target_link_libraries(benchmark
