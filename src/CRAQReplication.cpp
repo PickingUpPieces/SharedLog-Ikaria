@@ -21,6 +21,7 @@ CRAQReplication::CRAQReplication(NodeType nodeType, const char* pathToLog, erpc:
         nodeType_{nodeType},
         benchmarkData_{benchmarkData}
     {
+	// FIXME: Naughty race condition when starting threads in constructor
         if (benchmarkData_.progArgs.activeMode)
             thread_ = std::thread(run_active, this, nexus, erpcID, headURI, successorURI, tailURI); 
         else
@@ -39,6 +40,8 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
     for(int i = 0; i < 100; i++) 
         send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
 
+    uint64_t sentMessages = 100;
+
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
     rp->threadSync_.threadReady = true;
@@ -49,7 +52,9 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
     rp->benchmarkData_.startBenchmark->lock();
     rp->benchmarkData_.startBenchmark->unlock();
 
+
     while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
+	sentMessages++;
         if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -60,7 +65,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
-        while(rp->networkManager_->messagesInFlight_ > rp->benchmarkData_.progArgs.messageInFlightCap)
+        while((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)
             rp->networkManager_->sync(1);
     }
     /* Terminate */

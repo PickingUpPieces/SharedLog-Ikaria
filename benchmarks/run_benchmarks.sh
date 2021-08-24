@@ -10,7 +10,7 @@ sleepTime=2
 #size=(256)
 #size=(64 256 1024 2048)
 size=(256)
-threads=(16)
+threads=(8)
 #threads=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
 readProb=(50 80 90)
 
