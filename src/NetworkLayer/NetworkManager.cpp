@@ -23,7 +23,6 @@ NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t er
         replicationManager_{replicationManager},
         Nexus_{nexus},
         Inbound_(new Inbound(nodeType, Nexus_, this)),
-	messagesInFlight_{0},
         rpc_{Nexus_, this, erpcID, empty_sm_handler, 0}
 {
     rpc_.retry_connect_on_invalid_rpc_id = true;

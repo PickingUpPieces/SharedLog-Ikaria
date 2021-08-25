@@ -370,15 +370,14 @@ void CRAQReplication::receive_locally(Message *message) {
 
         #ifdef LATENCY
         double req_lat_us = erpc::to_usec(erpc::rdtsc() - message->timestamp, networkManager_->rpc_.get_freq_ghz());
-        benchmarkData_.latency.update(static_cast<size_t>(req_lat_us * 1.0));
-//        cout << "Latency count: " << to_string(benchmarkData_.latency.count()) << " min: " << benchmarkData_.latency.min() << " max: " << benchmarkData_.latency.max() << " avg: " << benchmarkData_.latency.avg() << endl;
+        benchmarkData_.latency.update(static_cast<size_t>(req_lat_us * benchmarkData_.latencyFactor));
         #endif
     } else if(message->messageType == READ) {
         benchmarkData_.amountReadsSent++;
         #ifdef LATENCY
-        #ifdef CR 
+        #ifdef CR  // Only take latency when CR reads
         double req_lat_us = erpc::to_usec(erpc::rdtsc() - message->timestamp, networkManager_->rpc_.get_freq_ghz());
-        benchmarkData_.latency.update(static_cast<size_t>(req_lat_us * 1.0));
+        benchmarkData_.latency.update(static_cast<size_t>(req_lat_us * benchmarkData_.latencyFactor));
         #endif
         #endif
     } 

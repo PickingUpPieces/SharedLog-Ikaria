@@ -89,7 +89,7 @@ struct Message {
     size_t reqBufferSize{0};
     erpc::MsgBuffer respBuffer;
     size_t respBufferSize{0};
-    #ifdef LATENCY
+    #ifdef LATENCY 
     size_t timestamp; // Timestamp when message was issued
     #endif
 };

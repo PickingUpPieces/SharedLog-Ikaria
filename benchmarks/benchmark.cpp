@@ -102,8 +102,8 @@ void printbenchmarkData() {
         std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
     else
         std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
-    std::cout << "Latency total count: " << to_string(benchmarkData.latency.count()) << " min: " << benchmarkData.latency.min() << "us ; max: " << benchmarkData.latency.max() << "us ; avg: " << benchmarkData.latency.avg() << "us" << endl;
-        cout << "Latency: .50: " << ( benchmarkData.latency.perc(0.50) / 1.0 ) << "us ; .99: " << ( benchmarkData.latency.perc(0.99) / 1.0 ) << "us ; .999: " << ( benchmarkData.latency.perc(0.999) / 1.0 ) << "us ; .9999: " << ( benchmarkData.latency.perc(0.9999) / 1.0 ) << "us" << endl;
+    std::cout << "Latency total count: " << to_string(benchmarkData.latency.count()) << " min: " << ( benchmarkData.latency.min() * benchmarkData.latencyFactor ) << "us ; max: " << ( benchmarkData.latency.max() * benchmarkData.latencyFactor ) << "us ; avg: " << ( benchmarkData.latency.avg() * benchmarkData.latencyFactor ) << "us" << endl;
+        cout << "Latency: .50: " << ( benchmarkData.latency.perc(0.50) * benchmarkData.latencyFactor ) << "us ; .99: " << ( benchmarkData.latency.perc(0.99) * benchmarkData.latencyFactor ) << "us ; .999: " << ( benchmarkData.latency.perc(0.999) * benchmarkData.latencyFactor ) << "us ; .9999: " << ( benchmarkData.latency.perc(0.9999) * benchmarkData.latencyFactor ) << "us" << endl;
     std::cout << "-------------------------------------" << endl;
 }
 
@@ -126,10 +126,10 @@ void printToCSV() {
     std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
     if (!newFile)
-        file << "reads,appends,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,replType" << endl;
+        file << "reads,appends,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,lat_50,lat_99,replType" << endl;
 
     // Reads,Appends,Op/s,probRead,time,valueSize,threads,replType
-    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << replicationType << endl;
+    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << ( benchmarkData.latency.perc(0.50) * benchmarkData.latencyFactor ) << "," << ( benchmarkData.latency.perc(0.99) * benchmarkData.latencyFactor ) << "," << replicationType << endl;
     
     // Close the file
     file.close();

@@ -32,6 +32,7 @@ struct BenchmarkData {
     double operationsPerSecond{0.0}; // Op/s
     uint64_t highestKnownLogOffset{1}; // So reads are performed on offset smaller than this
     erpc::Latency latency;
+    double latencyFactor{0.1}; // 
 };
 
 #endif
