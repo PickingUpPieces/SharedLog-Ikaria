@@ -102,6 +102,8 @@ void printbenchmarkData() {
         std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
     else
         std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
+    std::cout << "Latency total count: " << to_string(benchmarkData.latency.count()) << " min: " << benchmarkData.latency.min() << "us ; max: " << benchmarkData.latency.max() << "us ; avg: " << benchmarkData.latency.avg() << "us" << endl;
+        cout << "Latency: .50: " << ( benchmarkData.latency.perc(0.50) / 1.0 ) << "us ; .99: " << ( benchmarkData.latency.perc(0.99) / 1.0 ) << "us ; .999: " << ( benchmarkData.latency.perc(0.999) / 1.0 ) << "us ; .9999: " << ( benchmarkData.latency.perc(0.9999) / 1.0 ) << "us" << endl;
     std::cout << "-------------------------------------" << endl;
 }
 
@@ -265,4 +267,5 @@ int main(int argc, char** argv) {
     #else
     printbenchmarkData();
     #endif
+    printbenchmarkData();
 }
