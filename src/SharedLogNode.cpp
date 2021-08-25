@@ -26,6 +26,9 @@ void SharedLogNode<Replication>::get_results(BenchmarkData *benchmarkData) {
         benchmarkData->amountAppendsSent += rp->benchmarkData_.amountAppendsSent;
         benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
         benchmarkData->totalMessagesProcessed += rp->benchmarkData_.totalMessagesProcessed;
+        #ifdef LATENCY
+        cout << "Latency: 50-perc: " << ( benchmarkData->latency.perc(0.50) / 3 ) << " 99: " << ( benchmarkData->latency.perc(0.99) / 3 ) << " 999: " << ( benchmarkData->latency.perc(0.999) / 3 ) << " 9999: " << ( benchmarkData->latency.perc(0.9999) / 3 ) << endl;
+        #endif
     }
     benchmarkData->lastSequencerNumber = threads_.front()->softCounter_.load();
 }

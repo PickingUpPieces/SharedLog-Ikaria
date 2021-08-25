@@ -1,6 +1,7 @@
 #ifndef COMMONTESTS_H 
 #define COMMONTESTS_H 
 #include "rpc.h"
+#include "util/latency.h"
 #include <shared_mutex>
 
 /* Holds the program input arguments */
@@ -30,6 +31,7 @@ struct BenchmarkData {
     std::chrono::duration<double> totalExecutionTime{};
     double operationsPerSecond{0.0}; // Op/s
     uint64_t highestKnownLogOffset{1}; // So reads are performed on offset smaller than this
+    erpc::Latency latency;
 };
 
 #endif

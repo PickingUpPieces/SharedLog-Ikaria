@@ -7,6 +7,10 @@
 #include "common_info.h"
 using namespace std;
 
+#ifdef LATENCY
+#include "util/latency.h"
+#endif
+
 // https://stackoverflow.com/questions/1640258/need-a-fast-random-generator-for-c
 static unsigned long x=123456789, y=362436069, z=521288629;
 
@@ -84,6 +88,12 @@ void send_read_message(Replication *rp, uint64_t logOffset) {
     logEntryInFlight->header.logOffset = message->logOffset;
     logEntryInFlight->header.messageType = message->messageType;
 
+    #ifdef LATENCY
+    #ifdef CR
+    message->timestamp = erpc::rdtsc();
+    #endif
+    #endif
+
     /* Send the message */
     rp->read(message);
 }
@@ -117,6 +127,10 @@ void send_append_message(Replication *rp, LogEntryInFlight *logEntryInFlight, si
     memcpy(message->reqBuffer.buf, logEntryInFlight, logEntryInFlightLength); 
 
     DEBUG_MSG("sharedLogNode.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+
+    #ifdef LATENCY
+    message->timestamp = erpc::rdtsc();
+    #endif
 
     /* Send the message */
     if (rp->nodeType_ == HEAD)
