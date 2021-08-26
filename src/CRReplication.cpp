@@ -176,6 +176,12 @@ void CRReplication::append(Message *message) {
             reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
             message->logOffset = reqLogEntryInFlight->header.logOffset;
 
+            #ifdef RESET_LOG
+            // Reset counter every 1mil entries, to not write indefinitly
+            if (message->logOffset == 1000000)
+                softCounter_.store(0);
+            #endif
+
             /* Append the log entry to the local Log */
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
             

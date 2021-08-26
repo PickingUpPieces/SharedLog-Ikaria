@@ -16,7 +16,7 @@ struct ProgArgs {
     size_t valueSize{64}; // -v ; Bytes
     char csvName[64]{"benchmark.csv"};
     size_t chainNodes{3};
-    size_t messageInFlightCap{1000};
+    size_t messageInFlightCap{100};
 };
 
 /* Collects the measured data */
