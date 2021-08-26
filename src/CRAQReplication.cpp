@@ -54,7 +54,8 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
 
 
     while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
-	sentMessages++;
+	    sentMessages++;
+
         if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
