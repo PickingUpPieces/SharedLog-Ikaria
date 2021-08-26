@@ -178,6 +178,11 @@ void CRAQReplication::append(Message *message) {
         case HEAD: 
         {
             auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+            #ifdef LOG_RESET
+            // Reset counter every 1mil entries, to not write indefinitly
+            if (!(softCounter_.load() % 1000000))
+                softCounter_.store(0);
+            #endif
             /* Count Sequencer up and set the log entry number */
             reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
             message->logOffset = reqLogEntryInFlight->header.logOffset;

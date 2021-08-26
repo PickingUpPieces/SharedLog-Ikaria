@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include "rpc.h"
 #include "common_info.h"
-#include "common_tests.h"
+#include "common_benchmark.h"
 #ifdef CR
 #include "CRReplication.h"
 #elif CRAQ 
