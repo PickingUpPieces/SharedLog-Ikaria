@@ -3,7 +3,7 @@
 #include <chrono>
 #include <shared_mutex>
 #include "common_info.h"
-#include "common_tests.h"
+#include "common_benchmark.h"
 #include "SharedLogNode.h"
 
 /* FIXME: In case IPs change */
@@ -160,7 +160,7 @@ void parser(int amountArgs, char **argv) {
                 benchmarkData.progArgs.activeMode = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
             case 'r': // Percentage reads
-                benchmarkData.progArgs.probabilityOfRead = std::strtol(&(argv[i][3]), nullptr, 0);
+                benchmarkData.progArgs.probabilityOfRead = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
             case 's': // Size value
                 benchmarkData.progArgs.valueSize = std::stoul(&(argv[i][3]), nullptr, 0);

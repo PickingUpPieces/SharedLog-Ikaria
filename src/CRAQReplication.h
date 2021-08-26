@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include "common_info.h"
-#include "common_tests.h"
+#include "common_benchmark.h"
 #include "Log.h"
 #include "NetworkManager.h"
 using namespace std;

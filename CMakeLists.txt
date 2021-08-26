@@ -39,6 +39,8 @@ set(TRANSPORT "dpdk" CACHE STRING "Which transport type to use(infiniband/dpdk)"
 set(DPDK_CLUSTER "TRUE" CACHE STRING "Use DPDK-Cluster IPs (TRUE/FALSE)") 
 set(REPLICATION_PROTOCOL "CR" CACHE STRING "Choose Replication Protocoll (CR/UCR/CRAQ)")
 set(BENCHMARK "TRUE" CACHE STRING "Enable benchmark (TRUE/FALSE)")
+set(BENCHMARK_LATENCY "FALSE" CACHE STRING "Enable latency benchmarks (TRUE/FALSE)")
+set(RESET_LOG "TRUE" CACHE STRING "Enable resetting of the log (TRUE/FALSE)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -93,11 +95,23 @@ endif()
 
 
 string(TOUPPER ${BENCHMARK} BENCHMARK)
-if (${DPDK_CLUSTER} STREQUAL "TRUE")
+if (${BENCHMARK} STREQUAL "TRUE")
   add_compile_definitions(BENCHMARK)
-  add_compile_definitions(LATENCY)
   message(STATUS "Benchmarking enabled")
 endif()
+
+string(TOUPPER ${BENCHMARK_LATENCY} BENCHMARK_LATENCY)
+if (${BENCHMARK_LATENCY} STREQUAL "TRUE")
+  add_compile_definitions(LATENCY)
+  message(STATUS "Latency benchmarking enabled")
+endif()
+
+string(TOUPPER ${RESET_LOG} RESET_LOG)
+if (${RESET_LOG} STREQUAL "TRUE")
+  add_compile_definitions(RESET_LOG)
+  message(STATUS "Resetting of the log sequencer enabled")
+endif()
+
 
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)

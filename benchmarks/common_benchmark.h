@@ -1,5 +1,5 @@
-#ifndef COMMONTESTS_H 
-#define COMMONTESTS_H 
+#ifndef COMMONTBENCHMARK_H 
+#define COMMONTBENCHMARK_H 
 #include "rpc.h"
 #include "util/latency.h"
 #include <shared_mutex>
@@ -12,7 +12,7 @@ struct ProgArgs {
     size_t amountThreads{1}; // -t
     size_t totalNumberOfRequests{10000000}; // -m
     std::chrono::duration<long> time{};
-    int probabilityOfRead{50}; // -r ; Between 0 - 100
+    size_t probabilityOfRead{50}; // -r ; Between 0 - 100
     size_t valueSize{64}; // -v ; Bytes
     char csvName[64]{"benchmark.csv"};
     size_t chainNodes{3};
