@@ -63,6 +63,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
 	        auto randuint = static_cast<uint64_t>(xorshf96());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
+            rp->networkManager_->sync(1);
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }

@@ -62,6 +62,9 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 	        auto randuint = static_cast<uint64_t>(xorshf96());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
+            #ifdef UCR
+            rp->networkManager_->sync(1);
+            #endif
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
