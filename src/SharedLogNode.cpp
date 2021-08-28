@@ -27,7 +27,8 @@ void SharedLogNode<Replication>::get_results(BenchmarkData *benchmarkData) {
         benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
         benchmarkData->totalMessagesProcessed += rp->benchmarkData_.totalMessagesProcessed;
         #ifdef LATENCY
-        benchmarkData->latency += rp->benchmarkData_.latency;
+        benchmarkData->readlatency += rp->benchmarkData_.readlatency;
+        benchmarkData->appendlatency += rp->benchmarkData_.appendlatency;
         #endif
     }
     benchmarkData->lastSequencerNumber = threads_.front()->softCounter_.load();

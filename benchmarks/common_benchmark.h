@@ -31,7 +31,8 @@ struct BenchmarkData {
     std::chrono::duration<double> totalExecutionTime{};
     double operationsPerSecond{0.0}; // Op/s
     uint64_t highestKnownLogOffset{1}; // So reads are performed on offset smaller than this
-    erpc::Latency latency;
+    erpc::Latency appendlatency;
+    erpc::Latency readlatency;
     double latencyFactor{0.1}; // 
 };
 
