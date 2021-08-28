@@ -126,10 +126,10 @@ void printToCSV() {
     std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
     if (!newFile)
-        file << "reads,appends,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,lat_50,lat_99,replType" << endl;
+        file << "reads,appends,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,lat_50,lat_95,lat_99,replType" << endl;
 
     // Reads,Appends,Op/s,probRead,time,valueSize,threads,replType
-    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << ( benchmarkData.latency.perc(0.50) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.latency.perc(0.99) / benchmarkData.latencyFactor ) << "," << replicationType << endl;
+    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << ( benchmarkData.latency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.latency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.latency.perc(0.99) / benchmarkData.latencyFactor ) << "," << replicationType << endl;
     
     // Close the file
     file.close();
