@@ -55,6 +55,18 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
 	    sentMessages++;
 
+        #ifdef BENCHMARK_MAX
+        // Maximum appends already inFlight -> Do read
+        if ((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap) {
+	        auto randuint = static_cast<uint64_t>(xorshf96());
+            auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
+            send_read_message(rp, randReadOffset);
+            // Sync needed since read is local
+            rp->networkManager_->sync(1);
+        } else {
+            send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
+        }
+        #else
         if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -70,6 +82,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
         }
         while((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)
             rp->networkManager_->sync(1);
+        #endif
     }
     /* Terminate */
     if (rp->nodeType_ == HEAD)
