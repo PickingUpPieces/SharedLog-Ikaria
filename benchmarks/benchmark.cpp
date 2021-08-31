@@ -126,7 +126,7 @@ void printToCSV() {
     std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
     if (!newFile)
-        file << "reads,appends,rops,aops,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,alat_50,alat_95,alat_99,rlat_50,rlat95,rlat99,replType" << endl;
+        file << "reads,appends,rops,aops,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,alat_50,alat_95,alat_99,rlat_50,rlat_95,rlat_99,replType" << endl;
 
     file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," <<  (static_cast<double>(benchmarkData.amountReadsSent) / benchmarkData.totalExecutionTime.count()) << "," << (static_cast<double>(benchmarkData.amountAppendsSent) / benchmarkData.totalExecutionTime.count()) << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << ( benchmarkData.appendlatency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.appendlatency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.appendlatency.perc(0.99) / benchmarkData.latencyFactor ) <<  "," << ( benchmarkData.readlatency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.readlatency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.readlatency.perc(0.99) / benchmarkData.latencyFactor ) <<  "," << replicationType << endl;
     
@@ -218,7 +218,8 @@ int main(int argc, char** argv) {
         string middleFirstNode = CLARA_URI;
         string middleSecondNode = DONNA_URI;
         string middleThirdNode = AMY_URI;
-        string tailNode = MARTHA_URI;
+        //string tailNode = MARTHA_URI;
+        string tailNode = DONNA_URI;
 
         if (benchmarkData.progArgs.nodeID == 0)
             localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, headNode, std::string(), middleFirstNode, tailNode, &benchmarkData); 

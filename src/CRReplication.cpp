@@ -56,6 +56,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 	    sentMessages++;
 
         #ifdef BENCHMARK_MAX
+        #ifdef UCR
         // Maximum appends already inFlight -> Do read
         if ((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap) {
 	        auto randuint = static_cast<uint64_t>(xorshf96());
@@ -74,9 +75,23 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 	        auto randuint = static_cast<uint64_t>(xorshf96());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
-            #ifdef UCR
+        } else {
+            send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
+        }
+        cout << "sentMessages: " << sentMessages << " totalMessages: " << rp->benchmarkData_.totalMessagesProcessed << " delta: " << (sentMessages - rp->benchmarkData_.totalMessagesProcessed) << endl;
+        while((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)
             rp->networkManager_->sync(1);
-            #endif
+
+        #endif
+        #else
+        if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
+	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
+		        continue;
+
+	        auto randuint = static_cast<uint64_t>(xorshf96());
+            auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
+            send_read_message(rp, randReadOffset);
+            rp->networkManager_->sync(10);
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
