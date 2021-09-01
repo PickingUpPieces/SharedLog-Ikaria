@@ -55,17 +55,6 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
 	    sentMessages++;
 
-        #ifdef BENCHMARK_MAX
-        #ifdef UCR
-        // Maximum appends already inFlight -> Do read
-        if ((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap) {
-	        auto randuint = static_cast<uint64_t>(xorshf96());
-            auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
-            send_read_message(rp, randReadOffset);
-        } else {
-            send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
-        }
-        #else
         if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
 	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
 		        continue;
@@ -76,26 +65,11 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
-// cout << "sentMessages: " << sentMessages << " totalMessages: " << rp->benchmarkData_.totalMessagesProcessed << " delta: " << (sentMessages - rp->benchmarkData_.totalMessagesProcessed) << endl;
+
         while((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)
             rp->networkManager_->sync(1);
-
-        #endif
-        #else
-        if (( xorshf96() % 100 ) < rp->benchmarkData_.progArgs.probabilityOfRead) {
-	        if ( rp->benchmarkData_.highestKnownLogOffset < 1)
-		        continue;
-
-	        auto randuint = static_cast<uint64_t>(xorshf96());
-            auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
-            send_read_message(rp, randReadOffset);
-        } else {
-            send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
-        }
-        while((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)
-            rp->networkManager_->sync(1);
-        #endif
     }
+
     /* Terminate */
     if (rp->nodeType_ == HEAD)
         rp->terminate(generate_terminate_message(rp));
@@ -279,7 +253,6 @@ void CRReplication::read(Message *message) {
         // Send READ request drectly to TAIL 
         networkManager_->send_message(TAIL, message);
     } else {
-        // TODO: Check if logOffset < counter
         auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
         auto [logEntry, logEntryLength] = log_.read(message->logOffset);
         
@@ -296,7 +269,6 @@ void CRReplication::read(Message *message) {
 
         // Send READ response 
         networkManager_->send_response(message);
-        
     }; 
 }
 

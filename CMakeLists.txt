@@ -84,7 +84,7 @@ if(${REPLICATION_PROTOCOL} STREQUAL "CR")
   add_compile_definitions(CR)
   message(STATUS "Using Chain Replication")
 elseif(${REPLICATION_PROTOCOL} STREQUAL "UCR")
-  add_compile_definitions(CR)
+  add_compile_definitions(CRAQ)
   add_compile_definitions(UCR)
   message(STATUS "Using Uncommited Chain Replication")
 elseif(${REPLICATION_PROTOCOL} STREQUAL "CRAQ")
@@ -148,13 +148,13 @@ set(NETWORK_SOURCE
 )
 
 
-if(${REPLICATION_PROTOCOL} STREQUAL "CR" OR ${REPLICATION_PROTOCOL} STREQUAL "UCR")
+if(${REPLICATION_PROTOCOL} STREQUAL "CR")
 set(REPLICATION_SOURCE
   ${SRC}/CRReplication.h
   ${SRC}/CRReplication.cpp
   ${SRC}/helperFunctions.cpp
 )
-elseif(${REPLICATION_PROTOCOL} STREQUAL "CRAQ")
+elseif(${REPLICATION_PROTOCOL} STREQUAL "CRAQ" OR ${REPLICATION_PROTOCOL} STREQUAL "UCR")
 set(REPLICATION_SOURCE
   ${SRC}/CRAQReplication.h
   ${SRC}/CRAQReplication.cpp

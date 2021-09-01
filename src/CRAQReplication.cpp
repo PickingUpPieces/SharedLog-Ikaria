@@ -19,7 +19,12 @@ CRAQReplication::CRAQReplication(NodeType nodeType, const char* pathToLog, erpc:
         setupMessage_{nullptr},
         log_{POOL_SIZE, LOG_BLOCK_TOTAL_SIZE, pathToLog},
         nodeType_{nodeType},
-        benchmarkData_{benchmarkData}
+        benchmarkData_{benchmarkData},
+        #ifdef UCR
+        uncommittedRead{true}
+        #else
+        uncommittedRead{false}
+        #endif
     {
 	// FIXME: Naughty race condition when starting threads in constructor
         if (benchmarkData_.progArgs.activeMode)
@@ -259,7 +264,7 @@ void CRAQReplication::read(Message *message) {
             // TODO: Check if logOffset < counter
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
 
-            if (logEntry->header.state == CLEAN) {
+            if (logEntry->header.state == CLEAN || uncommittedRead) {
                 auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
                 /* Prepare respBuffer */

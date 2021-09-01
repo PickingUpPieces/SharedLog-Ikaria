@@ -78,14 +78,14 @@ void printbenchmarkData() {
     std::cout << "-------------------------------------" << endl;
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
-#ifdef CR 
+#ifdef CRAQ 
 #ifdef UCR
     std::cout << "Replication Type: U-CR" << endl;
 #else
-    std::cout << "Replication Type: CR" << endl;
-#endif
-#elif CRAQ
     std::cout << "Replication Type: CRAQ" << endl;
+#endif
+#elif CR
+    std::cout << "Replication Type: CR" << endl;
 #endif
     if (benchmarkTime)
         std::cout << "Total time: " << benchmarkData.progArgs.time.count() << "s" << endl;
@@ -112,14 +112,14 @@ void printToCSV() {
     ifstream f(benchmarkData.progArgs.csvName);
     bool newFile = f.good();
     string replicationType{};
-    #ifdef CR 
+    #ifdef CRAQ
         #ifdef UCR
         replicationType = "UCR";
         #else
-        replicationType = "CR";
+        replicationType = "CRAQ";
         #endif
-    #elif CRAQ
-    replicationType = "CRAQ";
+    #elif CR
+    replicationType = "CR";
     #endif
 
     // Open CSV file in append mode
