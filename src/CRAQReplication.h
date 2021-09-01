@@ -42,6 +42,8 @@ class CRAQReplication {
         NodeType nodeType_;
         BenchmarkData benchmarkData_;
         unique_ptr<NetworkManager> networkManager_;
+        uint64_t readsTotal{0};
+        uint64_t appendsTotal{0}; 
 
         struct ThreadSync {
             bool threadReady{false};

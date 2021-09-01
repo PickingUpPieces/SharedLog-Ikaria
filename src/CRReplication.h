@@ -39,7 +39,9 @@ class CRReplication {
 
         static atomic<uint64_t> softCounter_;
         NodeType nodeType_;
+        uint64_t appendsTotal{0};
         BenchmarkData benchmarkData_;
+        uint64_t readsTotal{0};
         unique_ptr<NetworkManager> networkManager_;
 
         struct ThreadSync {

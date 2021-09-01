@@ -2,19 +2,20 @@
 
 nodeID=$1
 chainLength=$2
-#numberOfRuns=(1 2 3)
-numberOfRuns=(1 2 3)
-#inFlightCap=(1000) 
-inFlightCap=(30 50 70) 
-runTime=30
+numberOfRuns=(1)
+inFlightCap=(25) 
+runTime=20
 sleepTime=5
-#size=(256)
-#size=(64 256 1024 2048)
 size=(256)
-threads=(8)
+#size=(64 256 1024 2048 4096)
+threads=(16)
 #threads=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
 #readProb=(50 80 90)
-readProb=(50 90)
+readProb=(80 100)
+
+sudo rm /dev/shm/replNode-$nodeID.log
+sudo rm /dev/hugepages/* 
+sudo rm *.csv
 
 echo "NodeID: " $nodeID " RunTime: " $runTime " Value Size: " $size
 
@@ -37,3 +38,4 @@ for a in ${numberOfRuns[@]}; do
 done
 
 sudo rm /dev/shm/replNode-$nodeID.log
+sudo rm /dev/hugepages/* 

@@ -86,7 +86,7 @@ void send_read_message(Replication *rp, uint64_t logOffset) {
     /* Fill request data */
     auto logEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
     logEntryInFlight->header.logOffset = message->logOffset;
-    logEntryInFlight->header.messageType = message->messageType;
+    logEntryInFlight->header.messageType = READ;
 
     #ifdef LATENCY
     #ifdef CR
