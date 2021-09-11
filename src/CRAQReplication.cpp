@@ -58,7 +58,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
     rp->benchmarkData_.startBenchmark->unlock();
 
 
-    while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
+    while(likely(rp->threadSync_.threadReady)) {
 	    sentMessages++;
 
         #ifdef BENCHMARK_MAX
@@ -79,6 +79,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
 	        auto randuint = static_cast<uint64_t>(xorshf96());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
+            rp->networkManager_->sync(1);
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
@@ -192,11 +193,14 @@ void CRAQReplication::append(Message *message) {
     DEBUG_MSG("CRAQReplication.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
+    auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
+
+    if (benchmarkData_.highestKnownLogOffset < reqLogEntryInFlight->header.logOffset)
+        benchmarkData_.highestKnownLogOffset = reqLogEntryInFlight->header.logOffset;
 
     switch(nodeType_) {
         case HEAD: 
         {
-            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Count Sequencer up and set the log entry number */
             reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
             message->logOffset = reqLogEntryInFlight->header.logOffset;
@@ -215,7 +219,6 @@ void CRAQReplication::append(Message *message) {
         }; break;
         case MIDDLE: 
         {
-            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             /* Append the log entry to the local log */
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
 
@@ -224,7 +227,6 @@ void CRAQReplication::append(Message *message) {
         }; break;
         case TAIL: 
         {
-            auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
             // Set state CLEAN, since TAIL is last node in the chain
             reqLogEntryInFlight->logEntry.header.state = CLEAN;
             /* Append the log entry to the local log */
@@ -390,8 +392,6 @@ void CRAQReplication::receive_locally(Message *message) {
     if (message->messageType == APPEND) {
         benchmarkData_.amountAppendsSent++; 
         auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
-        if (benchmarkData_.highestKnownLogOffset < respLogEntryInFlight->header.logOffset)
-            benchmarkData_.highestKnownLogOffset = respLogEntryInFlight->header.logOffset;
 
         #ifdef LATENCY
         double req_lat_us = erpc::to_usec(erpc::rdtsc() - message->timestamp, networkManager_->rpc_.get_freq_ghz());

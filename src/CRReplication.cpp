@@ -52,7 +52,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     rp->benchmarkData_.startBenchmark->unlock();
 
 
-    while(likely(rp->threadSync_.threadReady && ( rp->benchmarkData_.totalMessagesProcessed <= rp->benchmarkData_.remainderNumberOfRequests))) {
+    while(likely(rp->threadSync_.threadReady)) {
 	    sentMessages++;
 
         #ifdef BENCHMARK_MAX
@@ -80,6 +80,9 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 	        auto randuint = static_cast<uint64_t>(xorshf96());
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             send_read_message(rp, randReadOffset);
+            if ( rp->nodeType_ == TAIL ) {
+                rp->networkManager_->sync(1);
+            }
         } else {
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
@@ -206,6 +209,8 @@ void CRReplication::append(Message *message) {
 //            networkManager_->send_message(SUCCESSOR, message);
 //    } else if (nodeType_ == TAIL )
 //            networkManager_->send_response(message);
+    if (benchmarkData_.highestKnownLogOffset < reqLogEntryInFlight->header.logOffset)
+        benchmarkData_.highestKnownLogOffset = reqLogEntryInFlight->header.logOffset;
 
 
     switch(nodeType_) {
