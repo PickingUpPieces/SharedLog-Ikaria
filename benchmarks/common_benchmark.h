@@ -27,6 +27,7 @@ struct BenchmarkData {
     size_t lastSequencerNumber{0}; 
     size_t amountReadsSent{0};
     size_t amountAppendsSent{0};
+    size_t amountStateRequests{0};
     size_t totalMessagesProcessed{0};
     std::chrono::duration<double> totalExecutionTime{};
     double operationsPerSecond{0.0}; // Op/s

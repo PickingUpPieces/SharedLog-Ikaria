@@ -96,6 +96,7 @@ void printbenchmarkData() {
     std::cout << "Total Requests processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
     std::cout << "Processed READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
     std::cout << "Sent READ ratio: " << to_string((static_cast<double>(benchmarkData.amountReadsSent) / static_cast<double>(benchmarkData.totalMessagesProcessed)) * 100) << "% (shoud " << benchmarkData.progArgs.probabilityOfRead << "%)" << endl;
+    std::cout << "Total State Requests: " << benchmarkData.amountStateRequests << endl;
     std::cout << "Sequencer Number: " << benchmarkData.lastSequencerNumber << endl;
     std::cout << "Total time taken: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
     if (benchmarkTime)
@@ -122,13 +123,16 @@ void printToCSV() {
     replicationType = "CR";
     #endif
 
+    std::array<size_t, 5> opsbyNode{};
+    opsbyNode[benchmarkData.progArgs.nodeID] = benchmarkData.totalMessagesProcessed;
+
     // Open CSV file in append mode
     std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
     if (!newFile)
-        file << "reads,appends,rops,aops,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,alat_50,alat_95,alat_99,rlat_50,rlat_95,rlat_99,replType" << endl;
+        file << "reads,appends,rops,aops,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,alat_50,alat_95,alat_99,rlat_50,rlat_95,rlat_99,ops_node1,ops_node2,ops_node3,ops_node4,ops_node5,replType" << endl;
 
-    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," <<  (static_cast<double>(benchmarkData.amountReadsSent) / benchmarkData.totalExecutionTime.count()) << "," << (static_cast<double>(benchmarkData.amountAppendsSent) / benchmarkData.totalExecutionTime.count()) << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << ( benchmarkData.appendlatency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.appendlatency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.appendlatency.perc(0.99) / benchmarkData.latencyFactor ) <<  "," << ( benchmarkData.readlatency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.readlatency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.readlatency.perc(0.99) / benchmarkData.latencyFactor ) <<  "," << replicationType << endl;
+    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," <<  (static_cast<double>(benchmarkData.amountReadsSent) / benchmarkData.totalExecutionTime.count()) << "," << (static_cast<double>(benchmarkData.amountAppendsSent) / benchmarkData.totalExecutionTime.count()) << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << ( benchmarkData.appendlatency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.appendlatency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.appendlatency.perc(0.99) / benchmarkData.latencyFactor ) <<  "," << ( benchmarkData.readlatency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.readlatency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.readlatency.perc(0.99) / benchmarkData.latencyFactor ) <<  "," << opsbyNode[0] << "," << opsbyNode[1] << "," << opsbyNode[2] << "," << opsbyNode[3] << "," << opsbyNode[4] << "," << replicationType << endl;
     
     // Close the file
     file.close();

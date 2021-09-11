@@ -42,10 +42,10 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
 
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
     // Append few messages so something can be read
-    for(int i = 0; i < 100; i++) 
+    for(int i = 0; i < 1000; i++) 
         send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
 
-    uint64_t sentMessages = 100;
+    uint64_t sentMessages = 1000;
 
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
@@ -349,6 +349,7 @@ void CRAQReplication::get_log_entry_state_response(Message *message) {
     } else if(respLogEntryInFlight->logEntry.header.state == ERROR) {
         networkManager_->send_response(message);
     }
+    benchmarkData_.amountStateRequests++;
 }
 
 

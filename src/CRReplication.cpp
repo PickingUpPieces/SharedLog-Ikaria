@@ -36,10 +36,10 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
     // Append few messages so something can be read
-    for(int i = 0; i < 100; i++) 
+    for(int i = 0; i < 1000; i++) 
         send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
 
-    uint64_t sentMessages = 100;
+    uint64_t sentMessages = 1000;
 
     // Set threadReady to true
     unique_lock<mutex> lk(rp->threadSync_.m);
