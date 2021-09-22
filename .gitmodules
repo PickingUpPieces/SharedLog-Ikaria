@@ -9,4 +9,4 @@
 	url = git@github.com:PickingUpPieces/dpdk.git
 [submodule "pmdk"]
 	path = pmdk
-	url = ssh://git@bitbucket.ase.in.tum.de:7999/bavp/pmdk.git
+	url = git@github.com:PickingUpPieces/pmdk.git
