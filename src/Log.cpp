@@ -51,6 +51,9 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
 	/* Only copy the real entry size */
 	uint64_t totalLogEntrySize = logEntry->header.dataLength + sizeof(LogEntryHeader);
 
+	// TODO: Calculate popcnt
+	// TODO: 
+
 	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
 		exit(EXIT_FAILURE);
@@ -71,7 +74,8 @@ pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
 
 
 void Log::update_logEntryState(uint64_t logOffset, LogEntryState logEntryState) {
-	if (pmemlog_write(plp_, reinterpret_cast<void *>(&logEntryState), sizeof(LogEntryState), logOffset * logBlockSize_) < 0) {
+	// Add up sizeof(size_t) because of popcnt
+	if (pmemlog_write(plp_, reinterpret_cast<void *>(&logEntryState), sizeof(LogEntryState), logOffset * logBlockSize_ + sizeof(size_t)) < 0) {
 		perror("pmemlog_write");
 		exit(EXIT_FAILURE);
 	}

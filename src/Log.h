@@ -11,11 +11,6 @@ using namespace std;
 
 static void init(const char *pathToLog, uint64_t logTotalSize);
 
-struct LogEntryPopcnt {
-    size_t popcnt;
-    LogEntry logEntry;
-};
-
 class Log {
     private:
         const uint64_t logTotalSize_;

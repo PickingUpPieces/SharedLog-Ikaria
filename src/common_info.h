@@ -41,6 +41,7 @@ enum MessageType {
 };
 
 struct LogEntryHeader {
+    size_t popcnt;
     LogEntryState state{DIRTY};
     uint64_t dataLength;
 };
@@ -53,6 +54,7 @@ enum MessageType {
     TERMINATE
 };
 struct LogEntryHeader {
+    size_t popcnt;
     uint64_t dataLength;
 };
 #endif
