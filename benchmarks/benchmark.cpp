@@ -3,7 +3,7 @@
 #include <chrono>
 #include <shared_mutex>
 #include "common_info.h"
-#include "common_tests.h"
+#include "common_benchmark.h"
 #include "SharedLogNode.h"
 
 /* FIXME: In case IPs change */
@@ -78,14 +78,14 @@ void printbenchmarkData() {
     std::cout << "-------------------------------------" << endl;
     std::cout << "Benchmark Summary" << endl;
     std::cout << "-------------------------------------" << endl;
-#ifdef CR 
+#ifdef CRAQ 
 #ifdef UCR
     std::cout << "Replication Type: U-CR" << endl;
 #else
-    std::cout << "Replication Type: CR" << endl;
-#endif
-#elif CRAQ
     std::cout << "Replication Type: CRAQ" << endl;
+#endif
+#elif CR
+    std::cout << "Replication Type: CR" << endl;
 #endif
     if (benchmarkTime)
         std::cout << "Total time: " << benchmarkData.progArgs.time.count() << "s" << endl;
@@ -96,12 +96,15 @@ void printbenchmarkData() {
     std::cout << "Total Requests processed on this node: " << benchmarkData.totalMessagesProcessed << endl;
     std::cout << "Processed READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
     std::cout << "Sent READ ratio: " << to_string((static_cast<double>(benchmarkData.amountReadsSent) / static_cast<double>(benchmarkData.totalMessagesProcessed)) * 100) << "% (shoud " << benchmarkData.progArgs.probabilityOfRead << "%)" << endl;
+    std::cout << "Total State Requests: " << benchmarkData.amountStateRequests << endl;
     std::cout << "Sequencer Number: " << benchmarkData.lastSequencerNumber << endl;
     std::cout << "Total time taken: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
     if (benchmarkTime)
         std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
     else
         std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.progArgs.totalNumberOfRequests) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
+    std::cout << "Append Latency total count: " << to_string(benchmarkData.appendlatency.count()) << " min: " << ( benchmarkData.appendlatency.min() / benchmarkData.latencyFactor ) << "us ; max: " << ( benchmarkData.appendlatency.max() / benchmarkData.latencyFactor ) << "us ; avg: " << ( benchmarkData.appendlatency.avg() / benchmarkData.latencyFactor ) << "us" << endl;
+        cout << "Append Latency: .50: " << ( benchmarkData.appendlatency.perc(0.50) / benchmarkData.latencyFactor ) << "us ; .99: " << ( benchmarkData.appendlatency.perc(0.99) / benchmarkData.latencyFactor ) << "us ; .999: " << ( benchmarkData.appendlatency.perc(0.999) / benchmarkData.latencyFactor ) << "us ; .9999: " << ( benchmarkData.appendlatency.perc(0.9999) / benchmarkData.latencyFactor ) << "us" << endl;
     std::cout << "-------------------------------------" << endl;
 }
 
@@ -110,24 +113,26 @@ void printToCSV() {
     ifstream f(benchmarkData.progArgs.csvName);
     bool newFile = f.good();
     string replicationType{};
-    #ifdef CR 
+    #ifdef CRAQ
         #ifdef UCR
         replicationType = "UCR";
         #else
-        replicationType = "CR";
+        replicationType = "CRAQ";
         #endif
-    #elif CRAQ
-    replicationType = "CRAQ";
+    #elif CR
+    replicationType = "CR";
     #endif
+
+    std::array<size_t, 5> opsbyNode{};
+    opsbyNode[benchmarkData.progArgs.nodeID] = benchmarkData.totalMessagesProcessed;
 
     // Open CSV file in append mode
     std::ofstream file( benchmarkData.progArgs.csvName, std::ios::app );
 
     if (!newFile)
-        file << "reads,appends,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,replType" << endl;
+        file << "reads,appends,rops,aops,ops,probRead,time,valueSize,threads,chainNodes,maxInFlight,alat_50,alat_95,alat_99,rlat_50,rlat_95,rlat_99,ops_node1,ops_node2,ops_node3,ops_node4,ops_node5,replType" << endl;
 
-    // Reads,Appends,Op/s,probRead,time,valueSize,threads,replType
-    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << replicationType << endl;
+    file << benchmarkData.amountReadsSent << "," << benchmarkData.amountAppendsSent << "," <<  (static_cast<double>(benchmarkData.amountReadsSent) / benchmarkData.totalExecutionTime.count()) << "," << (static_cast<double>(benchmarkData.amountAppendsSent) / benchmarkData.totalExecutionTime.count()) << "," << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << "," << benchmarkData.progArgs.probabilityOfRead << "," << benchmarkData.totalExecutionTime.count() << "," << benchmarkData.progArgs.valueSize << "," << benchmarkData.progArgs.amountThreads << "," << benchmarkData.progArgs.chainNodes << "," << benchmarkData.progArgs.messageInFlightCap << "," << ( benchmarkData.appendlatency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.appendlatency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.appendlatency.perc(0.99) / benchmarkData.latencyFactor ) <<  "," << ( benchmarkData.readlatency.perc(0.50) / benchmarkData.latencyFactor ) << "," <<  ( benchmarkData.readlatency.perc(0.95) / benchmarkData.latencyFactor ) << "," << ( benchmarkData.readlatency.perc(0.99) / benchmarkData.latencyFactor ) <<  "," << opsbyNode[0] << "," << opsbyNode[1] << "," << opsbyNode[2] << "," << opsbyNode[3] << "," << opsbyNode[4] << "," << replicationType << endl;
     
     // Close the file
     file.close();
@@ -158,7 +163,7 @@ void parser(int amountArgs, char **argv) {
                 benchmarkData.progArgs.activeMode = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
             case 'r': // Percentage reads
-                benchmarkData.progArgs.probabilityOfRead = std::strtol(&(argv[i][3]), nullptr, 0);
+                benchmarkData.progArgs.probabilityOfRead = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
             case 's': // Size value
                 benchmarkData.progArgs.valueSize = std::stoul(&(argv[i][3]), nullptr, 0);
@@ -217,7 +222,8 @@ int main(int argc, char** argv) {
         string middleFirstNode = CLARA_URI;
         string middleSecondNode = DONNA_URI;
         string middleThirdNode = AMY_URI;
-        string tailNode = MARTHA_URI;
+        //string tailNode = MARTHA_URI;
+        string tailNode = DONNA_URI;
 
         if (benchmarkData.progArgs.nodeID == 0)
             localNode = new SharedLogNode<REPLICATION>(HEAD, 0, poolPath, headNode, std::string(), middleFirstNode, tailNode, &benchmarkData); 
@@ -265,4 +271,5 @@ int main(int argc, char** argv) {
     #else
     printbenchmarkData();
     #endif
+    printbenchmarkData();
 }

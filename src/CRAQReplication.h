@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include "common_info.h"
-#include "common_tests.h"
+#include "common_benchmark.h"
 #include "Log.h"
 #include "NetworkManager.h"
 using namespace std;
@@ -42,6 +42,9 @@ class CRAQReplication {
         NodeType nodeType_;
         BenchmarkData benchmarkData_;
         unique_ptr<NetworkManager> networkManager_;
+        bool uncommittedRead{false};
+        uint64_t readsTotal{0};
+        uint64_t appendsTotal{0}; 
 
         struct ThreadSync {
             bool threadReady{false};

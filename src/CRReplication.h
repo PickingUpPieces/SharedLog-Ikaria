@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include "common_info.h"
-#include "common_tests.h"
+#include "common_benchmark.h"
 #include "Log.h"
 #include "NetworkManager.h"
 using namespace std;
@@ -39,7 +39,9 @@ class CRReplication {
 
         static atomic<uint64_t> softCounter_;
         NodeType nodeType_;
+        uint64_t appendsTotal{0};
         BenchmarkData benchmarkData_;
+        uint64_t readsTotal{0};
         unique_ptr<NetworkManager> networkManager_;
 
         struct ThreadSync {
