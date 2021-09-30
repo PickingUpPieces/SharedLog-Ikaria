@@ -30,8 +30,6 @@ enum LogEntryState {
     DIRTY
 }; 
 
-/* CRAQ types */
-#ifdef CRAQ
 enum MessageType {
     READ = 2,
     APPEND,
@@ -40,19 +38,15 @@ enum MessageType {
     GET_LOG_ENTRY_STATE
 };
 
+/* CRAQ / UCRAQ log entry header */
+#ifdef CRAQ
 struct LogEntryHeader {
     uint64_t popcnt;
     LogEntryState state{DIRTY};
     uint64_t dataLength;
 };
-/* CR / U-CR types */
+/* CR header */
 #else 
-enum MessageType {
-    READ = 2,
-    APPEND,
-    SETUP,
-    TERMINATE
-};
 struct LogEntryHeader {
     uint64_t popcnt;
     uint64_t dataLength;
