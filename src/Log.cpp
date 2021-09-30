@@ -51,8 +51,9 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
 	/* Only copy the real entry size */
 	uint64_t totalLogEntrySize = logEntry->header.dataLength + sizeof(LogEntryHeader);
 
+	// TODO: Set popcnt to 0 
 	// TODO: Calculate popcnt
-	// TODO: 
+	// TODO: Write new popcnt value into struct
 
 	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
@@ -68,6 +69,10 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
 pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
     LogEntry *logEntry = static_cast<LogEntry *>(pmemlog_read(plp_, logOffset * logBlockSize_));
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->header.dataLength) << " ; data: " << logEntry->data << ")");
+
+	// TODO: Calculate popcnt of entry
+	// TODO: Calculate popcnt(popcnt) in struct
+	// TODO: Check if popcnt - popcnt(popcnt) == popcnt in struct
 
 	return make_pair(logEntry, logEntry->header.dataLength + sizeof(LogEntryHeader));
 }
