@@ -30,6 +30,7 @@ message(STATUS "DPDK-path: ${DPDK-PATH}")
 
 # This project source/test directory:
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 set(BENCHMARKS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
 
@@ -131,7 +132,9 @@ include_directories(SYSTEM ${ERPC}/src)
 link_directories(${ERPC}/build)
 link_libraries(erpc)
 
+include_directories(${LIB})
 include_directories(${SRC})
+include_directories(${SRC}/NetworkLayer)
 include_directories(${SRC}/NetworkLayer)
 include_directories(${TESTS})
 include_directories(${BENCHMARKS})
