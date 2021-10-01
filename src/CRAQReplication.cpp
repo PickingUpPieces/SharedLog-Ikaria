@@ -410,20 +410,18 @@ void CRAQReplication::receive_locally(Message *message) {
     
     if (message->messageType == APPEND) {
         benchmarkData_.amountAppendsSent++; 
-        auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
-
+        
         #ifdef LATENCY
         double req_lat_us = erpc::to_usec(erpc::rdtsc() - message->timestamp, networkManager_->rpc_.get_freq_ghz());
         benchmarkData_.appendlatency.update(static_cast<size_t>(req_lat_us * benchmarkData_.latencyFactor));
         #endif
     } else if(message->messageType == READ) {
         benchmarkData_.amountReadsSent++;
-        #ifdef LATENCY
-        #ifdef CR  // Only take latency when CR reads
-        double req_lat_us = erpc::to_usec(erpc::rdtsc() - message->timestamp, networkManager_->rpc_.get_freq_ghz());
-        benchmarkData_.readlatency.update(static_cast<size_t>(req_lat_us * benchmarkData_.latencyFactor));
-        #endif
-        #endif
+
+        // count error read messages
+        auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+        if (respLogEntryInFlight->logEntry.header.dataLength == 0)
+            benchmarkData_.amountReadsErrors++;
     } 
 
     networkManager_->rpc_.free_msg_buffer(message->reqBuffer);
