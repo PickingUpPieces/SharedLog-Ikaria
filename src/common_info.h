@@ -38,20 +38,11 @@ enum MessageType {
     GET_LOG_ENTRY_STATE
 };
 
-/* CRAQ / UCRAQ log entry header */
-#ifdef CRAQ
 struct LogEntryHeader {
     uint64_t popcnt;
     LogEntryState state{DIRTY};
     uint64_t dataLength;
 };
-/* CR header */
-#else 
-struct LogEntryHeader {
-    uint64_t popcnt;
-    uint64_t dataLength;
-};
-#endif
 
 struct LogEntry {
     LogEntryHeader header;
