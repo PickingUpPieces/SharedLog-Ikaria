@@ -25,9 +25,9 @@
 #define POOL_PATH "/dev/shm/replNode-0.log"
 
 enum LogEntryState {
+    ERROR,
     CLEAN,
-    DIRTY,
-    ERROR
+    DIRTY
 }; 
 
 /* CRAQ types */

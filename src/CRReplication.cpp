@@ -264,6 +264,8 @@ void CRReplication::read(Message *message) {
         networkManager_->send_message(TAIL, message);
     } else {
         auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+        respLogEntryInFlight->header.logOffset = message->logOffset;
+
         auto [logEntry, logEntryLength] = log_.read(message->logOffset);
 
         // If length is 0, entry hasn't been written yet
@@ -275,8 +277,6 @@ void CRReplication::read(Message *message) {
             message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
             memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
         }
-
-        respLogEntryInFlight->header.logOffset = message->logOffset;
 
         if (message->sentByThisNode) {
             this->receive_locally(message);

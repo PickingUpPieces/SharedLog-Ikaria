@@ -262,7 +262,23 @@ void CRAQReplication::read(Message *message) {
             // TODO: Check if logOffset < counter
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
 
-            if (logEntry->header.state == CLEAN || uncommittedRead) {
+            if (logEntryLength == 0) {
+                // Entry hasn't been written yet or is written atm, so it hasn't reached the tail yet for sure
+                auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+                message->respBufferSize = sizeof(LogEntryHeader) + sizeof(LogEntryInFlightHeader);
+                respLogEntryInFlight->header.logOffset = message->logOffset;
+
+                // Return length 0 for indicating entry hasn't been written yet
+                respLogEntryInFlight->logEntry.header.dataLength = 0;
+
+                if (message->sentByThisNode) {
+                    this->receive_locally(message);
+                    return;
+                }
+
+                /* Send READ response */
+                networkManager_->send_response(message);
+            } else if (logEntry->header.state == CLEAN || uncommittedRead) {
                 auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
                 /* Prepare respBuffer */
@@ -278,8 +294,6 @@ void CRAQReplication::read(Message *message) {
                 /* Send READ response */
                 networkManager_->send_response(message);
             } else {
-                // TODO: Check if EMPTY/ERROR, then return directly to client since then the head hasn't received it as well
-
                 auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
                 reqLogEntryInFlight->header.messageType = GET_LOG_ENTRY_STATE;
                 message->messageType = GET_LOG_ENTRY_STATE;
@@ -293,15 +307,19 @@ void CRAQReplication::read(Message *message) {
         case TAIL:
         {
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+            respLogEntryInFlight->header.logOffset = message->logOffset;
 
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
             
-            // TODO: Check if EMPTY/ERROR, then return ERROR state
-
-            /* Prepare respBuffer */
-            message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
-            respLogEntryInFlight->header.logOffset = message->logOffset;
-            memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
+            // If length is 0, entry hasn't been written yet
+            if (logEntryLength == 0) {
+                message->respBufferSize = sizeof(LogEntryHeader) + sizeof(LogEntryInFlightHeader);
+                // Return length 0 for indicating entry hasn't been written yet
+                respLogEntryInFlight->logEntry.header.dataLength = 0;
+            } else {
+                message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
+                memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
+            }
 
             DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     	    DEBUG_MSG("CRAQReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.data << ")");
