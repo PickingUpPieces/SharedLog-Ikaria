@@ -78,7 +78,15 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 		        continue;
 
 	        auto randuint = static_cast<uint64_t>(xorshf96());
+
+            #ifdef BENCHMARK_RANGE
+            // Get random value in range
+            auto randReadOffset = randuint % rp->benchmarkData_.benchmarkReadRange; 
+            randReadOffset = benchmarkData_.highestKnownLogOffset - randReadOffset;
+            #else
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
+            #endif // BENCHMARK_RANGE
+
             send_read_message(rp, randReadOffset);
             if ( rp->nodeType_ == TAIL ) {
                 rp->networkManager_->sync(1);
