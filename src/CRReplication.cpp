@@ -197,18 +197,10 @@ void CRReplication::append(Message *message) {
     DEBUG_MSG("CRReplication.append(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
-    appendsTotal++;
     auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
 
-//    if (message->sentByThisNode) {
-//        this->receive_locally(message);
-//        return;
-//    } else if (nodeType_ == HEAD ) {
-//            networkManager_->send_message(SUCCESSOR, message);
-//    } else if (nodeType_ == MIDDLE ) {
-//            networkManager_->send_message(SUCCESSOR, message);
-//    } else if (nodeType_ == TAIL )
-//            networkManager_->send_response(message);
+    // FIXME: Only for benchmarking
+    appendsTotal++;
     if (benchmarkData_.highestKnownLogOffset < reqLogEntryInFlight->header.logOffset)
         benchmarkData_.highestKnownLogOffset = reqLogEntryInFlight->header.logOffset;
 
@@ -219,12 +211,6 @@ void CRReplication::append(Message *message) {
             // Count Sequencer up and set the log entry number 
             reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
             message->logOffset = reqLogEntryInFlight->header.logOffset;
-
-            #ifdef RESET_LOG
-            // Reset counter every 1mil entries, to not write indefinitly
-            if (message->logOffset == 1000000)
-                softCounter_.store(0);
-            #endif
 
             // Append the log entry to the local Log 
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
@@ -279,12 +265,18 @@ void CRReplication::read(Message *message) {
     } else {
         auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
         auto [logEntry, logEntryLength] = log_.read(message->logOffset);
-        
-        // Prepare respBuffer 
-        message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
-        respLogEntryInFlight->header.logOffset = message->logOffset;
-        memcpy(&respLogEntryInFlight->logEntry, logEntry, 256);
 
+        // If length is 0, entry hasn't been written yet
+        if (logEntryLength == 0) {
+            message->respBufferSize = sizeof(LogEntryHeader) + sizeof(LogEntryInFlightHeader);
+            // Return length 0 for indicating entry hasn't been written yet
+            respLogEntryInFlight->logEntry.header.dataLength = 0;
+        } else {
+            message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
+            memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
+        }
+
+        respLogEntryInFlight->header.logOffset = message->logOffset;
 
         if (message->sentByThisNode) {
             this->receive_locally(message);

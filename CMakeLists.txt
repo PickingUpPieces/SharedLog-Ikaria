@@ -42,7 +42,6 @@ set(REPLICATION_PROTOCOL "CR" CACHE STRING "Choose Replication Protocoll (CR/UCR
 set(BENCHMARK "TRUE" CACHE STRING "Enable benchmark (TRUE/FALSE)")
 set(BENCHMARK_LATENCY "FALSE" CACHE STRING "Enable latency benchmarks (TRUE/FALSE)")
 set(BENCHMARK_MAX "FALSE" CACHE STRING "Keep max appends inFlight (TRUE/FALSE)")
-set(RESET_LOG "FALSE" CACHE STRING "Enable resetting of the log (TRUE/FALSE)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -112,12 +111,6 @@ string(TOUPPER ${BENCHMARK_MAX} BENCHMARK_MAX)
 if (${BENCHMARK_MAX} STREQUAL "TRUE")
   add_compile_definitions(BENCHMARK_MAX)
   message(STATUS "Maximum benchmark enabled")
-endif()
-
-string(TOUPPER ${RESET_LOG} RESET_LOG)
-if (${RESET_LOG} STREQUAL "TRUE")
-  add_compile_definitions(RESET_LOG)
-  message(STATUS "Resetting of the log sequencer enabled")
 endif()
 
 

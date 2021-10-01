@@ -195,6 +195,7 @@ void CRAQReplication::append(Message *message) {
     chainReady_ = true;
     auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
 
+    // FIXME: Only for benchmarking
     if (benchmarkData_.highestKnownLogOffset < reqLogEntryInFlight->header.logOffset)
         benchmarkData_.highestKnownLogOffset = reqLogEntryInFlight->header.logOffset;
 
@@ -202,14 +203,8 @@ void CRAQReplication::append(Message *message) {
         case HEAD: 
         {
             /* Count Sequencer up and set the log entry number */
-            reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
+            reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); 
             message->logOffset = reqLogEntryInFlight->header.logOffset;
-
-            #ifdef RESET_LOG 
-            // Reset counter every 1mil entries, to not write indefinitly
-            if (message->logOffset == 1000000)
-                softCounter_.store(0);
-            #endif
 
             /* Append the log entry to the local Log */
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
@@ -283,6 +278,8 @@ void CRAQReplication::read(Message *message) {
                 /* Send READ response */
                 networkManager_->send_response(message);
             } else {
+                // TODO: Check if EMPTY/ERROR, then return directly to client since then the head hasn't received it as well
+
                 auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
                 reqLogEntryInFlight->header.messageType = GET_LOG_ENTRY_STATE;
                 message->messageType = GET_LOG_ENTRY_STATE;
@@ -295,11 +292,12 @@ void CRAQReplication::read(Message *message) {
         }; break;
         case TAIL:
         {
-            // TODO: Check if logOffset < counter
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
             
+            // TODO: Check if EMPTY/ERROR, then return ERROR state
+
             /* Prepare respBuffer */
             message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
             respLogEntryInFlight->header.logOffset = message->logOffset;
@@ -319,6 +317,7 @@ void CRAQReplication::read(Message *message) {
     }
 }
 
+
 void CRAQReplication::get_log_entry_state(Message *message) {
     // TODO: Check if logOffset < counter: If true, set logEntryState ERROR in response
     auto [logEntry, logEntryLength] = log_.read(message->logOffset);
@@ -331,6 +330,7 @@ void CRAQReplication::get_log_entry_state(Message *message) {
     /* Send GET_LOG_ENTRY_STATE response */
     networkManager_->send_response(message);
 }
+
 
 void CRAQReplication::get_log_entry_state_response(Message *message) {
     auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
