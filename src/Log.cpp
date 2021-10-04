@@ -53,6 +53,7 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
 
 	// Calculate popcnt but add sizeof(size_t) offset to array struct so popcnt isn't in the calculation
 	logEntry->header.popcnt = popcnt(( logEntry + sizeof(uint64_t) ), ( totalLogEntrySize - sizeof(uint64_t) ));
+	std::cout << "Info: calculated popcount: " << logEntry->header.popcnt << "\n";
 
 	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
@@ -75,7 +76,7 @@ pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
 	 uint64_t popcntValue = popcnt(( logEntry + sizeof(uint64_t) ), ( totalLogEntrySize - sizeof(uint64_t) ));
 	 
 	 if (logEntry->header.popcnt != popcntValue) {
-		 std::cout << "Error: entry popcnt vs. calculated not matching: " << logEntry->header.popcnt << " vs. " << popcntValue;
+		 std::cout << "Error: entry popcnt vs. calculated not matching: " << logEntry->header.popcnt << " vs. " << popcntValue << "\n";
 		// Return 0 length if mismatch
 		return make_pair(logEntry, 0);
 	 }
