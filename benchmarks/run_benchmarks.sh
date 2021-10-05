@@ -27,7 +27,7 @@ for a in ${numberOfRuns[@]}; do
                 for s in ${size[@]}; do
                     echo "Current run: Run: " $a " Read Prob: " $r " Threads: " $t " Size: " $s " messagesInFlightCap: " $i
         
-                    sudo ./../benchmark -i $nodeID -r $r -t $t -h $runTime -f $fileName -s $s -j $i -c $chainLength
+                    sudo PMEM_IS_PMEM_FORCE=1 ./../benchmark -i $nodeID -r $r -t $t -h $runTime -f $fileName -s $s -j $i -c $chainLength
                     pid=$!
                     wait $pid
                     sleep $sleepTime
