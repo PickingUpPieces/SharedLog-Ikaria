@@ -8,11 +8,10 @@ runTime=20
 sleepTime=5
 size=(256)
 #size=(64 256 1024 2048 4096)
-threads=(1)
+threads=(2)
 #threads=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
 #readProb=(50 80 90)
 readProb=(80)
-range=5
 
 sudo rm /dev/shm/replNode-$nodeID.log
 sudo rm /dev/hugepages/* 
@@ -28,7 +27,7 @@ for a in ${numberOfRuns[@]}; do
                 for s in ${size[@]}; do
                     echo "Current run: Run: " $a " Read Prob: " $r " Threads: " $t " Size: " $s " messagesInFlightCap: " $i " range: " $range
         
-                    sudo ./../benchmark -i $nodeID -p $r -t $t -h $runTime -f $fileName -s $s -j $i -c $chainLength -r $range
+                    sudo PMEM_IS_PMEM_FORCE=1 ./../benchmark -i $nodeID -p $r -t $t -h $runTime -f $fileName -s $s -j $i -c $chainLength -r $range
                     pid=$!
                     wait $pid
                     sleep $sleepTime

@@ -30,6 +30,7 @@ message(STATUS "DPDK-path: ${DPDK-PATH}")
 
 # This project source/test directory:
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 set(BENCHMARKS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)
 
@@ -42,7 +43,6 @@ set(BENCHMARK "TRUE" CACHE STRING "Enable benchmark (TRUE/FALSE)")
 set(BENCHMARK_LATENCY "FALSE" CACHE STRING "Enable latency benchmarks (TRUE/FALSE)")
 set(BENCHMARK_MAX "FALSE" CACHE STRING "Keep max appends inFlight (TRUE/FALSE)")
 set(BENCHMARK_RANGE "FALSE" CACHE STRING "Only read offset which are only x old (TRUE/FALSE)")
-set(RESET_LOG "FALSE" CACHE STRING "Enable resetting of the log (TRUE/FALSE)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -120,17 +120,10 @@ if (${BENCHMARK_RANGE} STREQUAL "TRUE")
   message(STATUS "Benchmark range enabled")
 endif()
 
-string(TOUPPER ${RESET_LOG} RESET_LOG)
-if (${RESET_LOG} STREQUAL "TRUE")
-  add_compile_definitions(RESET_LOG)
-  message(STATUS "Resetting of the log sequencer enabled")
-endif()
-
-
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
 include_directories(SYSTEM ${PMDK}/src)
-link_directories(${PMDK}/lib/lib64)
+link_directories(${PMDK}/lib/lib)
 link_libraries(pmem pmemlog)
 
 # eRPC
@@ -138,6 +131,7 @@ include_directories(SYSTEM ${ERPC}/src)
 link_directories(${ERPC}/build)
 link_libraries(erpc)
 
+include_directories(${LIB})
 include_directories(${SRC})
 include_directories(${SRC}/NetworkLayer)
 include_directories(${TESTS})

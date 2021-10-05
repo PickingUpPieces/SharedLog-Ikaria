@@ -5,6 +5,8 @@
 #include <string>
 #include "libpmemlog.h"
 #include "common_info.h"
+#include "libpopcnt.h"
+
 using namespace std;
 
 static void init(const char *pathToLog, uint64_t logTotalSize);

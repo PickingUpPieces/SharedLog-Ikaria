@@ -203,6 +203,7 @@ void CRAQReplication::append(Message *message) {
     chainReady_ = true;
     auto *reqLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->reqBuffer.buf);
 
+    // FIXME: Only for benchmarking
     if (benchmarkData_.highestKnownLogOffset < reqLogEntryInFlight->header.logOffset)
         benchmarkData_.highestKnownLogOffset = reqLogEntryInFlight->header.logOffset;
 
@@ -210,14 +211,8 @@ void CRAQReplication::append(Message *message) {
         case HEAD: 
         {
             /* Count Sequencer up and set the log entry number */
-            reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
+            reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); 
             message->logOffset = reqLogEntryInFlight->header.logOffset;
-
-            #ifdef RESET_LOG 
-            // Reset counter every 1mil entries, to not write indefinitly
-            if (message->logOffset == 1000000)
-                softCounter_.store(0);
-            #endif
 
             /* Append the log entry to the local Log */
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
@@ -275,7 +270,23 @@ void CRAQReplication::read(Message *message) {
             // TODO: Check if logOffset < counter
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
 
-            if (logEntry->header.state == CLEAN || uncommittedRead) {
+            if (logEntryLength == 0) {
+                // Entry hasn't been written yet or is written atm, so it hasn't reached the tail yet for sure
+                auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+                message->respBufferSize = sizeof(LogEntryHeader) + sizeof(LogEntryInFlightHeader);
+                respLogEntryInFlight->header.logOffset = message->logOffset;
+
+                // Return length 0 for indicating entry hasn't been written yet
+                respLogEntryInFlight->logEntry.header.dataLength = 0;
+
+                if (message->sentByThisNode) {
+                    this->receive_locally(message);
+                    return;
+                }
+
+                /* Send READ response */
+                networkManager_->send_response(message);
+            } else if (logEntry->header.state == CLEAN || uncommittedRead) {
                 auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
 
                 /* Prepare respBuffer */
@@ -303,15 +314,20 @@ void CRAQReplication::read(Message *message) {
         }; break;
         case TAIL:
         {
-            // TODO: Check if logOffset < counter
             auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+            respLogEntryInFlight->header.logOffset = message->logOffset;
 
             auto [logEntry, logEntryLength] = log_.read(message->logOffset);
             
-            /* Prepare respBuffer */
-            message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
-            respLogEntryInFlight->header.logOffset = message->logOffset;
-            memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
+            // If length is 0, entry hasn't been written yet
+            if (logEntryLength == 0) {
+                message->respBufferSize = sizeof(LogEntryHeader) + sizeof(LogEntryInFlightHeader);
+                // Return length 0 for indicating entry hasn't been written yet
+                respLogEntryInFlight->logEntry.header.dataLength = 0;
+            } else {
+                message->respBufferSize = logEntryLength + sizeof(LogEntryInFlightHeader);
+                memcpy(&respLogEntryInFlight->logEntry, logEntry, logEntryLength);
+            }
 
             DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     	    DEBUG_MSG("CRAQReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.data << ")");
@@ -327,6 +343,7 @@ void CRAQReplication::read(Message *message) {
     }
 }
 
+
 void CRAQReplication::get_log_entry_state(Message *message) {
     // TODO: Check if logOffset < counter: If true, set logEntryState ERROR in response
     auto [logEntry, logEntryLength] = log_.read(message->logOffset);
@@ -339,6 +356,7 @@ void CRAQReplication::get_log_entry_state(Message *message) {
     /* Send GET_LOG_ENTRY_STATE response */
     networkManager_->send_response(message);
 }
+
 
 void CRAQReplication::get_log_entry_state_response(Message *message) {
     auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
@@ -355,6 +373,10 @@ void CRAQReplication::get_log_entry_state_response(Message *message) {
         
         this->read(message); // FIXME: Doing another read
     } else if(respLogEntryInFlight->logEntry.header.state == ERROR) {
+        if (message->sentByThisNode) {
+            this->receive_locally(message);
+            return;
+        }
         networkManager_->send_response(message);
     }
     benchmarkData_.amountStateRequests++;
@@ -400,20 +422,18 @@ void CRAQReplication::receive_locally(Message *message) {
     
     if (message->messageType == APPEND) {
         benchmarkData_.amountAppendsSent++; 
-        auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
-
+        
         #ifdef LATENCY
         double req_lat_us = erpc::to_usec(erpc::rdtsc() - message->timestamp, networkManager_->rpc_.get_freq_ghz());
         benchmarkData_.appendlatency.update(static_cast<size_t>(req_lat_us * benchmarkData_.latencyFactor));
         #endif
     } else if(message->messageType == READ) {
         benchmarkData_.amountReadsSent++;
-        #ifdef LATENCY
-        #ifdef CR  // Only take latency when CR reads
-        double req_lat_us = erpc::to_usec(erpc::rdtsc() - message->timestamp, networkManager_->rpc_.get_freq_ghz());
-        benchmarkData_.readlatency.update(static_cast<size_t>(req_lat_us * benchmarkData_.latencyFactor));
-        #endif
-        #endif
+
+        // count error read messages
+        auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
+        if (respLogEntryInFlight->logEntry.header.dataLength == 0)
+            benchmarkData_.amountReadsErrors++;
     } 
 
     networkManager_->rpc_.free_msg_buffer(message->reqBuffer);

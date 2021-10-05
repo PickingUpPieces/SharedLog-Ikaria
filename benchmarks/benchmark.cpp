@@ -97,6 +97,7 @@ void printbenchmarkData() {
     std::cout << "Processed READ/APPEND: " << benchmarkData.amountReadsSent << "/" << benchmarkData.amountAppendsSent << endl;
     std::cout << "Sent READ ratio: " << to_string((static_cast<double>(benchmarkData.amountReadsSent) / static_cast<double>(benchmarkData.totalMessagesProcessed)) * 100) << "% (shoud " << benchmarkData.progArgs.probabilityOfRead << "%)" << endl;
     std::cout << "Total State Requests: " << benchmarkData.amountStateRequests << endl;
+    std::cout << "Total failed READ Requests: " << benchmarkData.amountReadsErrors << endl;
     std::cout << "Sequencer Number: " << benchmarkData.lastSequencerNumber << endl;
     std::cout << "Benchmark Range: " << benchmarkData.benchmarkReadRange << endl;
     std::cout << "Total time taken: " << benchmarkData.totalExecutionTime.count() << "s" << endl;

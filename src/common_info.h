@@ -25,13 +25,11 @@
 #define POOL_PATH "/dev/shm/replNode-0.log"
 
 enum LogEntryState {
+    ERROR,
     CLEAN,
-    DIRTY,
-    ERROR
+    DIRTY
 }; 
 
-/* CRAQ types */
-#ifdef CRAQ
 enum MessageType {
     READ = 2,
     APPEND,
@@ -41,21 +39,10 @@ enum MessageType {
 };
 
 struct LogEntryHeader {
+    uint64_t popcnt;
     LogEntryState state{DIRTY};
     uint64_t dataLength;
 };
-/* CR / U-CR types */
-#else 
-enum MessageType {
-    READ = 2,
-    APPEND,
-    SETUP,
-    TERMINATE
-};
-struct LogEntryHeader {
-    uint64_t dataLength;
-};
-#endif
 
 struct LogEntry {
     LogEntryHeader header;
