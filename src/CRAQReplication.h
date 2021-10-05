@@ -17,7 +17,7 @@ class CRAQReplication {
     private:
         bool chainReady_;
         Message *setupMessage_;
-        bool waitForTerminateResponse_{false};
+        volatile bool waitForTerminateResponse_{false};
         std::thread thread_;
         Log log_;
         static void run_active(CRAQReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
@@ -47,7 +47,7 @@ class CRAQReplication {
         uint64_t appendsTotal{0}; 
 
         struct ThreadSync {
-            bool threadReady{false};
+            volatile bool threadReady{false};
             condition_variable cv;
             mutex m;
         } threadSync_;

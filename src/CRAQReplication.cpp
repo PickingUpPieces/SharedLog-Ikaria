@@ -81,7 +81,9 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
             #ifdef BENCHMARK_RANGE
             // Get random value in range
             auto randReadOffset = randuint % rp->benchmarkData_.benchmarkReadRange; 
-            randReadOffset = rp->benchmarkData_.highestKnownLogOffset - randReadOffset;
+            if ( rp->benchmarkData_.highestKnownLogOffset > randReadOffset ) {
+                randReadOffset = rp->benchmarkData_.highestKnownLogOffset - randReadOffset;
+            }
             #else
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             #endif // BENCHMARK_RANGE
@@ -92,15 +94,16 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
 
-        while((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)
+        while(((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap) && (rp->threadSync_.threadReady == true))
             rp->networkManager_->sync(1);
         #endif
     }
+    rp->exitLoop = true;
     /* Terminate */
     if (rp->nodeType_ == HEAD)
         rp->terminate(generate_terminate_message(rp));
     else {
-        while(!rp->waitForTerminateResponse_)
+        while(rp->waitForTerminateResponse_ == false)
             rp->networkManager_->sync(1);
     }
 }
@@ -214,6 +217,10 @@ void CRAQReplication::append(Message *message) {
             reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); 
             message->logOffset = reqLogEntryInFlight->header.logOffset;
 
+            // FIXME: Only for benchmarking
+            if (benchmarkData_.highestKnownLogOffset < reqLogEntryInFlight->header.logOffset)
+                benchmarkData_.highestKnownLogOffset = reqLogEntryInFlight->header.logOffset;
+
             /* Append the log entry to the local Log */
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);
             
@@ -262,6 +269,8 @@ void CRAQReplication::append_response(Message *message) {
 void CRAQReplication::read(Message *message) {
     /* Assumes that the HEAD only sends messages, when it received the SETUP response */
     chainReady_ = true;
+            DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
+            DEBUG_MSG("CRAQReplication.read(reqLogEntryInFlight: logOffset: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->header.logOffset) << " ; dataLength: " << std::to_string(((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->reqBuffer.buf)->logEntry.data << ")");
 
     switch(nodeType_) {
         case HEAD: 
@@ -330,7 +339,7 @@ void CRAQReplication::read(Message *message) {
             }
 
             DEBUG_MSG("CRAQReplication.read(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
-    	    DEBUG_MSG("CRAQReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.data << ")");
+    	    DEBUG_MSG("CRAQReplication.read(respLogEntryInFlight: dataLength: " << std::to_string(((LogEntryInFlight *) message->respBuffer.buf)->logEntry.header.dataLength) << " ; data: " << ((LogEntryInFlight *) message->respBuffer.buf)->logEntry.data << ")");
 
             if (message->sentByThisNode) {
                 this->receive_locally(message);
@@ -372,6 +381,7 @@ void CRAQReplication::get_log_entry_state_response(Message *message) {
         }
         
         this->read(message); // FIXME: Doing another read
+        benchmarkData_.amountStateRequests++;
     } else if(respLogEntryInFlight->logEntry.header.state == ERROR) {
         if (message->sentByThisNode) {
             this->receive_locally(message);
@@ -379,7 +389,6 @@ void CRAQReplication::get_log_entry_state_response(Message *message) {
         }
         networkManager_->send_response(message);
     }
-    benchmarkData_.amountStateRequests++;
 }
 
 
@@ -389,9 +398,11 @@ void CRAQReplication::terminate(Message *message) {
     switch(nodeType_){
         case HEAD:
         case MIDDLE:
+
             networkManager_->send_message(SUCCESSOR, message);
             break;
         case TAIL:
+
             networkManager_->send_response(message);
             waitForTerminateResponse_ = true;
     }
@@ -415,7 +426,6 @@ void CRAQReplication::terminate_response(Message *message) {
 
 
 
-
 /* Callback function when a response is received */
 void CRAQReplication::receive_locally(Message *message) {
     benchmarkData_.totalMessagesProcessed++;
@@ -434,7 +444,10 @@ void CRAQReplication::receive_locally(Message *message) {
         auto *respLogEntryInFlight = reinterpret_cast<LogEntryInFlight *>(message->respBuffer.buf);
         if (respLogEntryInFlight->logEntry.header.dataLength == 0)
             benchmarkData_.amountReadsErrors++;
-    } 
+    } else if (message->messageType == GET_LOG_ENTRY_STATE) {
+        benchmarkData_.amountReadsSent++;
+        benchmarkData_.amountStateRequests++;
+    }
 
     networkManager_->rpc_.free_msg_buffer(message->reqBuffer);
     networkManager_->rpc_.free_msg_buffer(message->respBuffer);
