@@ -365,6 +365,10 @@ void CRAQReplication::get_log_entry_state_response(Message *message) {
         
         this->read(message); // FIXME: Doing another read
     } else if(respLogEntryInFlight->logEntry.header.state == ERROR) {
+        if (message->sentByThisNode) {
+            this->receive_locally(message);
+            return;
+        }
         networkManager_->send_response(message);
     }
     benchmarkData_.amountStateRequests++;

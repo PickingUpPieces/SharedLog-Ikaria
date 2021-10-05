@@ -32,6 +32,7 @@ Log::~Log() {
 static void init(const char *pathToLog, uint64_t logTotalSize) {
 	/* create the pmemlog pool or open it if it already exists */
 	plp_ = pmemlog_create(pathToLog, logTotalSize, 0666);
+    pmemlog_zeroing(plp_);
 
 	if (plp_ == NULL &&
 	    (plp_ = pmemlog_open(pathToLog)) == NULL) {

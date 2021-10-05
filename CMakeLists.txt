@@ -117,7 +117,7 @@ endif()
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
 include_directories(SYSTEM ${PMDK}/src)
-link_directories(${PMDK}/lib/lib64)
+link_directories(${PMDK}/lib/lib)
 link_libraries(pmem pmemlog)
 
 # eRPC

@@ -8,10 +8,10 @@ runTime=20
 sleepTime=5
 size=(256)
 #size=(64 256 1024 2048 4096)
-threads=(16)
+threads=(2)
 #threads=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)
 #readProb=(50 80 90)
-readProb=(80 100)
+readProb=(80)
 
 sudo rm /dev/shm/replNode-$nodeID.log
 sudo rm /dev/hugepages/* 
