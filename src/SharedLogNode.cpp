@@ -28,6 +28,8 @@ void SharedLogNode<Replication>::get_results(BenchmarkData *benchmarkData) {
         benchmarkData->amountAppendsSent += rp->benchmarkData_.amountAppendsSent;
         benchmarkData->amountReadsSent += rp->benchmarkData_.amountReadsSent;
         benchmarkData->totalMessagesProcessed += rp->benchmarkData_.totalMessagesProcessed;
+        benchmarkData->amountStateRequests += rp->benchmarkData_.amountStateRequests;
+        benchmarkData->amountReadsErrors += rp->benchmarkData_.amountReadsErrors;
         readsTotal += rp->readsTotal;
         appendsTotal += rp->appendsTotal;
         #ifdef LATENCY

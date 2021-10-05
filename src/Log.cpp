@@ -32,6 +32,7 @@ Log::~Log() {
 static void init(const char *pathToLog, uint64_t logTotalSize) {
 	/* create the pmemlog pool or open it if it already exists */
 	plp_ = pmemlog_create(pathToLog, logTotalSize, 0666);
+    pmemlog_zeroing(plp_);
 
 	if (plp_ == NULL &&
 	    (plp_ = pmemlog_open(pathToLog)) == NULL) {
@@ -51,6 +52,9 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
 	/* Only copy the real entry size */
 	uint64_t totalLogEntrySize = logEntry->header.dataLength + sizeof(LogEntryHeader);
 
+	// Calculate popcnt but add 2 * sizeof(uint64_t) offset to array struct so popcnt and state isn't in the calculation
+	logEntry->header.popcnt = popcnt((void *) (((uint64_t) logEntry) + (2 * sizeof(uint64_t))), totalLogEntrySize - (2 * sizeof(uint64_t)));
+
 	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
 		exit(EXIT_FAILURE);
@@ -66,12 +70,24 @@ pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
     LogEntry *logEntry = static_cast<LogEntry *>(pmemlog_read(plp_, logOffset * logBlockSize_));
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->header.dataLength) << " ; data: " << logEntry->data << ")");
 
+	uint64_t totalLogEntrySize = logEntry->header.dataLength + sizeof(LogEntryHeader);
+
+	 // Calculate popcnt but add 2 * sizeof(uint64_t) offset to array struct so popcnt and state isn't in the calculation
+	 uint64_t popcntValue = popcnt((void *) (((uint64_t) logEntry) + (2 * sizeof(uint64_t))), ( totalLogEntrySize - (2 * sizeof(uint64_t))));
+	 
+	 if (logEntry->header.popcnt != popcntValue) {
+		 std::cout << "Error: entry popcnt vs. calculated not matching: " << std::to_string(logEntry->header.popcnt) << " vs. " << std::to_string(popcntValue) << "\n";
+		// Return length 0 if mismatch
+		return make_pair(logEntry, 0);
+	 }
+
 	return make_pair(logEntry, logEntry->header.dataLength + sizeof(LogEntryHeader));
 }
 
 
 void Log::update_logEntryState(uint64_t logOffset, LogEntryState logEntryState) {
-	if (pmemlog_write(plp_, reinterpret_cast<void *>(&logEntryState), sizeof(LogEntryState), logOffset * logBlockSize_) < 0) {
+	// Add up sizeof(uint64_t) because of popcnt
+	if (pmemlog_write(plp_, reinterpret_cast<void *>(&logEntryState), sizeof(LogEntryState), logOffset * logBlockSize_ + sizeof(uint64_t)) < 0) {
 		perror("pmemlog_write");
 		exit(EXIT_FAILURE);
 	}

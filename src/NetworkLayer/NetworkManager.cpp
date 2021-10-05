@@ -109,12 +109,12 @@ void NetworkManager::receive_message(Message *message) {
             message->messageType = TERMINATE;
             replicationManager_->terminate(message);
             break;
-        #ifdef CRAQ
         case GET_LOG_ENTRY_STATE: 
+            #ifdef CRAQ
             message->messageType = GET_LOG_ENTRY_STATE;
             replicationManager_->get_log_entry_state(message); 
+            #endif
             break;
-        #endif
     }
 }
 
@@ -143,11 +143,11 @@ void NetworkManager::receive_response(Message *message) {
     case TERMINATE:
         replicationManager_->terminate_response(message);
         break;
-    #ifdef CRAQ
     case GET_LOG_ENTRY_STATE:
+        #ifdef CRAQ
         replicationManager_->get_log_entry_state_response(message);
+        #endif
         break;
-    #endif
     }
 }
 
