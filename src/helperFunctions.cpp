@@ -172,9 +172,8 @@ Message *generate_terminate_message(Replication *rp) {
 /* Generate a random logEntryInFlight for sending in append requests */
 LogEntryInFlight generate_random_logEntryInFlight(uint64_t totalSize){
     LogEntryInFlight logEntryInFlight;
-    #ifdef CRAQ
     logEntryInFlight.logEntry.header.state = DIRTY;
-    #endif
+
     string possibleCharacters = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     mt19937 generator{random_device{}()};
     uniform_int_distribution<> dist(0, possibleCharacters.size()-1);

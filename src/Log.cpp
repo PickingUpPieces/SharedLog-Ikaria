@@ -51,9 +51,8 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
 	/* Only copy the real entry size */
 	uint64_t totalLogEntrySize = logEntry->header.dataLength + sizeof(LogEntryHeader);
 
-	// Calculate popcnt but add sizeof(size_t) offset to array struct so popcnt isn't in the calculation
-	logEntry->header.popcnt = popcnt(( logEntry + sizeof(uint64_t) ), ( totalLogEntrySize - sizeof(uint64_t) ));
-	std::cout << "Info: calculated popcount: " << logEntry->header.popcnt << "\n";
+	// Calculate popcnt but add 2 * sizeof(uint64_t) offset to array struct so popcnt and state isn't in the calculation
+	logEntry->header.popcnt = popcnt((void *) (((uint64_t) logEntry) + (2 * sizeof(uint64_t))), totalLogEntrySize - (2 * sizeof(uint64_t)));
 
 	if (pmemlog_write(plp_, logEntry, totalLogEntrySize, logOffset * logBlockSize_) < 0) {
 		perror("pmemlog_write");
@@ -72,12 +71,12 @@ pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
 
 	uint64_t totalLogEntrySize = logEntry->header.dataLength + sizeof(LogEntryHeader);
 
-	// Calculate popcnt but add sizeof(size_t) offset to array struct so popcnt isn't in the calculation
-	 uint64_t popcntValue = popcnt(( logEntry + sizeof(uint64_t) ), ( totalLogEntrySize - sizeof(uint64_t) ));
+	 // Calculate popcnt but add 2 * sizeof(uint64_t) offset to array struct so popcnt and state isn't in the calculation
+	 uint64_t popcntValue = popcnt((void *) (((uint64_t) logEntry) + (2 * sizeof(uint64_t))), ( totalLogEntrySize - (2 * sizeof(uint64_t))));
 	 
 	 if (logEntry->header.popcnt != popcntValue) {
-		 std::cout << "Error: entry popcnt vs. calculated not matching: " << logEntry->header.popcnt << " vs. " << popcntValue << "\n";
-		// Return 0 length if mismatch
+		 std::cout << "Error: entry popcnt vs. calculated not matching: " << std::to_string(logEntry->header.popcnt) << " vs. " << std::to_string(popcntValue) << "\n";
+		// Return length 0 if mismatch
 		return make_pair(logEntry, 0);
 	 }
 
