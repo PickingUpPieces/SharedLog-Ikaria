@@ -128,7 +128,6 @@ link_libraries(erpc)
 include_directories(${LIB})
 include_directories(${SRC})
 include_directories(${SRC}/NetworkLayer)
-include_directories(${SRC}/NetworkLayer)
 include_directories(${TESTS})
 include_directories(${BENCHMARKS})
 
