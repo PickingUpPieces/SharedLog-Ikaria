@@ -82,7 +82,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
             #ifdef BENCHMARK_RANGE
             // Get random value in range
             auto randReadOffset = randuint % rp->benchmarkData_.benchmarkReadRange; 
-            randReadOffset = benchmarkData_.highestKnownLogOffset - randReadOffset;
+            randReadOffset = rp->benchmarkData_.highestKnownLogOffset - randReadOffset;
             #else
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             #endif // BENCHMARK_RANGE

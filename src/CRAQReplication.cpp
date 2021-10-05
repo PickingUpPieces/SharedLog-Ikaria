@@ -81,7 +81,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
             #ifdef BENCHMARK_RANGE
             // Get random value in range
             auto randReadOffset = randuint % rp->benchmarkData_.benchmarkReadRange; 
-            randReadOffset = benchmarkData_.highestKnownLogOffset - randReadOffset;
+            randReadOffset = rp->benchmarkData_.highestKnownLogOffset - randReadOffset;
             #else
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             #endif // BENCHMARK_RANGE
