@@ -82,7 +82,9 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
             #ifdef BENCHMARK_RANGE
             // Get random value in range
             auto randReadOffset = randuint % rp->benchmarkData_.benchmarkReadRange; 
-            randReadOffset = rp->benchmarkData_.highestKnownLogOffset - randReadOffset;
+            if ( rp->benchmarkData_.highestKnownLogOffset > randReadOffset ) {
+                randReadOffset = rp->benchmarkData_.highestKnownLogOffset - randReadOffset;
+            }
             #else
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
             #endif // BENCHMARK_RANGE
@@ -219,6 +221,10 @@ void CRReplication::append(Message *message) {
             // Count Sequencer up and set the log entry number 
             reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
             message->logOffset = reqLogEntryInFlight->header.logOffset;
+
+            // FIXME: Only for benchmarking
+            if (benchmarkData_.highestKnownLogOffset < reqLogEntryInFlight->header.logOffset)
+                benchmarkData_.highestKnownLogOffset = reqLogEntryInFlight->header.logOffset;
 
             // Append the log entry to the local Log 
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);

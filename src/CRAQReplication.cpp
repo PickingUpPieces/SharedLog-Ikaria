@@ -98,7 +98,6 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
             rp->networkManager_->sync(1);
         #endif
     }
-    rp->exitLoop = true;
     /* Terminate */
     if (rp->nodeType_ == HEAD)
         rp->terminate(generate_terminate_message(rp));
