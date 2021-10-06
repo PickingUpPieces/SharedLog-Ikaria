@@ -97,7 +97,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
 
-        while((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)
+        while(((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)  && (rp->threadSync_.threadReady == true))
             rp->networkManager_->sync(1);
         #endif
     }
@@ -106,7 +106,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     if (rp->nodeType_ == HEAD)
         rp->terminate(generate_terminate_message(rp));
     else {
-        while(!rp->waitForTerminateResponse_)
+        while(rp->waitForTerminateResponse_ == false)
             rp->networkManager_->sync(1);
     }
 }

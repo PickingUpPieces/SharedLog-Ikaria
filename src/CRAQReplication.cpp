@@ -397,11 +397,9 @@ void CRAQReplication::terminate(Message *message) {
     switch(nodeType_){
         case HEAD:
         case MIDDLE:
-
             networkManager_->send_message(SUCCESSOR, message);
             break;
         case TAIL:
-
             networkManager_->send_response(message);
             waitForTerminateResponse_ = true;
     }

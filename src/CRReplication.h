@@ -17,7 +17,7 @@ class CRReplication {
     private:
         bool chainReady_;
         Message *setupMessage_;
-        bool waitForTerminateResponse_{false};
+        volatile bool waitForTerminateResponse_{false};
         std::thread thread_;
         Log log_;
         static void run_active(CRReplication *rp, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI);
@@ -45,7 +45,7 @@ class CRReplication {
         unique_ptr<NetworkManager> networkManager_;
 
         struct ThreadSync {
-            bool threadReady{false};
+            volatile bool threadReady{false};
             condition_variable cv;
             mutex m;
         } threadSync_;
