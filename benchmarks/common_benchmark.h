@@ -30,6 +30,7 @@ struct BenchmarkData {
     size_t amountStateRequests{0};
     size_t amountReadsErrors{0};
     size_t totalMessagesProcessed{0};
+    size_t benchmarkReadRange{100};
     std::chrono::duration<double> totalExecutionTime{};
     double operationsPerSecond{0.0}; // Op/s
     uint64_t highestKnownLogOffset{1}; // So reads are performed on offset smaller than this

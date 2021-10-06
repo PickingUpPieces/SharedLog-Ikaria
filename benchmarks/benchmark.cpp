@@ -99,6 +99,7 @@ void printbenchmarkData() {
     std::cout << "Total State Requests: " << benchmarkData.amountStateRequests << endl;
     std::cout << "Total failed READ Requests: " << benchmarkData.amountReadsErrors << endl;
     std::cout << "Sequencer Number: " << benchmarkData.lastSequencerNumber << endl;
+    std::cout << "Benchmark Range: " << benchmarkData.benchmarkReadRange << endl;
     std::cout << "Total time taken: " << benchmarkData.totalExecutionTime.count() << "s" << endl;
     if (benchmarkTime)
         std::cout << "Operations per Second: " << (static_cast<double>(benchmarkData.totalMessagesProcessed) / benchmarkData.totalExecutionTime.count()) << " Op/s" << endl;
@@ -163,7 +164,7 @@ void parser(int amountArgs, char **argv) {
             case 'a': // Active mode
                 benchmarkData.progArgs.activeMode = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
-            case 'r': // Percentage reads
+            case 'p': // Percentage reads
                 benchmarkData.progArgs.probabilityOfRead = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
             case 's': // Size value
@@ -174,6 +175,9 @@ void parser(int amountArgs, char **argv) {
                 break;
             case 'j': // Cap
                 benchmarkData.progArgs.messageInFlightCap = std::stoul(&(argv[i][3]), nullptr, 0);
+                break;
+            case 'r': // Benchmark read range
+                benchmarkData.benchmarkReadRange = std::stoul(&(argv[i][3]), nullptr, 0);
                 break;
             case 'h': // Time to run program in seconds
                 benchmarkData.progArgs.time = std::chrono::seconds(std::stoul(&(argv[i][3]), nullptr, 0));

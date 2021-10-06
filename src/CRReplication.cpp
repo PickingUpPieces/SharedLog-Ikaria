@@ -78,7 +78,17 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 		        continue;
 
 	        auto randuint = static_cast<uint64_t>(xorshf96());
+
+            #ifdef BENCHMARK_RANGE
+            // Get random value in range
+            auto randReadOffset = randuint % rp->benchmarkData_.benchmarkReadRange; 
+            if ( rp->benchmarkData_.highestKnownLogOffset > randReadOffset ) {
+                randReadOffset = rp->benchmarkData_.highestKnownLogOffset - randReadOffset;
+            }
+            #else
             auto randReadOffset = randuint % rp->benchmarkData_.highestKnownLogOffset; 
+            #endif // BENCHMARK_RANGE
+
             send_read_message(rp, randReadOffset);
             if ( rp->nodeType_ == TAIL ) {
                 rp->networkManager_->sync(1);
@@ -87,7 +97,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
             send_append_message(rp, &logEntryInFlight, sizeof(LogEntryInFlightHeader) + sizeof(LogEntryHeader) + logEntryInFlight.logEntry.header.dataLength);
         }
 
-        while((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)
+        while(((sentMessages - rp->benchmarkData_.totalMessagesProcessed) > rp->benchmarkData_.progArgs.messageInFlightCap)  && (rp->threadSync_.threadReady == true))
             rp->networkManager_->sync(1);
         #endif
     }
@@ -96,7 +106,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
     if (rp->nodeType_ == HEAD)
         rp->terminate(generate_terminate_message(rp));
     else {
-        while(!rp->waitForTerminateResponse_)
+        while(rp->waitForTerminateResponse_ == false)
             rp->networkManager_->sync(1);
     }
 }
@@ -211,6 +221,10 @@ void CRReplication::append(Message *message) {
             // Count Sequencer up and set the log entry number 
             reqLogEntryInFlight->header.logOffset = softCounter_.fetch_add(1); // FIXME: Check memory relaxation of fetch_add
             message->logOffset = reqLogEntryInFlight->header.logOffset;
+
+            // FIXME: Only for benchmarking
+            if (benchmarkData_.highestKnownLogOffset < reqLogEntryInFlight->header.logOffset)
+                benchmarkData_.highestKnownLogOffset = reqLogEntryInFlight->header.logOffset;
 
             // Append the log entry to the local Log 
             log_.append(message->logOffset, &reqLogEntryInFlight->logEntry);

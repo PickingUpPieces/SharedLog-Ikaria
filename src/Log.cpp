@@ -67,6 +67,7 @@ void Log::append(uint64_t logOffset, LogEntry *logEntry) {
  * @param logEntryLength Pointer for the logSize of the requested log, which is returned back to the ReplicationManager
 */
 pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
+    DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << ")");
     LogEntry *logEntry = static_cast<LogEntry *>(pmemlog_read(plp_, logOffset * logBlockSize_));
     DEBUG_MSG("Log.read(Offset: " << std::to_string(logOffset) << " ; LogEntry: dataLength: " << std::to_string(logEntry->header.dataLength) << " ; data: " << logEntry->data << ")");
 
@@ -76,7 +77,7 @@ pair<LogEntry *, uint64_t> Log::read(uint64_t logOffset) {
 	 uint64_t popcntValue = popcnt((void *) (((uint64_t) logEntry) + (2 * sizeof(uint64_t))), ( totalLogEntrySize - (2 * sizeof(uint64_t))));
 	 
 	 if (logEntry->header.popcnt != popcntValue) {
-		 std::cout << "Error: entry popcnt vs. calculated not matching: " << std::to_string(logEntry->header.popcnt) << " vs. " << std::to_string(popcntValue) << "\n";
+		 DEBUG_MSG("Log.read: entry popcnt vs. calculated not matching: " << std::to_string(logEntry->header.popcnt) << " vs. " << std::to_string(popcntValue));
 		// Return length 0 if mismatch
 		return make_pair(logEntry, 0);
 	 }

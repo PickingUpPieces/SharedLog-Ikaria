@@ -42,6 +42,7 @@ set(REPLICATION_PROTOCOL "CR" CACHE STRING "Choose Replication Protocoll (CR/UCR
 set(BENCHMARK "TRUE" CACHE STRING "Enable benchmark (TRUE/FALSE)")
 set(BENCHMARK_LATENCY "FALSE" CACHE STRING "Enable latency benchmarks (TRUE/FALSE)")
 set(BENCHMARK_MAX "FALSE" CACHE STRING "Keep max appends inFlight (TRUE/FALSE)")
+set(BENCHMARK_RANGE "FALSE" CACHE STRING "Only read offset which are only x old (TRUE/FALSE)")
 
 string(TOUPPER ${DEBUG} DEBUG)
 if (${DEBUG} STREQUAL "ON")
@@ -113,6 +114,11 @@ if (${BENCHMARK_MAX} STREQUAL "TRUE")
   message(STATUS "Maximum benchmark enabled")
 endif()
 
+string(TOUPPER ${BENCHMARK_RANGE} BENCHMARK_RANGE)
+if (${BENCHMARK_RANGE} STREQUAL "TRUE")
+  add_compile_definitions(BENCHMARK_RANGE)
+  message(STATUS "Benchmark range enabled")
+endif()
 
 # PMDK
 include_directories(SYSTEM ${PMDK}/lib/include)
