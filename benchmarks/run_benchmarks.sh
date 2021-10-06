@@ -40,3 +40,10 @@ done
 
 sudo rm /dev/shm/replNode-$nodeID.log
 sudo rm /dev/hugepages/* 
+
+sleep 5
+
+if [ $nodeID -eq 0 ]
+then
+    ./finish_benchmark.sh ${numberOfRuns[@]}
+fi
