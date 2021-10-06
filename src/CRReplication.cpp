@@ -31,7 +31,7 @@ CRReplication::CRReplication(NodeType nodeType, const char* pathToLog, erpc::Nex
 /* TODO: Documentation */
 /* Active Thread function */
 void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->networkManager_ = make_unique<NetworkManager<CRReplication>>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
@@ -114,7 +114,7 @@ void CRReplication::run_active(CRReplication *rp, erpc::Nexus *Nexus, uint8_t er
 /* TODO: Documentation */
 /* Passive Thread function */
 void CRReplication::run_passive(CRReplication *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->networkManager_ = make_unique<NetworkManager<CRReplication>>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     // Set threadReady to true

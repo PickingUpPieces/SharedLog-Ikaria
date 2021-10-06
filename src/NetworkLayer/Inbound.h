@@ -8,20 +8,22 @@
 #include "NetworkManager.h"
 using namespace std;
 
+template<class Replication>
 class NetworkManager;
 
 // Server Object
+template<class Replication>
 class Inbound {
     friend void req_handler(erpc::ReqHandle *req_handle, void *context);
-    friend NetworkManager;
+    friend NetworkManager<Replication>;
 
     private:
         NodeType nodeType_;
-        NetworkManager *networkManager_;
+        NetworkManager<Replication> *networkManager_;
         void send_response(Message *message);
 
     public:
-        Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *networkManager);
+        Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager<Replication> *networkManager);
 };
 
 #endif //REPLICATIONNODE_INBOUND_H

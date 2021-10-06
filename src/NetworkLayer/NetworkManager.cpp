@@ -1,10 +1,5 @@
 #include <iostream>
 #include "NetworkManager.h"
-#ifdef CR
-#define REPLICATION CRReplication
-#elif CRAQ
-#define REPLICATION CRAQReplication
-#endif
 void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
 
 /**
@@ -17,7 +12,8 @@ void empty_sm_handler(int, erpc::SmEventType, erpc::SmErrType, void *) {}
  * @param tailURI String "hostname:port" of the TAIL node of the chain. If this node is the TAIL, leave it empty.
  * @param replicationManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, REPLICATION *replicationManager):
+template<class Replication>
+NetworkManager<Replication>::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI, Replication *replicationManager):
         nodeType_{nodeType},
         erpcID_{erpcID},
         replicationManager_{replicationManager},
@@ -29,20 +25,21 @@ NetworkManager::NetworkManager(NodeType nodeType, erpc::Nexus *nexus, uint8_t er
     rpc_.set_pre_resp_msgbuf_size(MAX_MESSAGE_SIZE);
 
     if (nodeType_ != HEAD)
-        Head_ = make_unique<Outbound>(headURI, erpcID, this, &rpc_);
+        Head_ = make_unique<Outbound<Replication>>(headURI, erpcID, this, &rpc_);
 
     if (nodeType_ != TAIL) {
-        Tail_ = make_shared<Outbound>(tailURI, erpcID, this, &rpc_);
+        Tail_ = make_shared<Outbound<Replication>>(tailURI, erpcID, this, &rpc_);
     
         /* SUCCESSOR is the TAIL node */
-        (successorURI.compare(tailURI) == 0) ? Successor_ = Tail_ : Successor_ = make_shared<Outbound>(successorURI, erpcID, this, &rpc_);
+        (successorURI.compare(tailURI) == 0) ? Successor_ = Tail_ : Successor_ = make_shared<Outbound<Replication>>(successorURI, erpcID, this, &rpc_);
     }
 }
 
 /**
  * Establishes the connection for all Outbounds
  */
-void NetworkManager::init() {
+template<class Replication>
+void NetworkManager<Replication>::init() {
     if (Head_) Head_->connect();
     if (Successor_) Successor_->connect();
     if (Tail_ && (Tail_ != Successor_)) Tail_->connect();
@@ -53,7 +50,8 @@ void NetworkManager::init() {
  * @param targetNode Specifying the node in the chain the message should be send to
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void NetworkManager::send_message(NodeType targetNode, Message *message) {
+template<class Replication>
+void NetworkManager<Replication>::send_message(NodeType targetNode, Message *message) {
     messagesInFlight_++;
     DEBUG_MSG("NetworkManager.send_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
@@ -75,16 +73,19 @@ void NetworkManager::send_message(NodeType targetNode, Message *message) {
  * Further delegates a response message for a previous received message to the Inbound
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void NetworkManager::send_response(Message *message) {
+template<class Replication>
+void NetworkManager<Replication>::send_response(Message *message) {
     DEBUG_MSG("NetworkManager.send_response(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
     Inbound_->send_response(message);
 }
 
+// TODO: Add template specialisation for Replication types
 /**
  * Further delegates a received message from the Inbound to the ReplicationManager 
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void NetworkManager::receive_message(Message *message) {
+template<class Replication>
+void NetworkManager<Replication>::receive_message(Message *message) {
     totalMessagesProcessed_++;
 
     /* Fill the rest of the message meta information */
@@ -118,12 +119,14 @@ void NetworkManager::receive_message(Message *message) {
     }
 }
 
+// TODO: Add template specialisation for Replication types
 /**
  * Further delegates a received response from an Outbound
  * SentByThisNode is needed when traffic for the chain on this node is created
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void NetworkManager::receive_response(Message *message) {
+template<class Replication>
+void NetworkManager<Replication>::receive_response(Message *message) {
     messagesInFlight_--;
     DEBUG_MSG("NetworkManager.receive_message(messagesInFlight: " << std::to_string(messagesInFlight_) << " ; erpcID: " << std::to_string(erpcID_) << ")");
 
@@ -155,7 +158,14 @@ void NetworkManager::receive_response(Message *message) {
  * Runs the event loop
  * @param numberOfRuns How often the event loop should run
  */
-void NetworkManager::sync(int numberOfRuns) {
+template<class Replication>
+void NetworkManager<Replication>::sync(int numberOfRuns) {
     for (int i = 0; i < numberOfRuns; i++)
         rpc_.run_event_loop_once();
 }
+
+#ifdef CRAQ
+template class NetworkManager<CRAQReplication>;
+#else
+template class NetworkManager<CRReplication>;
+#endif

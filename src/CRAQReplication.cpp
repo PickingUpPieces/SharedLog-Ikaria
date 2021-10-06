@@ -37,7 +37,7 @@ CRAQReplication::CRAQReplication(NodeType nodeType, const char* pathToLog, erpc:
 /* TODO: Documentation */
 /* Active Thread function */
 void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->networkManager_ = make_unique<NetworkManager<CRAQReplication>>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     auto logEntryInFlight = generate_random_logEntryInFlight(rp->benchmarkData_.progArgs.valueSize);
@@ -110,7 +110,7 @@ void CRAQReplication::run_active(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_
 /* TODO: Documentation */
 /* Passive Thread function */
 void CRAQReplication::run_passive(CRAQReplication *rp, erpc::Nexus *Nexus, uint8_t erpcID, string headURI, string successorURI, string tailURI) {
-    rp->networkManager_ = make_unique<NetworkManager>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
+    rp->networkManager_ = make_unique<NetworkManager<CRAQReplication>>(rp->nodeType_, Nexus, erpcID, headURI, successorURI, tailURI, rp); 
     rp->init();
 
     // Set threadReady to true
