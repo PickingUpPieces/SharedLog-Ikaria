@@ -9,10 +9,11 @@
 #include "NetworkManager.h"
 using namespace std;
 
+template<class Replication>
 class NetworkManager;
 
 class CRReplication {
-    friend NetworkManager;
+    friend NetworkManager<CRReplication>;
 
     private:
         bool chainReady_;
@@ -42,7 +43,7 @@ class CRReplication {
         uint64_t appendsTotal{0};
         BenchmarkData benchmarkData_;
         uint64_t readsTotal{0};
-        unique_ptr<NetworkManager> networkManager_;
+        unique_ptr<NetworkManager<CRReplication>> networkManager_;
 
         struct ThreadSync {
             volatile bool threadReady{false};

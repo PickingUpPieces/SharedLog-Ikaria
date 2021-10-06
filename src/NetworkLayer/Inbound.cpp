@@ -9,7 +9,8 @@ static void register_req_handler(erpc::Nexus *nexus);
  * @param nexus Nexus needed for the eRPC connection
  * @param NetworkManager Reference needed for the message flow e.g. handing of messages for further process 
  */
-Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *networkManager):
+template<class Replication>
+Inbound<Replication>::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager<Replication> *networkManager):
         nodeType_{nodeType},
         networkManager_{networkManager}
 {
@@ -23,7 +24,11 @@ Inbound::Inbound(NodeType nodeType, erpc::Nexus *nexus, NetworkManager *networkM
  * @param context Pointer to the NetworkManager for handing of the message
  */
 void req_handler(erpc::ReqHandle *req_handle, void *context) {
-    auto networkManager = static_cast<NetworkManager *>(context);
+    #ifdef CRAQ
+    auto networkManager = static_cast<NetworkManager<CRAQReplication> *>(context);
+    #else
+    auto networkManager = static_cast<NetworkManager<CRReplication> *>(context);
+    #endif
     Message *message = new Message(); 
     message->reqHandle = req_handle;
 
@@ -59,7 +64,8 @@ void req_handler(erpc::ReqHandle *req_handle, void *context) {
  * Sends response for a previous received message
  * @param message Message contains important meta information/pointer e.g. Request Handle, resp/req Buffers
  */
-void Inbound::send_response(Message *message) {
+template<class Replication>
+void Inbound<Replication>::send_response(Message *message) {
     DEBUG_MSG("Inbound.send_response(Message: Type: " << std::to_string(message->messageType) << "; logOffset: " << std::to_string(message->logOffset) << " ; sentByThisNode: " << message->sentByThisNode << " ; reqBufferSize: " << std::to_string(message->reqBufferSize) << " ; respBufferSize: " << std::to_string(message->respBufferSize) <<")");
     
     /* Copy data in pre_resp MsgBuffer */
@@ -90,3 +96,6 @@ static void register_req_handler(erpc::Nexus *nexus) {
         std::terminate();
     } 
 }
+
+template class Inbound<CRAQReplication>;
+template class Inbound<CRReplication>;

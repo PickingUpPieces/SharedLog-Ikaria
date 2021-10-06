@@ -9,10 +9,11 @@
 #include "NetworkManager.h"
 using namespace std;
 
+template<class Replication>
 class NetworkManager;
 
 class CRAQReplication {
-    friend NetworkManager;
+    friend NetworkManager<CRAQReplication>;
 
     private:
         bool chainReady_;
@@ -41,7 +42,7 @@ class CRAQReplication {
         static atomic<uint64_t> softCounter_;
         NodeType nodeType_;
         BenchmarkData benchmarkData_;
-        unique_ptr<NetworkManager> networkManager_;
+        unique_ptr<NetworkManager<CRAQReplication>> networkManager_;
         bool uncommittedRead{false};
         uint64_t readsTotal{0};
         uint64_t appendsTotal{0}; 
