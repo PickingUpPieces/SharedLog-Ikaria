@@ -1,7 +1,23 @@
-# Replication Node
-A shared log implementation. The Network stack is based on eRPC. 
-As replication protocol a simple chain replication is used.
-For logging the PMDK library has been extended and is used for logging on persistent memory.
+# A shared log implementation with persistent memory and eRPC
+Shared logs are one of the basic building blocks of distributed systems. They are used
+in system like Kafka, Amazon Aurora or LogDevice. The increased popularity
+of shared logs in the last decade is due to their offered simplicity and properties
+like Strong Consistency. They order events received from multiple clients, replicate
+them across multiple servers and make them accessible. Therefore, a shared log can
+drastically decrease complexity for the system built on top. As it is a core building
+block, the shared log needs to be as performant as possible. In recent years there have
+been advancements in the fields of networking, Persistent Memory, and multi-core
+processors. The open question is how these advancements can be leveraged in a
+shared log system. We designed and implemented Ikaria, a highly parallelized shared
+log with CRAQ as a replication algorithm. Ikaria makes use of asynchronous user-
+space networking and builds upon Persistent Memory, which offers byte-addressable
+access, persistent data storage, and performance close to volatile memory. Our results
+show that Ikaria offers high throughput for read-heavy workloads. Furthermore, we
+demonstrate that Ikaria scales well with an increasing number of servers, threads, and
+different log entry sizes compared to the original Chain Replication protocol.
+
+For more details, refer to the [thesis](https://github.com/TUM-DSE/research-work-archive/blob/main/archive/2021/winter/docs/bsc_picking_shared_log_with_persistent_memory_and_erpc.pdf).
+
 
 ## Building
 There are nix-shell files in the nix folder, which are making the build process very easy.
